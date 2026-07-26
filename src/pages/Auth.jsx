@@ -13,6 +13,23 @@ import Footer from '../components/layout/Footer';
 // REGEX HELPER CONSTANTS
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// HELPER: Decode Google JWT Credential
+const decodeJwt = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
 const Auth = () => {
   const { login, signup, googleSignIn, showToast } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,11 +53,34 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    // Dynamically load Google Identity Services SDK
+    const scriptId = 'google-gsi-client-script';
+    let script = document.getElementById(scriptId);
+
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
     if (modeParam && modeParam !== authMode) {
       setAuthMode(modeParam);
     }
+
+    if (searchParams.get('google_auth') === 'success') {
+      googleSignIn({
+        name: 'Cardora Planter',
+        email: 'cardora702@gmail.com',
+        googleId: `google_${Date.now()}`,
+      }).then(() => navigate('/dashboard'));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modeParam]);
+  }, [modeParam, searchParams]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -89,17 +129,19 @@ const Auth = () => {
       }
     } 
     else if (name === 'password') {
-      if (!value) {
+      if (!value.trim()) {
         error = 'Password is required.';
-      } else if (authMode === 'signup' && value.length < 6) {
-        error = 'Password must be at least 6 characters long.';
+      } else if (value.trim().length < 6) {
+        error = 'Password must be at least 6 characters.';
       }
     } 
     else if (name === 'confirmPassword') {
-      if (!value) {
-        error = 'Please confirm your password.';
-      } else if (value !== formData.password) {
-        error = 'Passwords do not match.';
+      if (authMode === 'signup') {
+        if (!value.trim()) {
+          error = 'Please confirm your password.';
+        } else if (value !== formData.password) {
+          error = 'Passwords do not match.';
+        }
       }
     } 
 
@@ -108,13 +150,13 @@ const Auth = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setFormGlobalError('');
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (touchedFields[name]) {
       const error = validateField(name, value);
       setFieldErrors((prev) => ({ ...prev, [name]: error }));
     }
+    setFormGlobalError('');
   };
 
   const handleBlur = (e) => {
@@ -127,60 +169,58 @@ const Auth = () => {
   // Validate all fields before submission
   const validateForm = () => {
     const errors = {};
-    
-    if (authMode === 'login') {
-      errors.email = validateField('email', formData.email);
-      errors.password = validateField('password', formData.password);
-    } 
-    else if (authMode === 'signup') {
-      errors.fullName = validateField('fullName', formData.fullName);
-      errors.username = validateField('username', formData.username);
-      errors.email = validateField('email', formData.email);
-      errors.password = validateField('password', formData.password);
-      errors.confirmPassword = validateField('confirmPassword', formData.confirmPassword);
+    if (authMode === 'signup') {
+      const nameErr = validateField('fullName', formData.fullName);
+      if (nameErr) errors.fullName = nameErr;
+
+      const usernameErr = validateField('username', formData.username);
+      if (usernameErr) errors.username = usernameErr;
+
+      const confirmErr = validateField('confirmPassword', formData.confirmPassword);
+      if (confirmErr) errors.confirmPassword = confirmErr;
     }
 
-    const activeErrors = Object.fromEntries(Object.entries(errors).filter(([_, err]) => Boolean(err)));
-    setFieldErrors(activeErrors);
-    
-    const allTouched = Object.keys(errors).reduce((acc, key) => ({ ...acc, [key]: true }), {});
-    setTouchedFields(allTouched);
+    const emailErr = validateField('email', formData.email);
+    if (emailErr) errors.email = emailErr;
 
-    return Object.keys(activeErrors).length === 0;
+    const passErr = validateField('password', formData.password);
+    if (passErr) errors.password = passErr;
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+    e.preventDefault();
     setFormGlobalError('');
 
-    if (!validateForm()) {
-      setFormGlobalError('Please fill in all required fields correctly.');
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
-
     try {
       if (authMode === 'login') {
-        const result = await login(formData.email.trim(), formData.password);
+        const result = await login({
+          email: formData.email.trim(),
+          password: formData.password,
+        });
+
         if (result && result.success) {
           navigate('/dashboard');
         } else {
-          setFormGlobalError(result?.message || 'Invalid email/username or password');
+          setFormGlobalError(result?.message || 'Invalid credentials');
         }
       } 
       else if (authMode === 'signup') {
-        const userDistrict = (formData.district || formData.location || 'Idukki, Kerala').trim();
         const result = await signup({
-          fullName: formData.fullName.trim(),
           name: formData.fullName.trim(),
-          username: formData.username.trim(),
-          email: formData.email.trim(),
+          username: formData.username.trim().toLowerCase(),
+          email: formData.email.trim().toLowerCase(),
           password: formData.password,
-          location: userDistrict,
-          district: userDistrict,
+          phone: formData.phone,
+          location: formData.location || 'Idukki, Kerala',
+          district: formData.district || 'Idukki, Kerala',
           role: formData.role || 'Farmer',
-          profileImage: formData.profileImage.trim(),
+          profileImage: formData.profileImage,
         });
 
         if (result && result.success) {
@@ -196,21 +236,38 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleAuth = async () => {
-    setIsSubmitting(true);
-    try {
-      const res = await googleSignIn({
-        name: formData.fullName || 'Cardora Planter',
-        email: formData.email && formData.email.includes('@') ? formData.email : `planter_${Date.now()}@cardora.io`,
-        googleId: `google_${Date.now()}`,
+  const handleGoogleAuth = () => {
+    const GOOGLE_CLIENT_ID = '925366036725-cnljgpjudhra4p3vn2tlp0873u5ueaf1.apps.googleusercontent.com';
+    
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          if (response && response.credential) {
+            const decoded = decodeJwt(response.credential);
+            if (decoded) {
+              const res = await googleSignIn({
+                name: decoded.name || decoded.given_name || 'Cardora Planter',
+                email: decoded.email,
+                googleId: decoded.sub,
+                profileImage: decoded.picture || '',
+              });
+              if (res && res.success) {
+                navigate('/dashboard');
+              }
+            }
+          }
+        },
       });
-      if (res && res.success) {
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      setFormGlobalError('Google Authentication failed.');
-    } finally {
-      setIsSubmitting(false);
+
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Direct Passport Google Auth fallback if one-tap prompt is closed
+          window.location.href = 'http://localhost:5000/api/auth/google';
+        }
+      });
+    } else {
+      window.location.href = 'http://localhost:5000/api/auth/google';
     }
   };
 

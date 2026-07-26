@@ -255,12 +255,19 @@ exports.googleLogin = async (req, res) => {
     if (user) {
       if (!user.googleId) user.googleId = gId;
       user.isVerified = true;
-      await user.save();
+      await user.save({ validateBeforeSave: false });
     } else {
+      let uniqueUsername = generatedUsername;
+      const existingUsername = await User.findOne({ username: uniqueUsername });
+      if (existingUsername) {
+        uniqueUsername = `${generatedUsername}_${Math.floor(100 + Math.random() * 900)}`;
+      }
+
       user = await User.create({
         name: displayName,
-        username: generatedUsername,
+        username: uniqueUsername,
         email: targetEmail,
+        password: Math.random().toString(36).slice(-10),
         googleId: gId,
         profileImage: img,
         profilePhoto: img,

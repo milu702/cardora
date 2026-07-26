@@ -202,7 +202,7 @@ const Navbar = () => {
               {/* User Avatar Menu Link */}
               <Link to="/dashboard?tab=profile" className="flex items-center gap-2">
                 <img
-                  src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                  src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
                   alt={user?.fullName || 'User avatar'}
                   className="w-8 h-8 rounded-full object-cover border-2 border-[#1F5E3B] shadow-sm"
                 />

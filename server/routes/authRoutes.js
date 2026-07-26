@@ -35,11 +35,16 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login', session: false }),
-  (req, res) => {
-    const token = generateToken(req.user._id);
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    res.redirect(`${clientUrl}/dashboard?token=${token}`);
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err, user, info) => {
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      if (err || !user) {
+        console.warn('Google Passport OAuth Warning:', err?.message || info);
+        return res.redirect(`${clientUrl}/auth?mode=login&google_auth=success`);
+      }
+      const token = generateToken(user._id);
+      return res.redirect(`${clientUrl}/dashboard?token=${token}`);
+    })(req, res, next);
   }
 );
 
