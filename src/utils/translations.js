@@ -1,0 +1,310 @@
+export const translations = {
+  en: {
+    // Brand & Slogan
+    brandName: "CARDORA",
+    tagline: "Smart Digital Ecosystem for Cardamom Plantation Management",
+    subtitle: "One ecosystem for every cardamom plantation.",
+    
+    // Auth & Navigation
+    login: "Log In",
+    signup: "Sign Up",
+    forgotPassword: "Forgot Password?",
+    resetPassword: "Reset Password",
+    welcomeBack: "Welcome Back to Cardora",
+    joinCardora: "Join Cardora Today",
+    rememberMe: "Remember Me",
+    continueWithGoogle: "Continue with Google",
+    createAccount: "Create Account",
+    alreadyHaveAccount: "Already have an account?",
+    dontHaveAccount: "Don't have an account?",
+    fullName: "Full Name",
+    emailAddress: "Email Address",
+    phoneNumber: "Phone Number",
+    password: "Password",
+    confirmPassword: "Confirm Password",
+    enterEmailReset: "Enter your email to receive a password reset link",
+    sendResetLink: "Send Reset Link",
+    backToLogin: "Back to Login",
+
+    // Stats
+    statPlantations: "Thousands of Plantations",
+    statFarmers: "Farmers & Users Connected",
+    statAI: "AI Recommendations Generated",
+    statInsights: "Real-time Plantation Insights",
+
+    // Top Navigation
+    searchPlaceholder: "Search posts, plantations, plots, experts, labor...",
+    weather: "Idukki Weather",
+    temp: "24°C Humidity 88%",
+    notifications: "Notifications",
+    profile: "Profile",
+    darkTheme: "Dark Mode",
+    lightTheme: "Light Mode",
+    voiceReadout: "Voice Readout",
+    listening: "Listening...",
+
+    // Sidebar Tabs
+    navHome: "Home",
+    navPlantations: "Plantations",
+    navPlots: "Plot Listings",
+    navAI: "AI Recommendations",
+    navSoil: "Soil Monitoring",
+    navExperts: "Experts",
+    navSupervisor: "Supervisor & Tasks",
+    navLabor: "Labor Management",
+    navProfile: "Profile",
+    navSettings: "Settings",
+
+    // Home / Community Feed
+    createPost: "Share an update, question, or tip with the community...",
+    postTypeUpdate: "Plantation Update",
+    postTypeQuestion: "Question",
+    postTypeTip: "Farming Tip",
+    postTypeWeather: "Weather Alert",
+    postTypeExpert: "Expert Advice",
+    postButton: "Post Update",
+    like: "Like",
+    comment: "Comment",
+    share: "Share",
+    save: "Save",
+    commentsHeading: "Comments",
+    writeComment: "Write a comment...",
+    filterAll: "All Posts",
+    filterQuestions: "Questions",
+    filterTips: "Tips",
+    filterUpdates: "Updates",
+
+    // Plantations
+    addPlantation: "Add Plantation",
+    plantationName: "Plantation Name",
+    location: "Location / District",
+    areaAcres: "Area (Acres)",
+    plantCount: "Plant Count",
+    variety: "Cardamom Variety",
+    soilMoisture: "Soil Moisture (%)",
+    phLevel: "pH Level",
+    npkRatio: "NPK Ratio (N-P-K)",
+    createPlantationBtn: "Save Plantation",
+    varietyMalabar: "Malabar (Short panicle, high yield)",
+    varietyMysore: "Mysore (Erect panicle, cold resilient)",
+    varietyVazhukka: "Vazhukka (Hybrid, premium quality)",
+
+    // Plot Listings
+    addPlot: "List a Plot for Lease/Investment",
+    plotTitle: "Plot Title",
+    leasePrice: "Lease Price / Year (₹)",
+    investmentROI: "Expected ROI (%)",
+    healthScore: "Plantation Health Score",
+    viewMap: "View Location Map",
+    contactOwner: "Contact Owner",
+    plotDescription: "Plot Description",
+
+    // AI Recommendations
+    aiTitle: "AI Cardamom Yield & Health Calculator",
+    aiSubtitle: "Enter soil metrics to generate instant AI decision support insights.",
+    nitrogen: "Nitrogen (N) mg/kg",
+    phosphorus: "Phosphorus (P) mg/kg",
+    potassium: "Potassium (K) mg/kg",
+    generateAI: "Analyze Plantation Health with AI",
+    yieldPrediction: "Predicted Yield",
+    diseaseRisk: "Disease Risk",
+    investmentRisk: "Investment Risk Level",
+    fertilizerAdvice: "Recommended Fertilizer",
+    irrigationAdvice: "Recommended Irrigation Schedule",
+    readInMalayalam: "Read Recommendations in Malayalam 🔊",
+
+    // Soil IoT
+    soilTitle: "Live ESP32 Soil Sensor Network",
+    sensorStatus: "Sensor Status: Online (ESP32-KERALA-01)",
+    liveMoisture: "Current Moisture",
+    moistureHistory: "24-Hour Soil Moisture Trend",
+
+    // Experts
+    expertModeToggle: "Enable Expert Mode",
+    expertModeDesc: "List your profile as a verified agricultural consultant for bookings.",
+    consultationFee: "Consultation Fee",
+    rating: "Rating",
+    experience: "Years Experience",
+    bookConsultation: "Book Consultation",
+    chatWithExpert: "Chat",
+    verifiedBadge: "Verified Cardamom Expert",
+
+    // Supervisor & Tasks
+    supervisorTitle: "Supervisor Task & Attendance Board",
+    inviteSupervisor: "Invite Supervisor",
+    assignedPlantation: "Assigned Plantation",
+    dailyTasks: "Daily Task Checklist",
+    markComplete: "Mark Done",
+    attendance: "Log Attendance",
+
+    // Labor Management
+    laborTitle: "Cardamom Labor & Worker Directory",
+    laborType: "Specialization (Harvesting, Weeding, Spraying)",
+    contactLabor: "Contact Labor Team",
+    assignWork: "Assign Task",
+
+    // Profile & Settings
+    editProfile: "Edit Profile",
+    bio: "Bio",
+    district: "District",
+    followers: "Followers",
+    following: "Following",
+    achievements: "Achievements",
+    saveChanges: "Save Changes",
+    logout: "Log Out"
+  },
+  ml: {
+    // Brand & Slogan
+    brandName: "കാർഡോറ (CARDORA)",
+    tagline: "ഏലം തോട്ടം പരിപാലനത്തിനും തീരുമാന പിന്തുണയ്ക്കുമുള്ള മികച്ച ഡിജിറ്റൽ സംവിധാനം",
+    subtitle: "എല്ലാ ഏലം തോട്ടങ്ങൾക്കുമായി ഒരു സമ്പൂർണ്ണ ഡിജിറ്റൽ പ്ലാറ്റ്‌ഫോം.",
+    
+    // Auth & Navigation
+    login: "ലോഗിൻ ചെയ്യുക",
+    signup: "അക്കൗണ്ട് ഉണ്ടാക്കുക",
+    forgotPassword: "പാസ്‌വേഡ് മറന്നോ?",
+    resetPassword: "പാസ്‌വേഡ് മാറ്റുക",
+    welcomeBack: "കാർഡോറയിലേക്ക് സ്വാഗതം",
+    joinCardora: "ഇന്ന് തന്നെ കാർഡോറയിൽ ചേരൂ",
+    rememberMe: "ഓർത്തുവെക്കുക",
+    continueWithGoogle: "ഗൂഗിൾ വഴി ലോഗിൻ ചെയ്യുക",
+    createAccount: "അക്കൗണ്ട് സൃഷ്ടിക്കുക",
+    alreadyHaveAccount: "മുമ്പ് അക്കൗണ്ട് ഉണ്ടോ?",
+    dontHaveAccount: "അക്കൗണ്ട് ഇല്ലേ?",
+    fullName: "പൂർണ്ണമായ പേര്",
+    emailAddress: "ഇമെയിൽ വിലാസം",
+    phoneNumber: "ഫോൺ നമ്പർ",
+    password: "പാസ്‌വേഡ്",
+    confirmPassword: "പാസ്‌വേഡ് സ്ഥിരീകരിക്കുക",
+    enterEmailReset: "പാസ്‌വേഡ് മാറ്റാനുള്ള ലിങ്കിനായി ഇമെയിൽ നൽകുക",
+    sendResetLink: "ലിങ്ക് അയക്കുക",
+    backToLogin: "ലോഗിനിലേക്ക് മടങ്ങുക",
+
+    // Stats
+    statPlantations: "ആയിരക്കണക്കിന് ഏലം തോട്ടങ്ങൾ",
+    statFarmers: "കർഷകരും ഉപയോക്താക്കളും",
+    statAI: "AI ശുപാർശകൾ നൽകി",
+    statInsights: "തത്സമയ തോട്ടം വിവരങ്ങൾ",
+
+    // Top Navigation
+    searchPlaceholder: "പോസ്റ്റുകൾ, തോട്ടങ്ങൾ, വിദഗ്ദ്ധർ, തൊഴിലാളികളെ തിരയുക...",
+    weather: "ഇടുക്കി കാലാവസ്ഥ",
+    temp: "24°C ഈർപ്പം 88%",
+    notifications: "അറിയിപ്പുകൾ",
+    profile: "പ്രൊഫൈൽ",
+    darkTheme: "ഡാർക്ക് മോഡ്",
+    lightTheme: "ലൈറ്റ് മോഡ്",
+    voiceReadout: "ശബ്ദ വായന",
+    listening: "ശ്രദ്ധിക്കുന്നു...",
+
+    // Sidebar Tabs
+    navHome: "ഹോം",
+    navPlantations: "തോട്ടങ്ങൾ",
+    navPlots: "പ്ലോട്ട് ലിസ്റ്റിംഗുകൾ",
+    navAI: "AI ശുപാർശകൾ",
+    navSoil: "മണ്ണ് പരിശോധന",
+    navExperts: "വിദഗ്ദ്ധർ",
+    navSupervisor: "മേൽനോട്ടവും ജോലികളും",
+    navLabor: "തൊഴിലാളി പരിപാലനം",
+    navProfile: "പ്രൊഫൈൽ",
+    navSettings: "ക്രമീകരണങ്ങൾ",
+
+    // Home / Community Feed
+    createPost: "നിങ്ങളുടെ തോട്ടം അനുഭവങ്ങളും സംശയങ്ങളും പങ്കുവെക്കുക...",
+    postTypeUpdate: "തോട്ടം വിവരങ്ങൾ",
+    postTypeQuestion: "ചോദ്യം",
+    postTypeTip: "കൃഷി ടിപ്പ്",
+    postTypeWeather: "കാലാവസ്ഥ മുന്നറിയിപ്പ്",
+    postTypeExpert: "വിദഗ്ദ്ധ ഉപദേശം",
+    postButton: "പോസ്റ്റ് ചെയ്യുക",
+    like: "ലൈക്ക്",
+    comment: "കമന്റ്",
+    share: "ഷെയർ",
+    save: "സേവ്",
+    commentsHeading: "കമന്റുകൾ",
+    writeComment: "കമന്റ് എഴുതുക...",
+    filterAll: "എല്ലാ പോസ്റ്റുകളും",
+    filterQuestions: "ചോദ്യങ്ങൾ",
+    filterTips: "ടിപ്പുകൾ",
+    filterUpdates: "അപ്‌ഡേറ്റുകൾ",
+
+    // Plantations
+    addPlantation: "പുതിയ തോട്ടം ചേർക്കുക",
+    plantationName: "തോട്ടത്തിന്റെ പേര്",
+    location: "സ്ഥലം / ജില്ല",
+    areaAcres: "വിസ്തീർണ്ണം (ഏക്കർ)",
+    plantCount: "ചെടികളുടെ എണ്ണം",
+    variety: "ഏലം ഇനം",
+    soilMoisture: "മണ്ണിലെ ഈർപ്പം (%)",
+    phLevel: "pH അളവ്",
+    npkRatio: "NPK അനുപാതം",
+    createPlantationBtn: "തോട്ടം സേവ് ചെയ്യുക",
+    varietyMalabar: "മലബാർ (ഉയർന്ന വിളവ്)",
+    varietyMysore: "മൈസൂർ (തണുപ്പിനെ പ്രതിരോധിക്കുന്നത്)",
+    varietyVazhukka: "വഴുക (ഹൈബ്രിഡ്, മികച്ച ഗുണമേന്മ)",
+
+    // Plot Listings
+    addPlot: "പാട്ടത്തിന്/നിക്ഷേപത്തിന് പ്ലോട്ട് ചേർക്കുക",
+    plotTitle: "പ്ലോട്ടിന്റെ പേര്",
+    leasePrice: "വർഷത്തെ പാട്ടം (₹)",
+    investmentROI: "പ്രതീക്ഷിക്കുന്ന ലാഭം (%)",
+    healthScore: "തോട്ടത്തിന്റെ ആരോഗ്യ സ്കോർ",
+    viewMap: "മാപ്പ് കാണുക",
+    contactOwner: "ഉടമസ്ഥനെ ബന്ധപ്പെടുക",
+    plotDescription: "വിവരണം",
+
+    // AI Recommendations
+    aiTitle: "AI ഏലം വിളവ് & ആരോഗ്യ വിശകലനം",
+    aiSubtitle: "മണ്ണിലെ വിവരങ്ങൾ നൽകി ഉടനടി കൃഷി തീരുമാനങ്ങൾ നേടുക.",
+    nitrogen: "നൈട്രജൻ (N) mg/kg",
+    phosphorus: "ഫോസ്ഫറസ് (P) mg/kg",
+    potassium: "പൊട്ടാസ്യം (K) mg/kg",
+    generateAI: "AI പരിശോധന നടത്തുക",
+    yieldPrediction: "പ്രതീക്ഷിക്കുന്ന വിളവ്",
+    diseaseRisk: "രോഗ സാധ്യത",
+    investmentRisk: "നിക്ഷേപ റിസ്ക്",
+    fertilizerAdvice: "നിർദ്ദേശിക്കുന്ന വളം",
+    irrigationAdvice: "നനയ്ക്കൽ ക്രമം",
+    readInMalayalam: "മലയാളത്തിൽ വായിക്കുക 🔊",
+
+    // Soil IoT
+    soilTitle: "ESP32 തത്സമയ മണ്ണ് സെൻസർ നെറ്റ്വർക്ക്",
+    sensorStatus: "സെൻസർ നില: ഓൺലൈൻ (ESP32-KERALA-01)",
+    liveMoisture: "നിലവിലെ ഈർപ്പം",
+    moistureHistory: "24 മണിക്കൂർ മണ്ണ് ഈർപ്പ ഗ്രാഫ്",
+
+    // Experts
+    expertModeToggle: "എക്സ്പർട്ട് മോഡ് ഓൺ ചെയ്യുക",
+    expertModeDesc: "നിങ്ങളുടെ കാർഷിക അനുഭവങ്ങൾ മറ്റുള്ളവരുമായി പങ്കുവെക്കാൻ എക്സ്പർട്ട് ആയി രജിസ്റ്റർ ചെയ്യുക.",
+    consultationFee: "കൺസൾട്ടേഷൻ ഫീസ്",
+    rating: "റേറ്റിംഗ്",
+    experience: "പ്രവൃത്തിപരിചയം",
+    bookConsultation: "ബുക്ക് ചെയ്യുക",
+    chatWithExpert: "ചാറ്റ്",
+    verifiedBadge: "അംഗീകൃത ഏലം വിദഗ്ദ്ധൻ",
+
+    // Supervisor & Tasks
+    supervisorTitle: "സുപ്പർവൈസർ ടാസ്‌ക് ബോർഡ്",
+    inviteSupervisor: "സുപ്പർവൈസറെ ക്ഷണിക്കുക",
+    assignedPlantation: "ചുമതലപ്പെടുത്തിയ തോട്ടം",
+    dailyTasks: "ദിവസേനയുള്ള ജോലികൾ",
+    markComplete: "പൂർത്തിയായി",
+    attendance: "ഹാജർ രേഖപ്പെടുത്തുക",
+
+    // Labor Management
+    laborTitle: "ഏലം തൊഴിലാളി ഡയറക്ടറി",
+    laborType: "ജോലി തരം (വിളവെടുപ്പ്, കള പറിക്കൽ, മരുന്ന് തളിക്കൽ)",
+    contactLabor: "തൊഴിലാളി ടീമിനെ ബന്ധപ്പെടുക",
+    assignWork: "ജോലി നൽകുക",
+
+    // Profile & Settings
+    editProfile: "പ്രൊഫൈൽ തിരുത്തുക",
+    bio: "വിവരണം",
+    district: "ജില്ല",
+    followers: "ഫോളോവേഴ്സ്",
+    following: "ഫോളോയിംഗ്",
+    achievements: "നേട്ടങ്ങൾ",
+    saveChanges: "മാറ്റങ്ങൾ സേവ് ചെയ്യുക",
+    logout: "ലോഗ് ഔട്ട് ചെയ്യുക"
+  }
+};

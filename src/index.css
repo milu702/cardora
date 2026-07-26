@@ -1,13 +1,180 @@
-body {
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+* {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F8FAF7;
+  color: #4A5568;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', 'Space Grotesk', sans-serif;
+  color: #17331F;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F8FAF7;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1F5E3B, #5C8D4E);
+  border-radius: 9999px;
+}
+
+/* Glassmorphism Navbar & Cards */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(215, 230, 213, 0.7);
+}
+
+.glass-nav-scrolled {
+  background: rgba(248, 250, 247, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid #D7E6D5;
+  box-shadow: 0 10px 30px -5px rgba(31, 94, 59, 0.08);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #D7E6D5;
+  border-radius: 20px;
+}
+
+/* Custom Pill Button Ripple Click */
+.ripple-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease-out, height 0.5s ease-out;
+}
+
+.ripple-button:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Animated Underline for Links */
+.animated-underline {
+  position: relative;
+}
+
+.animated-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, #1F5E3B, #C9A227);
+  transition: width 0.3s ease-in-out;
+  border-radius: 2px;
+}
+
+.animated-underline:hover::after {
+  width: 100%;
+}
+
+/* Continuous Nature Animation Keyframes (No Opacity Fades!) */
+@keyframes floatLeaf {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+  50% { transform: translateY(-18px) rotate(12deg) scale(1.05); }
+}
+
+@keyframes swayGrass {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes flyButterfly {
+  0% { transform: translate(0px, 0px) scale(0.9) rotate(-5deg); }
+  25% { transform: translate(40px, -25px) scale(1.05) rotate(5deg); }
+  50% { transform: translate(80px, 10px) scale(1) rotate(-3deg); }
+  75% { transform: translate(40px, 30px) scale(0.95) rotate(8deg); }
+  100% { transform: translate(0px, 0px) scale(0.9) rotate(-5deg); }
+}
+
+@keyframes sunRayPass {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  50% { transform: translateX(100%) skewX(-20deg); }
+  100% { transform: translateX(200%) skewX(-20deg); }
+}
+
+@keyframes pollenDrift {
+  0% { transform: translateY(0) translateX(0) scale(0.8); }
+  50% { transform: translateY(-40px) translateX(20px) scale(1.2); }
+  100% { transform: translateY(-80px) translateX(-10px) scale(0.8); }
+}
+
+.animate-float-leaf {
+  animation: floatLeaf 5s ease-in-out infinite;
+}
+
+.animate-sway-grass {
+  transform-origin: bottom center;
+  animation: swayGrass 4s ease-in-out infinite;
+}
+
+.animate-butterfly {
+  animation: flyButterfly 10s linear infinite;
+}
+
+.animate-pollen {
+  animation: pollenDrift 7s ease-in-out infinite;
+}
+
+/* Section Dividers */
+.curved-divider {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.curved-divider svg {
+  position: relative;
+  display: block;
+  width: calc(100% + 1.3px);
+  height: 50px;
+}
+
+/* Hover Tilt Effect Utility */
+.tilt-card {
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease;
+}
+
+.tilt-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 20px 40px -10px rgba(31, 94, 59, 0.12);
 }

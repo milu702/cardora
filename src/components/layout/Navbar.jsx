@@ -1,0 +1,288 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Leaf, 
+  Menu, 
+  X, 
+  Globe, 
+  LogOut, 
+  Home, 
+  Users, 
+  MapPin, 
+  Sparkles,
+  User,
+  Bell
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../services/api';
+import Button from '../ui/Button';
+
+const Navbar = () => {
+  const { isAuthenticated, user, logout, lang, toggleLang } = useAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    apiService.getDBStatus();
+  }, []);
+
+  const loggedOutNavLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'Features', href: '/#features' },
+    { name: 'Growth Journey', href: '/#growth-journey' },
+    { name: 'Testimonials', href: '/#testimonials' },
+    { name: 'FAQ', href: '/#faq' },
+  ];
+
+  const loggedInNavLinks = [
+    { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
+    { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
+    { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
+    { name: 'Community', href: '/dashboard?tab=community', icon: Users },
+    { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
+    { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+  ];
+
+  const handleLogout = async () => {
+    await logout();
+    setIsMobileMenuOpen(false);
+    navigate('/auth?mode=login');
+  };
+
+  return (
+    <motion.nav
+      initial={{ y: -80, scale: 0.98 }}
+      animate={{ y: 0, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? 'glass-nav-scrolled py-3' : 'glass-nav py-4'
+      }`}
+    >
+      <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
+        
+        {/* Brand Logo */}
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#1F5E3B]/30 rounded-xl blur-lg group-hover:scale-110 transition-transform duration-300" />
+              <div className="relative bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E] rounded-xl p-2.5 text-white shadow-md">
+                <Leaf className="w-5 h-5 stroke-[2.5]" />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl md:text-2xl font-black tracking-wider text-[#17331F] font-poppins">
+                CARDORA
+              </span>
+              <span className="text-[9px] uppercase font-bold tracking-widest text-[#5C8D4E] -mt-1">
+                Agriculture Platform
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Desktop Navigation Links */}
+        <div className="hidden lg:flex items-center gap-6">
+          {!isAuthenticated ? (
+            loggedOutNavLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="animated-underline text-sm font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors py-1"
+              >
+                {link.name}
+              </a>
+            ))
+          ) : (
+            loggedInNavLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.href}
+                className="animated-underline flex items-center gap-1.5 text-xs font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors py-1"
+              >
+                <link.icon className="w-3.5 h-3.5 text-[#5C8D4E]" />
+                <span>{link.name}</span>
+              </Link>
+            ))
+          )}
+        </div>
+
+        {/* Action Controls & User Options */}
+        <div className="hidden lg:flex items-center gap-3">
+          
+          {/* Language Toggle */}
+          <button
+            onClick={toggleLang}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#DDEFD9] hover:bg-[#D7E6D5] text-[#17331F] text-xs font-bold transition-all border border-[#5C8D4E]/30"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#1F5E3B]" />
+            <span>{lang === 'en' ? 'EN' : 'മലയാളം'}</span>
+          </button>
+
+          {!isAuthenticated ? (
+            <>
+              <Link to="/auth?mode=login">
+                <button className="px-4 py-2 text-xs md:text-sm font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors">
+                  Login
+                </button>
+              </Link>
+              <Link to="/auth?mode=signup">
+                <Button variant="primary" size="sm">
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <div className="flex items-center gap-3 pl-2 border-l border-[#D7E6D5]">
+              
+              {/* Notifications Popover */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                  className="relative p-2 rounded-full bg-white border border-[#D7E6D5] hover:border-[#1F5E3B] text-[#17331F] shadow-sm transition-all"
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-[#C9A227] border-2 border-white" />
+                </button>
+
+                {showNotificationsDropdown && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-[20px] border border-[#D7E6D5] shadow-2xl p-4 z-50">
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#D7E6D5]">
+                      <h4 className="text-xs font-black text-[#17331F]">Agro Telemetry Notifications</h4>
+                      <span className="text-[10px] font-bold text-[#1F5E3B] bg-[#DDEFD9] px-2 py-0.5 rounded-full">2 New</span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                        <p className="font-bold text-[#17331F]">🌧️ Heavy Rainfall Alert</p>
+                        <p className="text-[11px] text-[#4A5568] mt-0.5">High altitude showers predicted in Kattappana.</p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                        <p className="font-bold text-[#17331F]">🌿 Organic NPK Recommendation</p>
+                        <p className="text-[11px] text-[#4A5568] mt-0.5">Apply Neem cake to elevate soil pH to 6.2.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* User Avatar Menu Link */}
+              <Link to="/dashboard?tab=profile" className="flex items-center gap-2">
+                <img
+                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                  alt={user?.fullName || 'User avatar'}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-[#1F5E3B] shadow-sm"
+                />
+                <span className="text-xs font-black text-[#17331F]">
+                  {user?.fullName || user?.name || user?.username || 'Planter'}
+                </span>
+              </Link>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-full hover:bg-red-50 text-red-600 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="lg:hidden p-2 rounded-xl text-[#17331F] hover:bg-[#DDEFD9] transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+      </div>
+
+      {/* Mobile Drawer Navigation */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden bg-white/95 backdrop-blur-xl border-b border-[#D7E6D5] px-6 py-6 shadow-xl"
+          >
+            <div className="flex flex-col gap-4">
+              {!isAuthenticated ? (
+                <>
+                  {loggedOutNavLinks.map((link) => (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-base font-bold text-[#17331F] py-2 border-b border-[#D7E6D5]/50"
+                    >
+                      {link.name}
+                    </a>
+                  ))}
+                  <div className="flex flex-col gap-3 pt-4">
+                    <Link to="/auth?mode=login" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="secondary" size="md" className="w-full">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/auth?mode=signup" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="primary" size="md" className="w-full">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {loggedInNavLinks.map((link) => (
+                    <Link
+                      key={link.name}
+                      to={link.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 text-base font-bold text-[#17331F] py-2.5 border-b border-[#D7E6D5]/50"
+                    >
+                      <link.icon className="w-5 h-5 text-[#5C8D4E]" />
+                      <span>{link.name}</span>
+                    </Link>
+                  ))}
+                  <div className="pt-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
+                      <div>
+                        <p className="text-sm font-black text-[#17331F]">{user?.fullName || user?.username || 'Planter'}</p>
+                        <p className="text-xs text-[#5C8D4E] font-bold">{user?.district || user?.location || 'Idukki'}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="px-4 py-2 rounded-full bg-red-50 text-red-600 font-bold text-xs"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
+  );
+};
+
+export default Navbar;
