@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
@@ -13,22 +14,33 @@ import Footer from '../components/layout/Footer';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Auth = () => {
-  const { login, signup, googleSignIn } = useAuth();
-  const [searchParams] = useSearchParams();
+  const { login, signup, googleSignIn, showToast } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   // Mode: 'login' | 'signup' | 'otp' | 'forgot' | 'reset'
   const modeParam = searchParams.get('mode') || 'login';
   const [authMode, setAuthMode] = useState(modeParam);
-  
-  // Sync mode whenever URL searchParam changes (e.g. clicking Navbar links)
+
+  // Forgot Password State
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetSuccessMessage, setResetSuccessMessage] = useState('');
+
+  const switchAuthMode = (newMode) => {
+    setAuthMode(newMode);
+    setSearchParams({ mode: newMode });
+    setFieldErrors({});
+    setFormGlobalError('');
+  };
+
   useEffect(() => {
     if (modeParam && modeParam !== authMode) {
       setAuthMode(modeParam);
-      setFieldErrors({});
-      setFormGlobalError('');
     }
-  }, [modeParam, authMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modeParam]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -202,6 +214,63 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    if (e) e.preventDefault();
+    const targetEmail = (resetEmail || formData.email || '').trim();
+    if (!targetEmail || !EMAIL_REGEX.test(targetEmail)) {
+      setFormGlobalError('Please enter a valid email address.');
+      return;
+    }
+    setFormGlobalError('');
+    setIsSubmitting(true);
+    try {
+      const res = await apiService.forgotPassword(targetEmail);
+      if (res && res.success) {
+        setResetEmail(targetEmail);
+        const codeMsg = res.otp ? ` (Security Code: ${res.otp})` : '';
+        setResetSuccessMessage(`OTP security code sent to ${targetEmail}.${codeMsg}`);
+        if (res.otp) setResetOtp(res.otp);
+        if (showToast) showToast(`OTP code sent to ${targetEmail}`);
+        switchAuthMode('reset');
+      } else {
+        setFormGlobalError(res?.message || 'No registered account found with this email.');
+      }
+    } catch (err) {
+      setFormGlobalError('Failed to request password reset OTP.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    if (e) e.preventDefault();
+    const targetEmail = (resetEmail || formData.email || '').trim();
+    if (!resetOtp.trim() || !newPassword.trim()) {
+      setFormGlobalError('OTP security code and new password are required.');
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setFormGlobalError('New password must be at least 6 characters.');
+      return;
+    }
+    setFormGlobalError('');
+    setIsSubmitting(true);
+    try {
+      const res = await apiService.resetPassword(targetEmail, resetOtp.trim(), newPassword.trim());
+      if (res && res.success) {
+        setResetSuccessMessage('Password reset successfully! You can now log in.');
+        if (showToast) showToast('Password reset successfully! Please log in.');
+        switchAuthMode('login');
+      } else {
+        setFormGlobalError(res?.message || 'Invalid or expired OTP security code.');
+      }
+    } catch (err) {
+      setFormGlobalError('Password reset failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAF7] text-[#4A5568] flex flex-col justify-between">
       <Navbar />
@@ -299,6 +368,13 @@ const Auth = () => {
               <div className="mb-6 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
                 <span>{formGlobalError}</span>
+              </div>
+            )}
+
+            {resetSuccessMessage && (
+              <div className="mb-6 p-3.5 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-bold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 flex-shrink-0 text-[#1F5E3B]" />
+                <span>{resetSuccessMessage}</span>
               </div>
             )}
 
@@ -449,9 +525,20 @@ const Auth = () => {
               {/* ===== 3. PASSWORD FIELD ===== */}
               {(authMode === 'login' || authMode === 'signup') && (
                 <div>
-                  <label className="block text-xs font-bold text-[#17331F] mb-1.5">
-                    Password <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-[#17331F]">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    {authMode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => switchAuthMode('forgot')}
+                        className="text-[11px] font-bold text-[#1F5E3B] hover:underline cursor-pointer"
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <Lock className={`w-4 h-4 absolute left-3.5 top-3.5 ${fieldErrors.password ? 'text-red-500' : 'text-[#5C8D4E]'}`} />
                     <input
@@ -474,6 +561,89 @@ const Auth = () => {
                       <span>{fieldErrors.password}</span>
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* ===== FORGOT PASSWORD FORM ===== */}
+              {authMode === 'forgot' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-[#4A5568] leading-relaxed font-medium">
+                    Enter your registered email address below. We will send a 6-digit OTP security code to reset your password.
+                  </p>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1.5">Registered Email Address <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-[#5C8D4E]" />
+                      <input 
+                        type="email"
+                        value={resetEmail || formData.email}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="user@domain.com"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#1F5E3B] to-[#5C8D4E] hover:from-[#5C8D4E] hover:to-[#1F5E3B] text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-4"
+                  >
+                    <span>{isSubmitting ? 'Sending OTP...' : 'Send Reset OTP Code'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchAuthMode('login')}
+                    className="w-full text-xs font-bold text-[#4A5568] hover:text-[#1F5E3B] text-center block pt-2 cursor-pointer"
+                  >
+                    ← Back to Login
+                  </button>
+                </div>
+              )}
+
+              {/* ===== RESET PASSWORD FORM ===== */}
+              {authMode === 'reset' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-[#4A5568] leading-relaxed font-medium">
+                    Enter the 6-digit OTP code sent to <strong>{resetEmail || formData.email}</strong> and your new password.
+                  </p>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1.5">6-Digit OTP Code <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text"
+                      value={resetOtp}
+                      onChange={(e) => setResetOtp(e.target.value)}
+                      placeholder="e.g. 123456"
+                      className="w-full px-4 py-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1.5">New Password <span className="text-red-500">*</span></label>
+                    <input 
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                      className="w-full px-4 py-2.5 rounded-xl text-xs font-medium bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#1F5E3B] to-[#5C8D4E] hover:from-[#5C8D4E] hover:to-[#1F5E3B] text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-4"
+                  >
+                    <span>{isSubmitting ? 'Resetting Password...' : 'Reset Password & Log In'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchAuthMode('login')}
+                    className="w-full text-xs font-bold text-[#4A5568] hover:text-[#1F5E3B] text-center block pt-2 cursor-pointer"
+                  >
+                    ← Back to Login
+                  </button>
                 </div>
               )}
 
@@ -554,12 +724,8 @@ const Auth = () => {
                   Don't have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => {
-                      setAuthMode('signup');
-                      setFieldErrors({});
-                      setFormGlobalError('');
-                    }}
-                    className="text-[#1F5E3B] font-extrabold hover:underline"
+                    onClick={() => switchAuthMode('signup')}
+                    className="text-[#1F5E3B] font-extrabold hover:underline cursor-pointer"
                   >
                     Sign Up Free
                   </button>
@@ -569,12 +735,8 @@ const Auth = () => {
                   Already have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => {
-                      setAuthMode('login');
-                      setFieldErrors({});
-                      setFormGlobalError('');
-                    }}
-                    className="text-[#1F5E3B] font-extrabold hover:underline"
+                    onClick={() => switchAuthMode('login')}
+                    className="text-[#1F5E3B] font-extrabold hover:underline cursor-pointer"
                   >
                     Log In
                   </button>

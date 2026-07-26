@@ -77,6 +77,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes Mount Points
+const { forgotPassword, resetPassword } = require('./controllers/authController');
+app.post('/api/auth/forgot-password', forgotPassword);
+app.post('/api/auth/send-otp', forgotPassword);
+app.post('/api/auth/reset-password', resetPassword);
+app.post('/api/auth/verify-otp', resetPassword);
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/plantations', require('./routes/plantationRoutes'));

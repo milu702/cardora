@@ -15,7 +15,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
 const Dashboard = () => {
-  const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang } = useAuth();
+  const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Active Tab: 'dashboard' | 'plantations' | 'ai' | 'community' | 'plots' | 'profile' | 'settings'
@@ -27,6 +27,7 @@ const Dashboard = () => {
 
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [selectedPublicUser, setSelectedPublicUser] = useState(null);
 
   // Profile Edit Form State & Errors
   const [profileForm, setProfileForm] = useState({
@@ -51,20 +52,23 @@ const Dashboard = () => {
   // Photo Upload State
   const [photoUrlInput, setPhotoUrlInput] = useState(user?.avatar || '');
 
+  const currentPhotoUrl = user?.avatar || user?.profileImage || user?.profilePhoto || '';
+
   useEffect(() => {
     if (user) {
       setProfileForm({
         fullName: user.fullName || user.name || '',
         phone: user.phone || '',
         district: user.district || user.location || 'Idukki, Kerala',
-        location: user.location || 'Kattappana',
+        location: user.location || user.district || 'Idukki, Kerala',
         bio: user.bio || '',
-        avatar: user.avatar || '',
+        avatar: currentPhotoUrl,
         role: user.role || 'Farmer',
       });
-      setPhotoUrlInput(user.avatar || user.profileImage || '');
+      setPhotoUrlInput(currentPhotoUrl);
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id || user?._id, currentPhotoUrl]);
 
   const handleUpdatePhoto = async (e) => {
     e.preventDefault();
@@ -72,7 +76,9 @@ const Dashboard = () => {
       showToast('Please select a photo file or enter an image URL.');
       return;
     }
-    await updateProfile({ avatar: photoUrlInput.trim(), profileImage: photoUrlInput.trim(), hasCustomPhoto: true });
+    const newPhoto = photoUrlInput.trim();
+    setProfileForm((prev) => ({ ...prev, avatar: newPhoto, profileImage: newPhoto, profilePhoto: newPhoto }));
+    await updateProfile({ avatar: newPhoto, profileImage: newPhoto, profilePhoto: newPhoto, hasCustomPhoto: true });
   };
 
   const handleProfileFileChange = (e) => {
@@ -83,9 +89,12 @@ const Dashboard = () => {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoUrlInput(reader.result);
-        showToast('Photo file loaded! Click "Save Profile Photo" to save to MongoDB.');
+      reader.onloadend = async () => {
+        const photoData = reader.result;
+        setPhotoUrlInput(photoData);
+        setProfileForm((prev) => ({ ...prev, avatar: photoData }));
+        await updateProfile({ avatar: photoData, profileImage: photoData, profilePhoto: photoData, hasCustomPhoto: true });
+        showToast('Profile photo updated & saved to MongoDB Atlas!');
       };
       reader.readAsDataURL(file);
     }
@@ -116,16 +125,23 @@ const Dashboard = () => {
     setProfileErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    const finalPhoto = photoUrlInput || profileForm.avatar || user?.avatar || '';
+    const currentPhoto = photoUrlInput || profileForm.avatar || user?.avatar || user?.profileImage || user?.profilePhoto || '';
     const payload = {
-      ...profileForm,
-      district: profileForm.district || profileForm.location || 'Idukki, Kerala',
-      location: profileForm.district || profileForm.location || 'Idukki, Kerala',
-      avatar: finalPhoto,
-      profileImage: finalPhoto,
-      profilePhoto: finalPhoto,
-      hasCustomPhoto: Boolean(finalPhoto),
+      fullName: profileForm.fullName.trim(),
+      name: profileForm.fullName.trim(),
+      district: (profileForm.district || profileForm.location || 'Idukki, Kerala').trim(),
+      location: (profileForm.district || profileForm.location || 'Idukki, Kerala').trim(),
+      phone: (profileForm.phone || '').trim(),
+      bio: (profileForm.bio || '').trim(),
+      role: profileForm.role || 'Farmer',
     };
+
+    if (currentPhoto) {
+      payload.avatar = currentPhoto;
+      payload.profileImage = currentPhoto;
+      payload.profilePhoto = currentPhoto;
+      payload.hasCustomPhoto = true;
+    }
 
     await updateProfile(payload);
     setProfileEditOpen(false);
@@ -332,20 +348,41 @@ const Dashboard = () => {
       const res = await apiService.getCommunityPosts();
       let dbPosts = [];
       if (res && res.success && Array.isArray(res.posts)) {
-        dbPosts = res.posts.map((p) => ({
-          id: p._id || p.id,
-          author: p.authorName || p.username || 'Planter',
-          username: p.username || p.authorName || 'planter',
-          avatar: p.authorAvatar || p.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-          time: new Date(p.createdAt || Date.now()).toLocaleDateString(),
-          category: p.category || 'Plantation Update',
-          content: p.description || p.content || '',
-          description: p.description || p.content || '',
-          image: p.image || (p.images && p.images.length > 0 ? p.images[0] : ''),
-          likes: Array.isArray(p.likes) ? p.likes.length : 0,
-          comments: Array.isArray(p.comments) ? p.comments.length : 0,
-          liked: false,
-        }));
+        const initialComments = {};
+        dbPosts = res.posts.map((p) => {
+          const postComments = Array.isArray(p.comments) ? p.comments.map((c) => ({
+            id: c._id || c.id || Date.now(),
+            author: c.authorName || c.user?.name || 'Planter',
+            avatar: c.authorAvatar || c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            text: c.text || c.content || '',
+            time: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
+          })) : [];
+
+          const pId = p._id || p.id;
+          if (postComments.length > 0) {
+            initialComments[pId] = postComments;
+          }
+
+          const currentUserId = user?.id || user?._id;
+          const isLiked = Array.isArray(p.likes) && currentUserId ? p.likes.some((l) => (l._id || l || '').toString() === currentUserId.toString()) : false;
+
+          return {
+            id: pId,
+            author: p.authorName || p.username || 'Planter',
+            username: p.username || p.authorName || 'planter',
+            avatar: p.authorAvatar || p.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            time: new Date(p.createdAt || Date.now()).toLocaleDateString(),
+            category: p.category || 'Plantation Update',
+            content: p.description || p.content || '',
+            description: p.description || p.content || '',
+            image: p.image || (p.images && p.images.length > 0 ? p.images[0] : ''),
+            likes: Array.isArray(p.likes) ? p.likes.length : 0,
+            comments: postComments.length,
+            liked: isLiked,
+          };
+        });
+
+        setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
       setFeedPosts([...dbPosts, ...defaultOtherPlanterPosts]);
     } catch (err) {
@@ -401,11 +438,105 @@ const Dashboard = () => {
     }
   };
 
+  // Interactive Comments State
+  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+  const [commentInputText, setCommentInputText] = useState('');
+  const [commentsMap, setCommentsMap] = useState({});
+
   const handleLikePost = async (id) => {
     try {
       await apiService.likePost(id);
     } catch (e) {}
-    setFeedPosts(feedPosts.map((p) => p.id === id ? { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: !p.liked } : p));
+    setFeedPosts((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          const isLiking = !p.liked;
+          const likerName = user?.fullName || user?.name || user?.username || 'A planter';
+          const postOwner = p.author || p.username || 'Planter';
+
+          const isSelfAction = likerName.toLowerCase().trim() === postOwner.toLowerCase().trim();
+
+          if (isLiking && !isSelfAction && addNotification) {
+            const snippet = p.description ? p.description.slice(0, 30) : 'Community update';
+            addNotification({
+              type: 'like',
+              title: '❤️ Post Liked!',
+              senderName: likerName,
+              targetOwner: postOwner,
+              body: `${likerName} liked your post: "${snippet}..."`,
+            });
+          }
+          return { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: isLiking };
+        }
+        return p;
+      })
+    );
+  };
+
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
+
+  const handleAddComment = async (postId) => {
+    if (!commentInputText.trim()) return;
+    const text = commentInputText.trim();
+    const targetPost = feedPosts.find((p) => p.id === postId);
+
+    const commenterName = user?.fullName || user?.name || user?.username || 'Planter';
+    const postOwner = targetPost?.author || targetPost?.username || 'Planter';
+
+    const newComment = {
+      id: Date.now(),
+      author: commenterName,
+      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      text,
+      time: 'Just now',
+    };
+
+    setCommentsMap((prev) => ({
+      ...prev,
+      [postId]: [...(prev[postId] || []), newComment],
+    }));
+
+    setFeedPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, comments: (p.comments || 0) + 1 } : p))
+    );
+
+    try {
+      await apiService.commentOnPost(postId, text);
+    } catch (e) {}
+
+    const isSelfAction = commenterName.toLowerCase().trim() === postOwner.toLowerCase().trim();
+
+    if (!isSelfAction && addNotification) {
+      addNotification({
+        type: 'comment',
+        title: '💬 New Comment!',
+        senderName: commenterName,
+        targetOwner: postOwner,
+        body: `${commenterName} commented on your post: "${text.slice(0, 30)}"`,
+      });
+    }
+
+    setCommentInputText('');
+    showToast('Comment saved to MongoDB Atlas!');
+  };
+
+  const handleSaveEditComment = async (postId, commentId) => {
+    if (!editingCommentText.trim()) return;
+    const newText = editingCommentText.trim();
+
+    setCommentsMap((prev) => ({
+      ...prev,
+      [postId]: (prev[postId] || []).map((c) => (c.id === commentId ? { ...c, text: newText } : c)),
+    }));
+
+    try {
+      await apiService.updateComment(postId, commentId, newText);
+    } catch (e) {}
+
+    setEditingCommentId(null);
+    setEditingCommentText('');
+    showToast('Comment updated in MongoDB Atlas!');
   };
 
   // ===== 3. MARKETPLACE PLOTS STATE =====
@@ -485,7 +616,7 @@ const Dashboard = () => {
           <div className="sticky top-28 bg-white rounded-[20px] border border-[#D7E6D5] shadow-soft p-4 space-y-1.5">
             
             <div className="p-3 mb-3 bg-[#DDEFD9]/60 rounded-xl border border-[#5C8D4E]/30 flex items-center gap-3">
-              <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
+              <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
               <div className="overflow-hidden">
                 <p className="text-xs font-black text-[#17331F] truncate">{user?.fullName || user?.username || 'Planter'}</p>
                 <p className="text-[10px] text-[#5C8D4E] font-bold">{user?.role || 'Planter'} • {user?.district || user?.location || 'Idukki'}</p>
@@ -980,10 +1111,17 @@ const Dashboard = () => {
                 feedPosts.map((post) => (
                   <Card key={post.id} className="p-6">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <img src={post.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
+                      <div 
+                        onClick={() => setSelectedPublicUser(post)} 
+                        className="flex items-center gap-3 cursor-pointer group"
+                        title="Click to view planter profile"
+                      >
+                        <img src={post.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform" />
                         <div>
-                          <h4 className="text-xs font-extrabold text-[#17331F]">{post.author} (@{post.username || 'planter'})</h4>
+                          <h4 className="text-xs font-extrabold text-[#17331F] group-hover:text-[#1F5E3B] flex items-center gap-1">
+                            <span>{post.author}</span>
+                            <span className="text-[10px] font-normal text-[#5C8D4E]">(@{post.username || 'planter'})</span>
+                          </h4>
                           <span className="text-[10px] text-[#4A5568]">{post.time}</span>
                         </div>
                       </div>
@@ -1005,7 +1143,10 @@ const Dashboard = () => {
                         <Heart className="w-4 h-4" />
                         <span>{post.likes}</span>
                       </button>
-                      <button className="flex items-center gap-1.5 text-[#4A5568] hover:text-[#1F5E3B]">
+                      <button 
+                        onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)} 
+                        className={`flex items-center gap-1.5 ${activeCommentPostId === post.id ? 'text-[#1F5E3B]' : 'text-[#4A5568]'} hover:text-[#1F5E3B]`}
+                      >
                         <MessageSquare className="w-4 h-4" />
                         <span>{post.comments}</span>
                       </button>
@@ -1014,6 +1155,72 @@ const Dashboard = () => {
                         <span>Share</span>
                       </button>
                     </div>
+
+                    {/* Interactive Comment Input & Comments List */}
+                    {activeCommentPostId === post.id && (
+                      <div className="mt-3 pt-3 border-t border-[#D7E6D5] space-y-3">
+                        <div className="flex gap-2">
+                          <input 
+                            type="text"
+                            value={commentInputText}
+                            onChange={(e) => setCommentInputText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post.id); }}
+                            placeholder="Write a comment..."
+                            className="flex-1 px-3 py-1.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                          />
+                          <Button variant="primary" size="sm" onClick={() => handleAddComment(post.id)}>
+                            Comment
+                          </Button>
+                        </div>
+
+                        {/* Comments List */}
+                        {commentsMap[post.id] && commentsMap[post.id].length > 0 && (
+                          <div className="space-y-2 pt-1">
+                            {commentsMap[post.id].map((c) => (
+                              <div key={c.id} className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] text-xs flex justify-between items-start">
+                                <div className="flex gap-2.5 items-start flex-1">
+                                  <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
+                                  <div className="flex-1">
+                                    <span className="font-extrabold text-[#17331F] block">{c.author}</span>
+                                    {editingCommentId === c.id ? (
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <input 
+                                          type="text"
+                                          value={editingCommentText}
+                                          onChange={(e) => setEditingCommentText(e.target.value)}
+                                          className="flex-1 px-2.5 py-1 rounded-lg border border-[#1F5E3B] text-xs bg-white focus:outline-none"
+                                        />
+                                        <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-2.5 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-bold hover:bg-[#17331F]">
+                                          Save
+                                        </button>
+                                        <button onClick={() => setEditingCommentId(null)} className="px-2.5 py-1 rounded-lg bg-gray-200 text-gray-700 text-[10px] font-bold hover:bg-gray-300">
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <p className="text-[#4A5568] mt-0.5">{c.text}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {editingCommentId !== c.id && (
+                                  <button 
+                                    onClick={() => {
+                                      setEditingCommentId(c.id);
+                                      setEditingCommentText(c.text);
+                                    }} 
+                                    className="text-[10px] font-bold text-[#1F5E3B] hover:underline flex items-center gap-1 pl-2"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                    <span>Edit</span>
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </Card>
                 ))
               )}
@@ -1063,7 +1270,7 @@ const Dashboard = () => {
             <div className="space-y-6 max-w-3xl mx-auto">
               <Card className="p-6">
                 <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
-                  <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" />
+                  <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" />
                   <div>
                     <h3 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
                       {user?.fullName || user?.username || 'Planter'}
@@ -1075,7 +1282,19 @@ const Dashboard = () => {
                 </div>
 
                 <div className="pt-4 border-t border-[#D7E6D5] flex gap-3">
-                  <Button variant="primary" size="sm" icon={Edit} onClick={() => setProfileEditOpen(true)}>
+                  <Button variant="primary" size="sm" icon={Edit} onClick={() => {
+                    setProfileForm({
+                      fullName: user?.fullName || user?.name || '',
+                      phone: user?.phone || '',
+                      district: user?.district || user?.location || 'Idukki, Kerala',
+                      location: user?.location || user?.district || 'Idukki, Kerala',
+                      bio: user?.bio || '',
+                      avatar: user?.avatar || user?.profileImage || '',
+                      role: user?.role || 'Farmer',
+                    });
+                    setPhotoUrlInput(user?.avatar || user?.profileImage || '');
+                    setProfileEditOpen(true);
+                  }}>
                     Edit Profile Details
                   </Button>
                 </div>
@@ -1104,7 +1323,7 @@ const Dashboard = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="relative group">
                     <img 
-                      src={photoUrlInput || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} 
+                      src={photoUrlInput || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} 
                       alt="Avatar preview" 
                       className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" 
                     />
@@ -1151,7 +1370,11 @@ const Dashboard = () => {
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => setPhotoUrlInput(presetUrl)}
+                          onClick={async () => {
+                            setPhotoUrlInput(presetUrl);
+                            setProfileForm((prev) => ({ ...prev, avatar: presetUrl }));
+                            await updateProfile({ avatar: presetUrl, profileImage: presetUrl, profilePhoto: presetUrl, hasCustomPhoto: true });
+                          }}
                           className="px-2.5 py-1 rounded-full bg-[#F8FAF7] border border-[#D7E6D5] text-[10px] font-bold text-[#1F5E3B] hover:bg-[#DDEFD9]"
                         >
                           Avatar {idx + 1}
@@ -1202,7 +1425,7 @@ const Dashboard = () => {
                       <input 
                         type="text"
                         value={profileForm.district}
-                        onChange={(e) => setProfileForm({ ...profileForm, district: e.target.value })}
+                        onChange={(e) => setProfileForm({ ...profileForm, district: e.target.value, location: e.target.value })}
                         className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
                       />
                     </div>
@@ -1413,7 +1636,7 @@ const Dashboard = () => {
                 <div>
                   <label className="block text-xs font-bold mb-1">Profile Photo / Avatar</label>
                   <div className="flex items-center gap-3 mb-2">
-                    <img src={photoUrlInput || profileForm.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B]" />
+                    <img src={photoUrlInput || profileForm.avatar || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B]" />
                     <input 
                       type="file" 
                       id="modal-profile-photo" 
@@ -1442,7 +1665,7 @@ const Dashboard = () => {
                   <input 
                     type="text" 
                     value={profileForm.district} 
-                    onChange={(e) => setProfileForm({...profileForm, district: e.target.value})} 
+                    onChange={(e) => setProfileForm({...profileForm, district: e.target.value, location: e.target.value})} 
                     className={`w-full p-2.5 rounded-xl text-xs border ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
                   />
                   {profileErrors.district && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.district}</p>}
@@ -1460,6 +1683,82 @@ const Dashboard = () => {
                   Save Changes to MongoDB
                 </Button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PUBLIC PLANTER PROFILE MODAL */}
+      <AnimatePresence>
+        {selectedPublicUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div onClick={() => setSelectedPublicUser(null)} className="absolute inset-0 bg-[#17331F]/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[24px] p-6 max-w-md w-full border border-[#D7E6D5] shadow-2xl z-10 space-y-5">
+              <div className="flex justify-between items-start border-b border-[#D7E6D5] pb-4">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={selectedPublicUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedPublicUser.author || selectedPublicUser.name || 'Planter')}&background=1F5E3B&color=ffffff`} 
+                    alt="" 
+                    className="w-16 h-16 rounded-full object-cover border-3 border-[#1F5E3B] shadow-md" 
+                  />
+                  <div>
+                    <h3 className="text-lg font-black text-[#17331F] font-poppins flex items-center gap-1.5">
+                      {selectedPublicUser.author || selectedPublicUser.name || 'Planter'}
+                      <CheckCircle className="w-4 h-4 text-[#1F5E3B]" />
+                    </h3>
+                    <p className="text-xs text-[#5C8D4E] font-bold">@{selectedPublicUser.username || 'planter'} • {selectedPublicUser.role || 'Cardamom Cultivator'}</p>
+                    <p className="text-[11px] text-[#4A5568] flex items-center gap-1 mt-0.5 font-medium">
+                      <MapPin className="w-3 h-3 text-[#1F5E3B]" />
+                      <span>{selectedPublicUser.district || selectedPublicUser.location || 'Idukki, Kerala'}</span>
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedPublicUser(null)} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5 text-[#4A5568]" /></button>
+              </div>
+
+              {/* Bio & Member Metrics */}
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                  <p className="text-xs font-bold text-[#17331F] mb-1">About Planter</p>
+                  <p className="text-xs text-[#4A5568] leading-relaxed">
+                    {selectedPublicUser.bio || `${selectedPublicUser.author || selectedPublicUser.name || 'This member'} is a verified cardamom planter participating in the Cardora community ecosystem.`}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="p-3 rounded-2xl bg-[#DDEFD9]/50 border border-[#5C8D4E]/30">
+                    <p className="text-[10px] font-bold text-[#5C8D4E] uppercase">Community Posts</p>
+                    <p className="text-lg font-black text-[#1F5E3B] mt-0.5">{feedPosts.filter(p => p.author === (selectedPublicUser.author || selectedPublicUser.name)).length || 1}</p>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-[#DDEFD9]/50 border border-[#5C8D4E]/30">
+                    <p className="text-[10px] font-bold text-[#5C8D4E] uppercase">Ecosystem Rank</p>
+                    <p className="text-lg font-black text-[#1F5E3B] mt-0.5">Verified Member</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  className="flex-1 justify-center"
+                  onClick={() => {
+                    const targetName = selectedPublicUser.author || selectedPublicUser.name || 'Planter';
+                    setSelectedPublicUser(null);
+                    showToast(`Contact request sent to ${targetName}!`);
+                  }}
+                >
+                  Connect & Message
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  onClick={() => setSelectedPublicUser(null)}
+                >
+                  Close
+                </Button>
+              </div>
             </motion.div>
           </div>
         )}

@@ -30,6 +30,53 @@ export const AuthProvider = ({ children }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
+  // App Notifications State (No dummy notifications)
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cardora_user_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const addNotification = ({ type = 'like', title, body, targetOwner = '', senderName = '' }) => {
+    const newNotif = {
+      id: Date.now(),
+      type,
+      title: title || (type === 'like' ? '❤️ Post Liked!' : '💬 New Comment!'),
+      body: body || '',
+      targetOwner,
+      senderName,
+      time: 'Just now',
+      read: false,
+    };
+    setNotifications((prev) => {
+      const updated = [newNotif, ...prev];
+      try {
+        localStorage.setItem('cardora_user_notifications', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    try {
+      localStorage.removeItem('cardora_user_notifications');
+    } catch (e) {}
+  };
+
+  const markNotificationsRead = () => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, read: true }));
+      try {
+        localStorage.setItem('cardora_user_notifications', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   const fetchUserProfile = async () => {
     const existingToken = localStorage.getItem('cardora_token');
     if (!existingToken) {
@@ -234,19 +281,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = async (updatedData) => {
-    const finalPhoto = updatedData.avatar !== undefined ? updatedData.avatar : (updatedData.profileImage !== undefined ? updatedData.profileImage : (updatedData.profilePhoto || ''));
+    const finalPhoto = updatedData.avatar || updatedData.profileImage || updatedData.profilePhoto;
     
     // 1. Immediately update UI state and localStorage in real-time
     setUser((prev) => {
+      const activePhoto = finalPhoto || prev?.avatar || prev?.profileImage || prev?.profilePhoto || '';
       const merged = {
         ...prev,
         ...updatedData,
         name: updatedData.fullName || updatedData.name || prev?.name || prev?.fullName || '',
         fullName: updatedData.fullName || updatedData.name || prev?.fullName || prev?.name || '',
-        avatar: finalPhoto !== undefined ? finalPhoto : (prev?.avatar || ''),
-        profileImage: finalPhoto !== undefined ? finalPhoto : (prev?.profileImage || ''),
-        profilePhoto: finalPhoto !== undefined ? finalPhoto : (prev?.profilePhoto || ''),
-        hasCustomPhoto: Boolean(updatedData.hasCustomPhoto !== undefined ? updatedData.hasCustomPhoto : (Boolean(finalPhoto) || prev?.hasCustomPhoto)),
+        avatar: activePhoto,
+        profileImage: activePhoto,
+        profilePhoto: activePhoto,
+        hasCustomPhoto: Boolean(activePhoto),
         district: updatedData.district || updatedData.location || prev?.district || prev?.location || 'Idukki, Kerala',
         location: updatedData.location || updatedData.district || prev?.location || 'Idukki, Kerala',
         phone: updatedData.phone !== undefined ? updatedData.phone : (prev?.phone || ''),
@@ -264,7 +312,7 @@ export const AuthProvider = ({ children }) => {
       const res = await apiService.updateProfile(updatedData);
       if (res && res.success && res.user) {
         setUser((prev) => {
-          const img = res.user.avatar || res.user.profileImage || res.user.profilePhoto || prev?.avatar || '';
+          const img = res.user.avatar || res.user.profileImage || res.user.profilePhoto || prev?.avatar || prev?.profileImage || '';
           const finalUser = {
             ...prev,
             ...res.user,
@@ -274,7 +322,7 @@ export const AuthProvider = ({ children }) => {
             avatar: img,
             profileImage: img,
             profilePhoto: img,
-            hasCustomPhoto: Boolean(res.user.hasCustomPhoto || Boolean(img) || prev?.hasCustomPhoto),
+            hasCustomPhoto: Boolean(img),
             phone: res.user.phone !== undefined ? res.user.phone : prev?.phone,
             location: res.user.location || prev?.location,
             district: res.user.district || res.user.location || prev?.district,
@@ -374,6 +422,10 @@ export const AuthProvider = ({ children }) => {
         isSpeaking,
         listenSpeech,
         isListening,
+        notifications,
+        addNotification,
+        clearNotifications,
+        markNotificationsRead,
       }}
     >
       {children}

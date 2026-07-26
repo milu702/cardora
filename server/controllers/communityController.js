@@ -115,6 +115,36 @@ exports.commentOnPost = async (req, res) => {
   }
 };
 
+// @desc    Update a comment on a post
+// @route   PUT /api/community/posts/:postId/comments/:commentId
+// @access  Private
+exports.updateComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Comment text is required' });
+    }
+
+    const post = await CommunityPost.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    const comment = post.comments.id ? post.comments.id(commentId) : post.comments.find((c) => (c._id || c.id).toString() === commentId.toString());
+    if (!comment) {
+      return res.status(404).json({ success: false, message: 'Comment not found' });
+    }
+
+    comment.text = text.trim();
+    await post.save();
+
+    res.status(200).json({ success: true, message: 'Comment updated', comments: post.comments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Share a post
 // @route   POST /api/community/posts/:id/share
 // @access  Public

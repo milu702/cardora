@@ -177,23 +177,26 @@ exports.updateProfile = async (req, res) => {
     if (location !== undefined) updates.location = location;
     if (district !== undefined) updates.district = district;
     if (bio !== undefined) updates.bio = bio;
-    if (role !== undefined) updates.role = role;
 
-    if (avatar !== undefined || profileImage !== undefined || profilePhoto !== undefined || hasCustomPhoto !== undefined) {
-      const newImg = avatar !== undefined ? avatar : (profileImage !== undefined ? profileImage : profilePhoto);
-      if (newImg !== undefined) {
-        updates.avatar = newImg;
-        updates.profileImage = newImg;
-        updates.profilePhoto = newImg;
-      }
-      if (hasCustomPhoto !== undefined) {
-        updates.hasCustomPhoto = Boolean(hasCustomPhoto);
-      } else if (newImg) {
-        updates.hasCustomPhoto = true;
-      }
+    if (role !== undefined && typeof role === 'string') {
+      const r = role.toLowerCase();
+      if (r.includes('expert')) updates.role = 'Expert';
+      else if (r.includes('investor')) updates.role = 'Investor';
+      else if (r.includes('user')) updates.role = 'User';
+      else if (r.includes('admin')) updates.role = 'admin';
+      else updates.role = 'Farmer';
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true });
+    const imagePayload = avatar || profileImage || profilePhoto;
+    if (imagePayload && typeof imagePayload === 'string' && imagePayload.trim() !== '') {
+      const trimmedImg = imagePayload.trim();
+      updates.avatar = trimmedImg;
+      updates.profileImage = trimmedImg;
+      updates.profilePhoto = trimmedImg;
+      updates.hasCustomPhoto = true;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: false });
 
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: 'User profile not found' });
@@ -289,6 +292,114 @@ exports.googleLogin = async (req, res) => {
         district: user.district || user.location,
         bio: user.bio,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const nodemailer = require('nodemailer');
+
+// @desc    Forgot Password - Send OTP to Email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+
+    const targetEmail = email.trim().toLowerCase();
+    let user = await User.findOne({ $or: [{ email: targetEmail }, { username: targetEmail }] });
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    if (user) {
+      user.otp = otpCode;
+      user.otpExpire = Date.now() + 15 * 60 * 1000;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    // Always send real Nodemailer email to the target email address!
+    let emailSent = false;
+    try {
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.SMTP_USER || 'cardora702@gmail.com',
+          pass: (process.env.SMTP_PASS || 'pvaahrfsdbkaaged').replace(/\s+/g, ''),
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"Cardora Ecosystem" <${process.env.SMTP_USER || 'cardora702@gmail.com'}>`,
+        to: targetEmail,
+        subject: '🔑 Cardora - Password Reset OTP Code',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #D7E6D5; border-radius: 16px; background-color: #ffffff;">
+            <h2 style="color: #1F5E3B; margin-bottom: 8px;">Cardora Account Recovery</h2>
+            <p style="color: #4A5568; font-size: 14px;">You requested a password reset for your Cardora account (${targetEmail}).</p>
+            <p style="color: #4A5568; font-size: 14px; font-weight: bold;">Your 6-digit OTP security code is:</p>
+            <div style="font-size: 36px; font-weight: 900; color: #1F5E3B; letter-spacing: 6px; padding: 16px; background: #DDEFD9; text-align: center; border-radius: 12px; margin: 16px 0;">
+              ${otpCode}
+            </div>
+            <p style="font-size: 12px; color: #718096; margin-top: 20px; text-align: center;">This OTP is valid for 15 minutes. If you did not request this, please ignore this email.</p>
+          </div>
+        `,
+      });
+      emailSent = true;
+      console.log(`✅ Nodemailer OTP email successfully sent to: ${targetEmail}`);
+    } catch (mailError) {
+      console.error('❌ Nodemailer Email Error:', mailError.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Password reset OTP has been sent to ${targetEmail}`,
+      otp: otpCode,
+      emailSent,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reset Password using OTP
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email, OTP code, and new password are required.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+otp +otpExpire +password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    if (user.otp !== otp.trim()) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP security code.' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.otp = undefined;
+    user.otpExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! You can now log in with your new password.',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -19,7 +19,7 @@ import { apiService } from '../../services/api';
 import Button from '../ui/Button';
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, lang, toggleLang } = useAuth();
+  const { isAuthenticated, user, logout, lang, toggleLang, notifications = [], clearNotifications, markNotificationsRead } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
@@ -148,30 +148,52 @@ const Navbar = () => {
               {/* Notifications Popover */}
               <div className="relative">
                 <button
-                  onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                  onClick={() => {
+                    setShowNotificationsDropdown(!showNotificationsDropdown);
+                    if (!showNotificationsDropdown && markNotificationsRead) markNotificationsRead();
+                  }}
                   className="relative p-2 rounded-full bg-white border border-[#D7E6D5] hover:border-[#1F5E3B] text-[#17331F] shadow-sm transition-all"
                   title="Notifications"
                 >
                   <Bell className="w-4 h-4" />
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-[#C9A227] border-2 border-white" />
+                  {notifications.filter((n) => !n.read).length > 0 && (
+                    <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white animate-pulse" />
+                  )}
                 </button>
 
                 {showNotificationsDropdown && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-[20px] border border-[#D7E6D5] shadow-2xl p-4 z-50">
                     <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#D7E6D5]">
-                      <h4 className="text-xs font-black text-[#17331F]">Agro Telemetry Notifications</h4>
-                      <span className="text-[10px] font-bold text-[#1F5E3B] bg-[#DDEFD9] px-2 py-0.5 rounded-full">2 New</span>
+                      <h4 className="text-xs font-black text-[#17331F]">Notifications</h4>
+                      <div className="flex items-center gap-2">
+                        {notifications.length > 0 && (
+                          <span className="text-[10px] font-bold text-[#1F5E3B] bg-[#DDEFD9] px-2 py-0.5 rounded-full">
+                            {notifications.length} New
+                          </span>
+                        )}
+                        {notifications.length > 0 && (
+                          <button 
+                            onClick={() => clearNotifications && clearNotifications()}
+                            className="text-[10px] font-bold text-red-600 hover:underline"
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-2 text-xs">
-                      <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                        <p className="font-bold text-[#17331F]">🌧️ Heavy Rainfall Alert</p>
-                        <p className="text-[11px] text-[#4A5568] mt-0.5">High altitude showers predicted in Kattappana.</p>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                        <p className="font-bold text-[#17331F]">🌿 Organic NPK Recommendation</p>
-                        <p className="text-[11px] text-[#4A5568] mt-0.5">Apply Neem cake to elevate soil pH to 6.2.</p>
-                      </div>
+                    <div className="space-y-2 text-xs max-h-64 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <p className="text-center text-xs font-bold text-[#4A5568] py-4">No notifications.</p>
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                            <p className="font-bold text-[#17331F]">{n.title}</p>
+                            <p className="text-[11px] text-[#4A5568] mt-0.5">{n.body}</p>
+                            <span className="text-[9px] text-[#5C8D4E] font-bold mt-1 block">{n.time}</span>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -180,7 +202,7 @@ const Navbar = () => {
               {/* User Avatar Menu Link */}
               <Link to="/dashboard?tab=profile" className="flex items-center gap-2">
                 <img
-                  src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                  src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
                   alt={user?.fullName || 'User avatar'}
                   className="w-8 h-8 rounded-full object-cover border-2 border-[#1F5E3B] shadow-sm"
                 />
@@ -262,7 +284,7 @@ const Navbar = () => {
                   ))}
                   <div className="pt-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
+                      <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
                       <div>
                         <p className="text-sm font-black text-[#17331F]">{user?.fullName || user?.username || 'Planter'}</p>
                         <p className="text-xs text-[#5C8D4E] font-bold">{user?.district || user?.location || 'Idukki'}</p>
