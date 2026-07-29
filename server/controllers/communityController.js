@@ -62,7 +62,7 @@ exports.likePost = async (req, res) => {
     }
 
     const userId = req.user._id || req.user.id;
-    const isLiked = post.likes.includes(userId);
+    const isLiked = post.likes.some((id) => id.toString() === userId.toString());
 
     if (isLiked) {
       post.likes = post.likes.filter((id) => id.toString() !== userId.toString());
@@ -145,6 +145,56 @@ exports.updateComment = async (req, res) => {
   }
 };
 
+// @desc    Reply to a comment
+// @route   POST /api/community/posts/:postId/comments/:commentId/reply
+// @access  Private
+exports.replyToComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Reply text is required' });
+    }
+
+    const post = await CommunityPost.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    const comment = post.comments.id ? post.comments.id(commentId) : post.comments.find((c) => (c._id || c.id).toString() === commentId.toString());
+    if (!comment) {
+      return res.status(404).json({ success: false, message: 'Comment not found' });
+    }
+
+    const user = await User.findById(req.user._id || req.user.id);
+    const userIdStr = (req.user._id || req.user.id).toString();
+    const isPostOwner = Boolean(
+      (post.user && post.user.toString() === userIdStr) ||
+      (post.userId && post.userId === userIdStr)
+    );
+
+    if (!comment.replies) comment.replies = [];
+
+    comment.replies.push({
+      user: req.user._id || req.user.id,
+      authorName: user ? user.name : 'Planter',
+      authorAvatar: user ? (user.avatar || user.profileImage || user.profilePhoto) : '',
+      text: text.trim(),
+      isPostOwner,
+    });
+
+    await post.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Reply added successfully',
+      comments: post.comments,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Share a post
 // @route   POST /api/community/posts/:id/share
 // @access  Public
@@ -175,7 +225,7 @@ exports.savePost = async (req, res) => {
     }
 
     const userId = req.user._id || req.user.id;
-    const isSaved = post.savedBy.includes(userId);
+    const isSaved = post.savedBy.some((id) => id.toString() === userId.toString());
 
     if (isSaved) {
       post.savedBy = post.savedBy.filter((id) => id.toString() !== userId.toString());
@@ -233,7 +283,7 @@ exports.updatePost = async (req, res) => {
   }
 };
 
-// @desc    Delete own post
+// @desc    Delete post (Owner or Admin)
 // @route   DELETE /api/community/posts/:id
 // @access  Private
 exports.deletePost = async (req, res) => {
@@ -243,24 +293,51 @@ exports.deletePost = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }
 
+    const userId = (req.user?._id || req.user?.id || '').toString();
+    const isOwner = post.user?.toString() === userId || post.userId?.toString() === userId || post.username === req.user?.username;
+    const isAdmin = req.user?.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this post' });
+    }
+
     await post.deleteOne();
-    res.status(200).json({ success: true, message: 'Post deleted' });
+    res.status(200).json({ success: true, message: 'Community post deleted successfully from MongoDB Atlas' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Search posts
+// @desc    Search posts and planters
 // @route   GET /api/community/search
 // @access  Public
 exports.searchPosts = async (req, res) => {
   try {
     const { q } = req.query;
+    const query = (q || '').trim();
+    const regex = new RegExp(query, 'i');
+
     const posts = await CommunityPost.find({
-      content: { $regex: q || '', $options: 'i' },
+      $or: [
+        { authorName: regex },
+        { username: regex },
+        { content: regex },
+        { description: regex },
+        { category: regex },
+      ],
     }).sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, count: posts.length, posts });
+    const users = await User.find({
+      $or: [
+        { name: regex },
+        { username: regex },
+        { email: regex },
+        { location: regex },
+        { district: regex },
+      ],
+    }).select('-password');
+
+    res.status(200).json({ success: true, count: posts.length, posts, users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

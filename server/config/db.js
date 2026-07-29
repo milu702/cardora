@@ -20,6 +20,7 @@ const connectDB = async () => {
     activeHost = conn.connection.host;
     activeDB = conn.connection.name;
     console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
+    await seedAdminUser();
     return;
   } catch (atlasErr) {
     console.warn(`⚠️ Atlas Connection Note (${atlasErr.message}). Connecting to Local MongoDB instance...`);
@@ -35,9 +36,39 @@ const connectDB = async () => {
     activeHost = conn.connection.host;
     activeDB = conn.connection.name;
     console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
+    await seedAdminUser();
   } catch (localErr) {
     console.error(`❌ Database Connection Error: ${localErr.message}`);
     isConnected = false;
+  }
+};
+
+const seedAdminUser = async () => {
+  try {
+    const User = require('../models/User');
+    const adminEmail = 'admin@cardora.com';
+    let admin = await User.findOne({ email: adminEmail }).select('+password');
+
+    if (!admin) {
+      await User.create({
+        name: 'System Admin',
+        username: 'admin',
+        email: adminEmail,
+        password: 'admin123',
+        role: 'admin',
+        location: 'Idukki, Kerala',
+        district: 'Idukki, Kerala',
+        bio: 'Cardora Platform Administrator',
+        isVerified: true,
+      });
+      console.log('🔑 Default Admin Account Ready: admin@cardora.com / admin123');
+    } else if (admin.role !== 'admin') {
+      admin.role = 'admin';
+      await admin.save();
+      console.log('🔑 Admin Role updated for admin@cardora.com');
+    }
+  } catch (err) {
+    console.error('Seed Admin error:', err.message);
   }
 };
 

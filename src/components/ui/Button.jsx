@@ -12,7 +12,7 @@ const Button = ({
 }) => {
   const variants = {
     primary: 'bg-gradient-to-r from-[#1F5E3B] to-[#5C8D4E] text-white shadow-[0_6px_20px_rgba(31,94,59,0.25)] hover:shadow-[0_10px_28px_rgba(31,94,59,0.4)] border border-[#5C8D4E]/30',
-    secondary: 'bg-white text-[#1F5E3B] border-2 border-[#1F5E3B] hover:bg-[#DDEFD9] shadow-soft',
+    secondary: 'bg-white dark:bg-slate-800 text-[#1F5E3B] dark:text-emerald-400 border-2 border-[#1F5E3B] dark:border-emerald-500 hover:bg-[#DDEFD9] dark:hover:bg-slate-700 shadow-soft',
     outline: 'bg-transparent text-[#1F5E3B] border-2 border-[#5C8D4E] hover:bg-[#1F5E3B] hover:text-white',
     ghost: 'bg-transparent text-[#1F5E3B] hover:bg-[#DDEFD9]/50',
     gold: 'bg-gradient-to-r from-[#C9A227] to-[#D4AF37] text-white shadow-[0_6px_20px_rgba(201,162,39,0.3)] hover:shadow-[0_10px_28px_rgba(201,162,39,0.5)]',

@@ -6,6 +6,7 @@ const {
   likePost,
   commentOnPost,
   updateComment,
+  replyToComment,
   sharePost,
   savePost,
   reportPost,
@@ -29,6 +30,7 @@ router.route('/posts/:id')
 router.post('/posts/:id/like', protect, likePost);
 router.post('/posts/:id/comment', protect, commentOnPost);
 router.put('/posts/:postId/comments/:commentId', protect, updateComment);
+router.post('/posts/:postId/comments/:commentId/reply', protect, replyToComment);
 router.post('/posts/:id/share', sharePost);
 router.post('/posts/:id/save', protect, savePost);
 router.post('/posts/:id/report', protect, reportPost);

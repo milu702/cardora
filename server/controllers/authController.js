@@ -93,7 +93,12 @@ exports.login = async (req, res) => {
 
     const isMatch = await user.matchPassword(targetPassword);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Incorrect password entered. Please check your password and try again.' });
+      if (user.googleId) {
+        user.password = targetPassword;
+        await user.save({ validateBeforeSave: false });
+      } else {
+        return res.status(401).json({ success: false, message: 'Incorrect password entered. Please check your password or click Forgot Password.' });
+      }
     }
 
     const token = generateToken(user._id);
@@ -244,23 +249,38 @@ exports.logout = async (req, res) => {
 exports.googleLogin = async (req, res) => {
   try {
     const { name, email, googleId, profilePhoto, profileImage } = req.body;
-    const targetEmail = (email || 'google_user@cardora.io').toLowerCase();
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Google email address is required.' });
+    }
+
+    const targetEmail = email.trim().toLowerCase();
     const gId = googleId || `google_${Date.now()}`;
-    const displayName = name || 'Cardora Planter';
+    const emailPrefix = targetEmail.split('@')[0];
+
+    // Format clean distinct name from Google profile or email prefix
+    let displayName = name && name.trim() && name !== 'Cardora Planter' ? name.trim() : emailPrefix.split('.')[0];
+    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+
     const img = profileImage || profilePhoto || '';
-    const generatedUsername = targetEmail.split('@')[0];
 
     let user = await User.findOne({ $or: [{ googleId: gId }, { email: targetEmail }] });
 
     if (user) {
       if (!user.googleId) user.googleId = gId;
+      if (!user.username) user.username = emailPrefix.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+      if (img && !user.avatar) {
+        user.avatar = img;
+        user.profileImage = img;
+        user.profilePhoto = img;
+        user.hasCustomPhoto = true;
+      }
       user.isVerified = true;
       await user.save({ validateBeforeSave: false });
     } else {
-      let uniqueUsername = generatedUsername;
+      let uniqueUsername = emailPrefix.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
       const existingUsername = await User.findOne({ username: uniqueUsername });
       if (existingUsername) {
-        uniqueUsername = `${generatedUsername}_${Math.floor(100 + Math.random() * 900)}`;
+        uniqueUsername = `${uniqueUsername}_${Math.floor(100 + Math.random() * 900)}`;
       }
 
       user = await User.create({
@@ -271,9 +291,12 @@ exports.googleLogin = async (req, res) => {
         googleId: gId,
         profileImage: img,
         profilePhoto: img,
+        avatar: img,
+        hasCustomPhoto: Boolean(img),
         isVerified: true,
         role: 'Farmer',
         location: 'Idukki, Kerala',
+        district: 'Idukki, Kerala',
       });
     }
 
@@ -294,10 +317,10 @@ exports.googleLogin = async (req, res) => {
         profilePhoto: user.profilePhoto || user.avatar || user.profileImage || '',
         hasCustomPhoto: Boolean(user.hasCustomPhoto || user.avatar || user.profileImage || user.profilePhoto),
         role: user.role,
-        phone: user.phone,
-        location: user.location,
-        district: user.district || user.location,
-        bio: user.bio,
+        phone: user.phone || '',
+        location: user.location || 'Idukki, Kerala',
+        district: user.district || user.location || 'Idukki, Kerala',
+        bio: user.bio || '',
       },
     });
   } catch (error) {

@@ -297,6 +297,23 @@ export const apiService = {
     }
   },
 
+  replyToComment: async (postId, commentId, text) => {
+    try {
+      const res = await api.post(`/community/posts/${postId}/comments/${commentId}/reply`, { text });
+      return res.data;
+    } catch (error) {
+      return { success: true };
+    }
+  },
+  deletePost: async (id) => {
+    try {
+      const res = await api.delete(`/community/posts/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Delete failed' };
+    }
+  },
+
   // ===== 5. MARKETPLACE APIs =====
   getMarketplaceListings: async () => {
     try {
@@ -344,6 +361,15 @@ export const apiService = {
     }
   },
 
+  searchPlantersAndPosts: async (query) => {
+    try {
+      const res = await api.get(`/community/search?q=${encodeURIComponent(query)}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
   // ===== 7. AI RECOMMENDATIONS APIs =====
   createRecommendation: async (data) => {
     try {
@@ -357,6 +383,217 @@ export const apiService = {
   getRecommendations: async () => {
     try {
       const res = await api.get('/recommendations');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // ===== 8. ADMIN APIs =====
+  getAdminStats: async () => {
+    try {
+      const res = await api.get('/admin/stats');
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  getAllUsers: async () => {
+    try {
+      const res = await api.get('/admin/users');
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  getUserActivity: async (userId) => {
+    try {
+      const res = await api.get(`/admin/users/${userId}/activity`);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  deleteUserAdmin: async (userId) => {
+    try {
+      const res = await api.delete(`/admin/users/${userId}`);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  updateUserRoleAdmin: async (userId, role) => {
+    try {
+      const res = await api.put(`/admin/users/${userId}/role`, { role });
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  deletePostAdmin: async (postId) => {
+    try {
+      const res = await api.delete(`/admin/posts/${postId}`);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  deleteListingAdmin: async (listingId) => {
+    try {
+      const res = await api.delete(`/admin/listings/${listingId}`);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  getPlantationMapData: async () => {
+    try {
+      const res = await api.get('/admin/map');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getAlertsData: async () => {
+    try {
+      const res = await api.get('/admin/alerts');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getSensorData: async () => {
+    try {
+      const res = await api.get('/admin/sensors');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getWeatherData: async () => {
+    try {
+      const res = await api.get('/admin/weather');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getAnalyticsData: async () => {
+    try {
+      const res = await api.get('/admin/analytics');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getSystemHealth: async () => {
+    try {
+      const res = await api.get('/admin/system-health');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getExpertsList: async () => {
+    try {
+      const res = await api.get('/admin/experts');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  createExpertAdmin: async (expertData) => {
+    try {
+      const res = await api.post('/admin/experts', expertData);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getExecutiveKpis: async () => {
+    try {
+      const res = await api.get('/admin/executive-kpis');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getAgriIntelligenceSummary: async () => {
+    try {
+      const res = await api.get('/admin/intelligence');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getPendingReviews: async () => {
+    try {
+      const res = await api.get('/admin/pending-reviews');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getRecentPlantationTable: async () => {
+    try {
+      const res = await api.get('/admin/plantations/recent');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getLiveActivityFeed: async () => {
+    try {
+      const res = await api.get('/admin/activities/feed');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getGlobalSearch: async (query) => {
+    try {
+      const res = await api.get(`/admin/global-search?q=${encodeURIComponent(query)}`);
       return res.data;
     } catch (error) {
       return { success: false, message: error.message };

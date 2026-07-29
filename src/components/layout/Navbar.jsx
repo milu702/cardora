@@ -12,17 +12,22 @@ import {
   MapPin, 
   Sparkles,
   User,
-  Bell
+  Bell,
+  Search,
+  Shield,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import Button from '../ui/Button';
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, lang, toggleLang, notifications = [], clearNotifications, markNotificationsRead } = useAuth();
+  const { isAuthenticated, user, logout, lang, toggleLang, darkMode, toggleDarkMode, notifications = [], clearNotifications, markNotificationsRead } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,14 +50,21 @@ const Navbar = () => {
     { name: 'FAQ', href: '/#faq' },
   ];
 
-  const loggedInNavLinks = [
-    { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
-    { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
-    { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
-    { name: 'Community', href: '/dashboard?tab=community', icon: Users },
-    { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
-    { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
-  ];
+  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+
+  const loggedInNavLinks = isAdminUser
+    ? [
+        { name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield },
+        { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+      ]
+    : [
+        { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
+        { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
+        { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
+        { name: 'Community', href: '/dashboard?tab=community', icon: Users },
+        { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
+        { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+      ];
 
   const handleLogout = async () => {
     await logout();
@@ -92,7 +104,7 @@ const Navbar = () => {
         </div>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-5">
           {!isAuthenticated ? (
             loggedOutNavLinks.map((link) => (
               <a
@@ -117,16 +129,62 @@ const Navbar = () => {
           )}
         </div>
 
+        {/* Global Planter Search Bar */}
+        {isAuthenticated && (
+          <div className="relative hidden md:block w-48 lg:w-56">
+            <div className="flex items-center rounded-full bg-[#F8FAF7] border border-[#D7E6D5] focus-within:border-[#1F5E3B] px-3 py-1.5 shadow-inner transition-all">
+              <Search className="w-3.5 h-3.5 text-[#5C8D4E] mr-1.5 flex-shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    navigate(`/dashboard?tab=community&search=${encodeURIComponent(searchQuery.trim())}`);
+                  }
+                }}
+                placeholder="Search planter name..."
+                className="w-full text-xs bg-transparent text-[#17331F] font-bold focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
+              />
+              <button
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    navigate(`/dashboard?tab=community&search=${encodeURIComponent(searchQuery.trim())}`);
+                  }
+                }}
+                className="p-1 rounded-full bg-[#1F5E3B] text-white hover:bg-[#17331F] transition-colors ml-1"
+                title="Search Planters"
+              >
+                <Search className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Action Controls & User Options */}
         <div className="hidden lg:flex items-center gap-3">
           
           {/* Language Toggle */}
           <button
             onClick={toggleLang}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#DDEFD9] hover:bg-[#D7E6D5] text-[#17331F] text-xs font-bold transition-all border border-[#5C8D4E]/30"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#DDEFD9] dark:bg-slate-800 hover:bg-[#D7E6D5] dark:hover:bg-slate-700 text-[#17331F] dark:text-slate-100 text-xs font-bold transition-all border border-[#5C8D4E]/30 dark:border-slate-700"
           >
-            <Globe className="w-3.5 h-3.5 text-[#1F5E3B]" />
+            <Globe className="w-3.5 h-3.5 text-[#1F5E3B] dark:text-emerald-400" />
             <span>{lang === 'en' ? 'EN' : 'മലയാളം'}</span>
+          </button>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleDarkMode}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+              darkMode
+                ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 hover:bg-amber-900/60'
+                : 'bg-[#DDEFD9] border-[#5C8D4E]/30 text-[#17331F] hover:bg-[#D7E6D5]'
+            }`}
+            title="Toggle Dark / Light Theme"
+          >
+            {darkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-[#1F5E3B]" />}
+            <span>{darkMode ? 'Light' : 'Dark'}</span>
           </button>
 
           {!isAuthenticated ? (

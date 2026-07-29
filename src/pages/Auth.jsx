@@ -150,7 +150,16 @@ const Auth = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'fullName' && !prev.usernameTouched && (!prev.username || prev.username === prev.fullName.toLowerCase().replace(/[^a-z0-9]/g, '_'))) {
+        updated.username = value.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+      }
+      if (name === 'username') {
+        updated.usernameTouched = true;
+      }
+      return updated;
+    });
 
     if (touchedFields[name]) {
       const error = validateField(name, value);
@@ -240,32 +249,36 @@ const Auth = () => {
     const GOOGLE_CLIENT_ID = '925366036725-cnljgpjudhra4p3vn2tlp0873u5ueaf1.apps.googleusercontent.com';
     
     if (window.google && window.google.accounts && window.google.accounts.id) {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async (response) => {
-          if (response && response.credential) {
-            const decoded = decodeJwt(response.credential);
-            if (decoded) {
-              const res = await googleSignIn({
-                name: decoded.name || decoded.given_name || 'Cardora Planter',
-                email: decoded.email,
-                googleId: decoded.sub,
-                profileImage: decoded.picture || '',
-              });
-              if (res && res.success) {
-                navigate('/dashboard');
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (response && response.credential) {
+              const decoded = decodeJwt(response.credential);
+              if (decoded) {
+                const res = await googleSignIn({
+                  name: decoded.name || decoded.given_name || decoded.email.split('@')[0],
+                  email: decoded.email,
+                  googleId: decoded.sub,
+                  profileImage: decoded.picture || '',
+                });
+                if (res && res.success) {
+                  navigate('/dashboard');
+                  return;
+                }
               }
             }
-          }
-        },
-      });
+          },
+        });
 
-      window.google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Direct Passport Google Auth fallback if one-tap prompt is closed
-          window.location.href = 'http://localhost:5000/api/auth/google';
-        }
-      });
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            window.location.href = 'http://localhost:5000/api/auth/google';
+          }
+        });
+      } catch (e) {
+        window.location.href = 'http://localhost:5000/api/auth/google';
+      }
     } else {
       window.location.href = 'http://localhost:5000/api/auth/google';
     }

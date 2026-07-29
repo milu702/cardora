@@ -48,6 +48,7 @@ const MainContent = () => {
         <Route path="/recommendations" element={<ProtectedDashboard />} />
         <Route path="/community" element={<ProtectedDashboard />} />
         <Route path="/marketplace" element={<ProtectedDashboard />} />
+        <Route path="/admin" element={<ProtectedDashboard />} />
         <Route path="/profile" element={<ProtectedDashboard />} />
 
         {/* 404 Page Not Found */}

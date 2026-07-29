@@ -18,24 +18,45 @@ module.exports = function(passport) {
           if (user) {
             if (!user.googleId) {
               user.googleId = profile.id;
-              await user.save();
+              await user.save({ validateBeforeSave: false });
             }
             return done(null, user);
           }
 
           // Create new user if first login with Google
+          const generatedUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
+          let uniqueUsername = generatedUsername;
+          const existingUsername = await User.findOne({ username: uniqueUsername });
+          if (existingUsername) {
+            uniqueUsername = `${generatedUsername}_${Math.floor(100 + Math.random() * 900)}`;
+          }
+
+          const photoUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
+
+          let displayName = profile.displayName || (profile.name ? profile.name.givenName : generatedUsername);
+          if (!displayName || displayName === 'Cardora Planter') {
+            displayName = generatedUsername.charAt(0).toUpperCase() + generatedUsername.slice(1);
+          }
+
           user = await User.create({
-            name: profile.displayName || profile.name.givenName || 'Cardora Planter',
+            name: displayName,
+            username: uniqueUsername,
             email: email,
+            password: Math.random().toString(36).slice(-10),
             googleId: profile.id,
-            profilePhoto: profile.photos[0]?.value || '',
+            profileImage: photoUrl,
+            profilePhoto: photoUrl,
+            avatar: photoUrl,
+            hasCustomPhoto: Boolean(photoUrl),
             isVerified: true,
-            role: 'planter',
+            role: 'Farmer',
             district: 'Idukki, Kerala',
+            location: 'Idukki, Kerala',
           });
 
           return done(null, user);
         } catch (error) {
+          console.error('Passport Google Strategy Error:', error.message);
           return done(error, null);
         }
       }

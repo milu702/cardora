@@ -5,8 +5,24 @@ import { apiService } from '../services/api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('cardora_token') || null);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('cardora_token')));
+  const [token, setToken] = useState(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryToken = urlParams.get('token');
+      if (queryToken) {
+        localStorage.setItem('cardora_token', queryToken);
+        return queryToken;
+      }
+    } catch (e) {}
+    return localStorage.getItem('cardora_token') || null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('token')) return true;
+    } catch (e) {}
+    return Boolean(localStorage.getItem('cardora_token'));
+  });
   const [user, setUser] = useState(() => {
     try {
       const cached = localStorage.getItem('cardora_user');
@@ -21,16 +37,62 @@ export const AuthProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
 
   // Theme State
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('cardora_dark_mode') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
 
-  // Toast Notification State
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
+
+  useEffect(() => {
+    const syncProfileFromDB = async () => {
+      const storedToken = localStorage.getItem('cardora_token');
+      if (storedToken) {
+        try {
+          const res = await apiService.getProfile();
+          if (res && res.success && res.user) {
+            setUser((prev) => {
+              const merged = { ...prev, ...res.user };
+              try {
+                localStorage.setItem('cardora_user', JSON.stringify(merged));
+              } catch (e) {}
+              return merged;
+            });
+          }
+        } catch (e) {
+        } finally {
+          setLoadingUser(false);
+        }
+      } else {
+        setLoadingUser(false);
+      }
+    };
+    syncProfileFromDB();
+  }, [token]);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      try {
+        localStorage.setItem('cardora_dark_mode', 'true');
+      } catch (e) {}
+    } else {
+      document.documentElement.classList.remove('dark');
+      try {
+        localStorage.setItem('cardora_dark_mode', 'false');
+      } catch (e) {}
+    }
+  }, [darkMode]);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Voice State
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // App Notifications State (No dummy notifications)
+  // App Notifications State
   const [notifications, setNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem('cardora_user_notifications');
@@ -76,67 +138,6 @@ export const AuthProvider = ({ children }) => {
       return updated;
     });
   };
-
-  const fetchUserProfile = async () => {
-    const existingToken = localStorage.getItem('cardora_token');
-    if (!existingToken) {
-      setUser(null);
-      localStorage.removeItem('cardora_user');
-      setIsAuthenticated(false);
-      setLoadingUser(false);
-      return;
-    }
-
-    try {
-      setLoadingUser(true);
-      const res = await apiService.getProfile();
-      if (res && res.success && res.user) {
-        setUser((prev) => {
-          const currentPhoto = res.user.avatar || res.user.profileImage || res.user.profilePhoto || prev?.avatar || prev?.profileImage || '';
-          const fetchedUser = {
-            id: res.user.id || res.user._id || prev?.id,
-            fullName: res.user.fullName || res.user.name || prev?.fullName || prev?.name || '',
-            name: res.user.name || res.user.fullName || prev?.name || prev?.fullName || '',
-            username: res.user.username || prev?.username || (res.user.email ? res.user.email.split('@')[0] : 'Planter'),
-            email: res.user.email || prev?.email || '',
-            phone: res.user.phone !== undefined ? res.user.phone : (prev?.phone || ''),
-            location: res.user.location || prev?.location || 'Idukki, Kerala',
-            district: res.user.district || res.user.location || prev?.district || prev?.location || 'Idukki, Kerala',
-            role: res.user.role || prev?.role || 'Farmer',
-            avatar: currentPhoto,
-            profileImage: currentPhoto,
-            hasCustomPhoto: Boolean(res.user.hasCustomPhoto || Boolean(currentPhoto) || prev?.hasCustomPhoto),
-            bio: res.user.bio !== undefined ? res.user.bio : (prev?.bio || 'Cardamom planter & social ecosystem member.'),
-          };
-          localStorage.setItem('cardora_user', JSON.stringify(fetchedUser));
-          return fetchedUser;
-        });
-        setIsAuthenticated(true);
-      } else if (!user) {
-        localStorage.removeItem('cardora_token');
-        localStorage.removeItem('cardora_user');
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (err) {
-      // Keep cached user if network fails temporarily
-    } finally {
-      setLoadingUser(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -426,8 +427,11 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider
       value={{
+        token,
+        setToken,
         isAuthenticated,
         loadingUser,
+        setLoadingUser,
         user,
         login,
         signup,
@@ -441,6 +445,7 @@ export const AuthProvider = ({ children }) => {
         t,
         darkMode,
         setDarkMode,
+        toggleDarkMode,
         toastMessage,
         showToast,
         speakText,

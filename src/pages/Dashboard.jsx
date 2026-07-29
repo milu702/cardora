@@ -5,7 +5,7 @@ import {
   Home, Leaf, MapPin, Users, User, Settings, 
   Search, Heart, MessageSquare, Share2, 
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
-  Camera, Lock, Key, Bell, Upload, Globe
+  Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -13,13 +13,17 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import AdminDashboard from '../components/admin/AdminDashboard';
 
 const Dashboard = () => {
   const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Active Tab: 'dashboard' | 'plantations' | 'ai' | 'community' | 'plots' | 'profile' | 'settings'
-  const activeTab = searchParams.get('tab') || 'dashboard';
+  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+  const defaultTab = isAdminUser ? 'admin' : 'dashboard';
+
+  // Active Tab: 'dashboard' | 'plantations' | 'ai' | 'community' | 'plots' | 'admin' | 'profile' | 'settings'
+  const activeTab = searchParams.get('tab') || defaultTab;
 
   const setActiveTab = (tabName) => {
     setSearchParams({ tab: tabName });
@@ -356,6 +360,14 @@ const Dashboard = () => {
             avatar: c.authorAvatar || c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
             text: c.text || c.content || '',
             time: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
+            replies: Array.isArray(c.replies) ? c.replies.map((r) => ({
+              id: r._id || r.id || Date.now(),
+              author: r.authorName || 'Planter',
+              avatar: r.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+              text: r.text || '',
+              isPostOwner: Boolean(r.isPostOwner || r.authorName === p.authorName),
+              time: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recently',
+            })) : [],
           })) : [];
 
           const pId = p._id || p.id;
@@ -371,7 +383,7 @@ const Dashboard = () => {
             author: p.authorName || p.username || 'Planter',
             username: p.username || p.authorName || 'planter',
             avatar: p.authorAvatar || p.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-            time: new Date(p.createdAt || Date.now()).toLocaleDateString(),
+            time: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jul 26, 2026',
             category: p.category || 'Plantation Update',
             content: p.description || p.content || '',
             description: p.description || p.content || '',
@@ -384,11 +396,41 @@ const Dashboard = () => {
 
         setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
-      setFeedPosts([...dbPosts, ...defaultOtherPlanterPosts]);
+      if (dbPosts.length > 0) {
+        setFeedPosts(dbPosts);
+      } else {
+        setFeedPosts(defaultOtherPlanterPosts);
+      }
     } catch (err) {
       setFeedPosts(defaultOtherPlanterPosts);
     }
   };
+
+  const [communitySearchQuery, setCommunitySearchQuery] = useState(searchParams.get('search') || '');
+  const [searchedPlanters, setSearchedPlanters] = useState([]);
+
+  useEffect(() => {
+    const searchVal = searchParams.get('search');
+    if (searchVal !== null) {
+      setCommunitySearchQuery(searchVal);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const handleSearchPlanters = async () => {
+      if (!communitySearchQuery.trim()) {
+        setSearchedPlanters([]);
+        return;
+      }
+      try {
+        const res = await apiService.searchPlantersAndPosts(communitySearchQuery.trim());
+        if (res && res.success && Array.isArray(res.users)) {
+          setSearchedPlanters(res.users);
+        }
+      } catch (err) {}
+    };
+    handleSearchPlanters();
+  }, [communitySearchQuery]);
 
   React.useEffect(() => {
     fetchPosts();
@@ -473,8 +515,66 @@ const Dashboard = () => {
     );
   };
 
+  const handleDeletePost = async (postId) => {
+    try {
+      const res = await apiService.deletePost(postId);
+      if (res && res.success) {
+        showToast('Post deleted from MongoDB Atlas');
+      } else {
+        showToast(res?.message || 'Post deleted');
+      }
+    } catch (e) {
+      showToast('Post removed');
+    }
+    setFeedPosts((prev) => prev.filter((p) => (p.id || p._id) !== postId));
+  };
+
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState('');
+  const [activeReplyCommentId, setActiveReplyCommentId] = useState(null);
+  const [replyInputText, setReplyInputText] = useState('');
+
+  const handleSendReply = async (postId, commentId) => {
+    if (!replyInputText || !replyInputText.trim()) return;
+    const text = replyInputText.trim();
+    const commenterName = user?.fullName || user?.name || user?.username || 'Planter';
+    const targetPost = feedPosts.find((p) => p.id === postId);
+    const postOwnerName = targetPost?.author || targetPost?.username || '';
+    const isOwner = commenterName.toLowerCase().trim() === postOwnerName.toLowerCase().trim();
+
+    const newReply = {
+      id: Date.now(),
+      author: commenterName,
+      avatar: user?.avatar || user?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      text,
+      isPostOwner: isOwner,
+      time: 'Just now',
+    };
+
+    setCommentsMap((prev) => {
+      const existingComments = prev[postId] || [];
+      const updatedComments = existingComments.map((c) => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            replies: [...(c.replies || []), newReply],
+          };
+        }
+        return c;
+      });
+      return { ...prev, [postId]: updatedComments };
+    });
+
+    try {
+      await apiService.replyToComment(postId, commentId, text);
+      showToast('Reply posted successfully!');
+    } catch (e) {
+      showToast('Reply posted!');
+    }
+
+    setReplyInputText('');
+    setActiveReplyCommentId(null);
+  };
 
   const handleAddComment = async (postId) => {
     if (!commentInputText.trim()) return;
@@ -595,69 +695,80 @@ const Dashboard = () => {
     showToast('AI Plantation Analysis complete!');
   };
 
-  const sidebarLinks = [
-    { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
-    { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടങ്ങൾ' : 'My Plantation', icon: Leaf },
-    { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'Recommendations', icon: Sparkles },
-    { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Users },
-    { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
-    { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
-    { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
-  ];
+  const sidebarLinks = isAdminUser
+    ? [
+        { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
+        { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
+        { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
+      ]
+    : [
+        { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
+        { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടങ്ങൾ' : 'My Plantation', icon: Leaf },
+        { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'Recommendations', icon: Sparkles },
+        { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Users },
+        { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
+        { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
+        { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
+      ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAF7] text-[#4A5568] flex flex-col justify-between">
+    <div className="min-h-screen bg-[#F8FAF7] dark:bg-slate-950 text-[#4A5568] dark:text-slate-300 transition-colors flex flex-col justify-between">
       <Navbar />
 
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 flex gap-6">
+      {/* MAIN CONTAINER */}
+      <div className={`flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 ${
+        activeTab === 'admin' ? 'max-w-full' : 'max-w-7xl flex gap-6'
+      }`}>
         
-        {/* DESKTOP SIDEBAR NAVIGATION */}
-        <aside className="hidden lg:block w-64 flex-shrink-0">
-          <div className="sticky top-28 bg-white rounded-[20px] border border-[#D7E6D5] shadow-soft p-4 space-y-1.5">
-            
-            <div className="p-3 mb-3 bg-[#DDEFD9]/60 rounded-xl border border-[#5C8D4E]/30 flex items-center gap-3">
-              <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
-              <div className="overflow-hidden">
-                <p className="text-xs font-black text-[#17331F] truncate">{user?.fullName || user?.username || 'Planter'}</p>
-                <p className="text-[10px] text-[#5C8D4E] font-bold">{user?.role || 'Planter'} • {user?.district || user?.location || 'Idukki'}</p>
+        {/* DESKTOP SIDEBAR NAVIGATION (Hidden on Admin Tab for Full Screen Display) */}
+        {activeTab !== 'admin' && (
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-28 bg-white dark:bg-slate-900 rounded-[20px] border border-[#D7E6D5] dark:border-slate-800 shadow-soft p-4 space-y-1.5">
+              
+              <div className="p-3 mb-3 bg-[#DDEFD9]/60 dark:bg-slate-800/80 rounded-xl border border-[#5C8D4E]/30 dark:border-slate-700 flex items-center gap-3">
+                <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
+                <div className="overflow-hidden">
+                  <p className="text-xs font-black text-[#17331F] dark:text-white truncate">{user?.fullName || user?.username || 'Planter'}</p>
+                  <p className="text-[10px] text-[#5C8D4E] dark:text-emerald-400 font-bold">{user?.role || 'Planter'} • {user?.district || user?.location || 'Idukki'}</p>
+                </div>
               </div>
+
+              {sidebarLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = activeTab === link.id;
+                return (
+                  <button
+                    key={link.id}
+                    onClick={() => setActiveTab(link.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-[#1F5E3B] text-white shadow-md'
+                        : 'text-[#17331F] dark:text-slate-200 hover:bg-[#DDEFD9]/50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{link.label}</span>
+                  </button>
+                );
+              })}
+
             </div>
-
-            {sidebarLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = activeTab === link.id;
-              return (
-                <button
-                  key={link.id}
-                  onClick={() => setActiveTab(link.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-[#1F5E3B] text-white shadow-md'
-                      : 'text-[#17331F] hover:bg-[#DDEFD9]/50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{link.label}</span>
-                </button>
-              );
-            })}
-
-          </div>
-        </aside>
+          </aside>
+        )}
 
         {/* MAIN TAB CONTENT DISPLAY */}
-        <main className="flex-1">
+        <main className={activeTab === 'admin' ? 'w-full' : 'flex-1'}>
           
           {/* Global Search Bar & Malayalam Translator */}
           <div className="mb-6 flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full flex items-center">
-              <Search className="w-4 h-4 text-[#5C8D4E] absolute left-4" />
+              <Search className="w-4 h-4 text-[#5C8D4E] dark:text-emerald-400 absolute left-4" />
               <input
                 type="text"
                 value={globalSearchQuery}
                 onChange={(e) => setGlobalSearchQuery(e.target.value)}
                 placeholder={lang === 'ml' ? "തിരയുക: തോട്ടങ്ങൾ, എഐ നിർദ്ദേശങ്ങൾ, വിവരങ്ങൾ..." : "Global Search: Plantations, AI diagnosis, Marketplace plots, Community posts..."}
-                className="w-full pl-11 pr-4 py-3 rounded-full bg-white border border-[#D7E6D5] text-xs font-medium text-[#17331F] focus:outline-none focus:border-[#1F5E3B] shadow-sm"
+                className="w-full pl-11 pr-4 py-3 rounded-full bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 text-xs font-medium text-[#17331F] dark:text-white focus:outline-none focus:border-[#1F5E3B] shadow-sm"
               />
             </div>
 
@@ -1037,7 +1148,105 @@ const Dashboard = () => {
           {/* ===== TAB 4: COMMUNITY ===== */}
           {activeTab === 'community' && (
             <div className="space-y-6 max-w-2xl mx-auto">
-              <h2 className="text-2xl font-black text-[#17331F] font-poppins">Planters Community Feed</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h2 className="text-2xl font-black text-[#17331F] font-poppins">Planters Community Feed</h2>
+                {communitySearchQuery && (
+                  <span className="px-3 py-1 rounded-full bg-[#DDEFD9] text-[#1F5E3B] text-xs font-bold w-fit">
+                    Filtered by: "{communitySearchQuery}"
+                  </span>
+                )}
+              </div>
+
+              {/* Planters & Posts Search Bar with Search Button */}
+              <div className="bg-white p-3.5 rounded-[20px] border border-[#D7E6D5] shadow-soft flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <Search className="w-4 h-4 text-[#5C8D4E] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={communitySearchQuery}
+                    onChange={(e) => setCommunitySearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && communitySearchQuery.trim()) {
+                        showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
+                      }
+                    }}
+                    placeholder="Search planter name (e.g. Rajesh, Ananya, Suresh, Milu)..."
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] font-bold focus:outline-none focus:border-[#1F5E3B]"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (communitySearchQuery.trim()) {
+                      showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs font-black transition-colors shadow-sm flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Search Planter</span>
+                </button>
+                {communitySearchQuery && (
+                  <button
+                    onClick={() => {
+                      setCommunitySearchQuery('');
+                      setSearchParams({ tab: 'community' });
+                    }}
+                    className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Matching Planter Profiles Card (Live Search Results) */}
+              {communitySearchQuery.trim() && (
+                <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-5 shadow-soft space-y-3">
+                  <h3 className="text-xs font-black text-[#17331F] flex items-center justify-between">
+                    <span>Matching Planter Profiles ({searchedPlanters.length})</span>
+                    <span className="text-[10px] text-[#5C8D4E] font-bold">MongoDB Atlas Live Search</span>
+                  </h3>
+
+                  {searchedPlanters.length === 0 ? (
+                    <p className="text-xs text-[#4A5568] py-1">No planter accounts found matching "{communitySearchQuery}".</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {searchedPlanters.map((planter) => (
+                        <div 
+                          key={planter._id || planter.id} 
+                          onClick={() => setSelectedPublicUser({
+                            author: planter.name,
+                            username: planter.username,
+                            avatar: planter.avatar || planter.profileImage || planter.profilePhoto,
+                            role: planter.role,
+                            location: planter.location || planter.district,
+                            district: planter.district || planter.location,
+                            bio: planter.bio,
+                          })}
+                          className="p-3 rounded-xl bg-[#F8FAF7] hover:bg-[#DDEFD9] border border-[#D7E6D5] flex items-center justify-between cursor-pointer group transition-colors shadow-sm"
+                        >
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <img 
+                              src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`} 
+                              alt="" 
+                              className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0" 
+                            />
+                            <div className="overflow-hidden">
+                              <h4 className="text-xs font-extrabold text-[#17331F] flex items-center gap-1 truncate">
+                                <span className="truncate">{planter.name}</span>
+                                <CheckCircle className="w-3 h-3 text-[#1F5E3B] flex-shrink-0" />
+                              </h4>
+                              <p className="text-[10px] text-[#5C8D4E] font-bold truncate">@{planter.username || 'planter'} • {planter.role || 'Farmer'}</p>
+                            </div>
+                          </div>
+                          <button className="px-2.5 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0">
+                            View Profile
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Create Post Card */}
               <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-5 shadow-soft space-y-3">
@@ -1102,13 +1311,33 @@ const Dashboard = () => {
               </div>
 
               {/* Feed Posts */}
-              {feedPosts.length === 0 ? (
+              {feedPosts.filter((post) => {
+                if (!communitySearchQuery.trim()) return true;
+                const q = communitySearchQuery.toLowerCase().trim();
+                return (
+                  (post.author && post.author.toLowerCase().includes(q)) ||
+                  (post.username && post.username.toLowerCase().includes(q)) ||
+                  (post.content && post.content.toLowerCase().includes(q)) ||
+                  (post.description && post.description.toLowerCase().includes(q)) ||
+                  (post.category && post.category.toLowerCase().includes(q))
+                );
+              }).length === 0 ? (
                 <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-8 text-center">
-                  <p className="text-sm font-bold text-[#17331F]">No community posts yet.</p>
-                  <p className="text-xs text-[#4A5568] mt-1">Be the first to create a post for your cardamom ecosystem!</p>
+                  <p className="text-sm font-bold text-[#17331F]">No matching planter posts found.</p>
+                  <p className="text-xs text-[#4A5568] mt-1">Try searching for another planter name or clear the search filter.</p>
                 </div>
               ) : (
-                feedPosts.map((post) => (
+                feedPosts.filter((post) => {
+                  if (!communitySearchQuery.trim()) return true;
+                  const q = communitySearchQuery.toLowerCase().trim();
+                  return (
+                    (post.author && post.author.toLowerCase().includes(q)) ||
+                    (post.username && post.username.toLowerCase().includes(q)) ||
+                    (post.content && post.content.toLowerCase().includes(q)) ||
+                    (post.description && post.description.toLowerCase().includes(q)) ||
+                    (post.category && post.category.toLowerCase().includes(q))
+                  );
+                }).map((post) => (
                   <Card key={post.id} className="p-6">
                     <div className="flex items-center justify-between mb-3">
                       <div 
@@ -1125,9 +1354,23 @@ const Dashboard = () => {
                           <span className="text-[10px] text-[#4A5568]">{post.time}</span>
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#DDEFD9] text-[#1F5E3B]">
-                        {post.category}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#DDEFD9] text-[#1F5E3B]">
+                          {post.category}
+                        </span>
+                        {((user?.role || '').toLowerCase() === 'admin' || user?.username === post.username || user?.fullName === post.author) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePost(post.id);
+                            }}
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="Delete Post (Admin / Owner)"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <p className="text-xs text-[#4A5568] leading-relaxed mb-3">{post.description || post.content}</p>
@@ -1175,48 +1418,118 @@ const Dashboard = () => {
 
                         {/* Comments List */}
                         {commentsMap[post.id] && commentsMap[post.id].length > 0 && (
-                          <div className="space-y-2 pt-1">
-                            {commentsMap[post.id].map((c) => (
-                              <div key={c.id} className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] text-xs flex justify-between items-start">
-                                <div className="flex gap-2.5 items-start flex-1">
-                                  <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
-                                  <div className="flex-1">
-                                    <span className="font-extrabold text-[#17331F] block">{c.author}</span>
-                                    {editingCommentId === c.id ? (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <input 
-                                          type="text"
-                                          value={editingCommentText}
-                                          onChange={(e) => setEditingCommentText(e.target.value)}
-                                          className="flex-1 px-2.5 py-1 rounded-lg border border-[#1F5E3B] text-xs bg-white focus:outline-none"
-                                        />
-                                        <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-2.5 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-bold hover:bg-[#17331F]">
-                                          Save
-                                        </button>
-                                        <button onClick={() => setEditingCommentId(null)} className="px-2.5 py-1 rounded-lg bg-gray-200 text-gray-700 text-[10px] font-bold hover:bg-gray-300">
-                                          Cancel
-                                        </button>
+                          <div className="space-y-3 pt-2">
+                            {commentsMap[post.id].map((c) => {
+                              const currentUserName = user?.fullName || user?.name || user?.username || '';
+                              const isPostAuthor = currentUserName.toLowerCase().trim() === (post.author || post.username || '').toLowerCase().trim();
+                              return (
+                                <div key={c.id} className="p-3 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] text-xs space-y-2">
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex gap-2.5 items-start flex-1">
+                                      <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-extrabold text-[#17331F]">{c.author}</span>
+                                          {c.author === post.author && (
+                                            <span className="px-1.5 py-0.5 rounded bg-[#1F5E3B] text-white text-[9px] font-black tracking-wide">
+                                              POST OWNER
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {editingCommentId === c.id ? (
+                                          <div className="flex items-center gap-2 mt-1">
+                                            <input 
+                                              type="text"
+                                              value={editingCommentText}
+                                              onChange={(e) => setEditingCommentText(e.target.value)}
+                                              className="flex-1 px-2.5 py-1 rounded-lg border border-[#1F5E3B] text-xs bg-white focus:outline-none"
+                                            />
+                                            <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-2.5 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-bold hover:bg-[#17331F]">
+                                              Save
+                                            </button>
+                                            <button onClick={() => setEditingCommentId(null)} className="px-2.5 py-1 rounded-lg bg-gray-200 text-gray-700 text-[10px] font-bold hover:bg-gray-300">
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <p className="text-[#4A5568] mt-0.5 font-medium">{c.text}</p>
+                                        )}
                                       </div>
-                                    ) : (
-                                      <p className="text-[#4A5568] mt-0.5">{c.text}</p>
-                                    )}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        onClick={() => {
+                                          setActiveReplyCommentId(activeReplyCommentId === c.id ? null : c.id);
+                                          setReplyInputText('');
+                                        }}
+                                        className="text-[10px] font-extrabold text-[#1F5E3B] hover:bg-[#DDEFD9] px-2 py-1 rounded-md transition-colors flex items-center gap-1"
+                                      >
+                                        <CornerDownRight className="w-3 h-3" />
+                                        <span>Reply</span>
+                                      </button>
+
+                                      {editingCommentId !== c.id && (
+                                        <button 
+                                          onClick={() => {
+                                            setEditingCommentId(c.id);
+                                            setEditingCommentText(c.text);
+                                          }} 
+                                          className="text-[10px] font-bold text-gray-400 hover:text-[#1F5E3B] px-1 py-1"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
+
+                                  {/* Inline Reply Input Box */}
+                                  {activeReplyCommentId === c.id && (
+                                    <div className="mt-2 pl-6 flex gap-2 items-center">
+                                      <input
+                                        type="text"
+                                        value={replyInputText}
+                                        onChange={(e) => setReplyInputText(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(post.id, c.id); }}
+                                        placeholder={isPostAuthor ? "Reply as Post Owner..." : `Replying to @${c.author}...`}
+                                        className="flex-1 px-3 py-1.5 rounded-xl text-xs border border-[#1F5E3B] bg-white focus:outline-none"
+                                        autoFocus
+                                      />
+                                      <button
+                                        onClick={() => handleSendReply(post.id, c.id)}
+                                        className="px-3 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-[10px] font-bold transition-colors"
+                                      >
+                                        Send Reply
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Nested Replies List */}
+                                  {c.replies && c.replies.length > 0 && (
+                                    <div className="pl-6 space-y-2 mt-2 pt-2 border-t border-[#D7E6D5]/60">
+                                      {c.replies.map((r) => (
+                                        <div key={r.id} className="p-2 rounded-xl bg-[#EAF3E8] border-l-3 border-[#1F5E3B] text-xs flex items-start gap-2">
+                                          <img src={r.avatar} alt="" className="w-5 h-5 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-black text-[#17331F] text-[11px]">{r.author}</span>
+                                              {(r.isPostOwner || r.author === post.author) && (
+                                                <span className="px-1.5 py-0.2 rounded bg-[#C9A227] text-white text-[8px] font-black uppercase tracking-wider">
+                                                  👑 POST OWNER REPLY
+                                                </span>
+                                              )}
+                                              <span className="text-[9px] text-[#5C8D4E] font-medium ml-auto">{r.time}</span>
+                                            </div>
+                                            <p className="text-[#334155] text-[11px] mt-0.5 font-medium">{r.text}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                
-                                {editingCommentId !== c.id && (
-                                  <button 
-                                    onClick={() => {
-                                      setEditingCommentId(c.id);
-                                      setEditingCommentText(c.text);
-                                    }} 
-                                    className="text-[10px] font-bold text-[#1F5E3B] hover:underline flex items-center gap-1 pl-2"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                    <span>Edit</span>
-                                  </button>
-                                )}
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -1264,6 +1577,9 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+
+          {/* ===== TAB: ADMIN PORTAL ===== */}
+          {activeTab === 'admin' && <AdminDashboard />}
 
           {/* ===== TAB 6: PROFILE ===== */}
           {activeTab === 'profile' && (

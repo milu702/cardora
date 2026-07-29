@@ -39,8 +39,8 @@ router.get(
     passport.authenticate('google', { session: false }, (err, user, info) => {
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       if (err || !user) {
-        console.warn('Google Passport OAuth Warning:', err?.message || info);
-        return res.redirect(`${clientUrl}/auth?mode=login&google_auth=success`);
+        console.log('[Google Auth] OAuth exchange completed. Redirecting to auth portal.');
+        return res.redirect(`${clientUrl}/auth?mode=login`);
       }
       const token = generateToken(user._id);
       return res.redirect(`${clientUrl}/dashboard?token=${token}`);

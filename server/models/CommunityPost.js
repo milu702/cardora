@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+const replySchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    authorName: { type: String },
+    authorAvatar: { type: String },
+    text: {
+      type: String,
+      required: true,
+    },
+    isPostOwner: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
+
 const commentSchema = new mongoose.Schema(
   {
     user: {
@@ -13,6 +33,7 @@ const commentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    replies: [replySchema],
   },
   { timestamps: true }
 );
@@ -38,7 +59,6 @@ const communityPostSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['Plantation Update', 'Expert Advice', 'Question', 'Farming Tip'],
       default: 'Plantation Update',
     },
     image: { type: String },
