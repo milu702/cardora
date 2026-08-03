@@ -244,11 +244,13 @@ const Navbar = () => {
                       {notifications.length === 0 ? (
                         <p className="text-center text-xs font-bold text-[#4A5568] py-4">No notifications.</p>
                       ) : (
-                        notifications.map((n) => (
-                          <div key={n.id} className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                        notifications.map((n, idx) => (
+                          <div key={n._id || n.id || idx} className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
                             <p className="font-bold text-[#17331F]">{n.title}</p>
-                            <p className="text-[11px] text-[#4A5568] mt-0.5">{n.body}</p>
-                            <span className="text-[9px] text-[#5C8D4E] font-bold mt-1 block">{n.time}</span>
+                            <p className="text-[11px] text-[#4A5568] mt-0.5">{n.body || n.message}</p>
+                            <span className="text-[9px] text-[#5C8D4E] font-bold mt-1 block">
+                              {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (n.time || 'Just now')}
+                            </span>
                           </div>
                         ))
                       )}

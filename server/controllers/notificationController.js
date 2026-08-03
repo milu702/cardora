@@ -6,7 +6,9 @@ const Notification = require('../models/Notification');
 exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
-    let notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 });
+    let notifications = await Notification.find({ user: userId })
+      .populate('sender', 'name avatar profilePhoto role')
+      .sort({ createdAt: -1 });
 
     // Seed default notifications if none present for user
     if (notifications.length === 0) {

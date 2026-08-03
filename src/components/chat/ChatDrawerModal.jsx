@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, Send, Paperclip, Mic, MicOff, Image, Check, CheckCheck, 
-  Trash2, ShieldOff, Search, MoreVertical, Smile, Play, Pause, 
-  User, MapPin, Sparkles
+  X, Send, Mic, MicOff, CheckCheck, 
+  Trash2, ShieldOff, Smile, Play, Pause, 
+  Sparkles
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -65,14 +65,26 @@ const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
   };
 
   useEffect(() => {
+    let interval;
     if (isOpen) {
       fetchConversations();
       if (activePartner?._id || activePartner?.id) {
-        fetchChatMessages(activePartner._id || activePartner.id);
+        const partnerId = activePartner._id || activePartner.id;
+        fetchChatMessages(partnerId);
+        interval = setInterval(() => {
+          apiService.getChatMessages(partnerId).then((res) => {
+            if (res && res.success && Array.isArray(res.messages)) {
+              setMessages(res.messages);
+            }
+          });
+        }, 3500);
       } else {
         setLoading(false);
       }
     }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, activePartner?._id || activePartner?.id]);
 

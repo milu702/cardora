@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, MapPin, Calendar, Mail, Phone, ShieldCheck, UserPlus, UserCheck, 
+  X, MapPin, Calendar, UserPlus, UserCheck, 
   MessageSquare, Share2, Heart, Leaf, Award, Briefcase, GraduationCap, 
-  Building, CheckCircle, Image, Sparkles, Activity, Lock, ExternalLink,
-  ChevronRight, Users, Grid, Bookmark, ThumbsUp
+  Building, CheckCircle, Image, Sparkles, Activity,
+  Grid
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';

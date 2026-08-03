@@ -143,6 +143,26 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const fetchUserNotifications = async () => {
+    try {
+      const res = await apiService.getNotifications();
+      if (res && res.success && Array.isArray(res.notifications)) {
+        setNotifications(res.notifications);
+      }
+    } catch (err) {}
+  };
+
+  const currentUserId = user?._id || user?.id || '';
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchUserNotifications();
+      const interval = setInterval(fetchUserNotifications, 5000);
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId]);
+
   const clearNotifications = () => {
     setNotifications([]);
     try {
@@ -158,6 +178,11 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {}
       return updated;
     });
+    if (typeof apiService.markNotificationRead === 'function') {
+      apiService.markNotificationRead('all').catch(() => {});
+    } else if (typeof apiService.markAsRead === 'function') {
+      apiService.markAsRead('all').catch(() => {});
+    }
   };
 
   const showToast = (msg) => {

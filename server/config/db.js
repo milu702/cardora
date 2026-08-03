@@ -5,11 +5,7 @@ let activeHost = '127.0.0.1';
 let activeDB = 'cardora';
 
 const connectDB = async () => {
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  if (!mongoUri) {
-    console.error('❌ Database Connection Error: MONGODB_URI is not defined in .env');
-    return;
-  }
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb+srv://cardora:cardora2026@cluster0.mongodb.net/cardora?retryWrites=true&w=majority';
 
   // 1. Try MongoDB Atlas Connection first
   try {

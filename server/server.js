@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const connectDB = require('./config/db');
 const { getDBStatus } = require('./config/db');
@@ -93,6 +93,7 @@ app.use('/api/recommendations', require('./routes/recommendationRoutes'));
 app.use('/api/weather', require('./routes/weatherRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/workforce', require('./routes/workforceRoutes'));
 
 // 404 & Error Handlers
 app.use(notFound);

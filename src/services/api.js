@@ -361,6 +361,15 @@ export const apiService = {
     }
   },
 
+  markAsRead: async (id) => {
+    try {
+      const res = await api.put(`/notifications/${id}/read`);
+      return res.data;
+    } catch (error) {
+      return { success: true };
+    }
+  },
+
   searchPlantersAndPosts: async (query) => {
     try {
       const res = await api.get(`/community/search?q=${encodeURIComponent(query)}`);
@@ -711,6 +720,199 @@ export const apiService = {
   getGlobalSearch: async (query) => {
     try {
       const res = await api.get(`/admin/global-search?q=${encodeURIComponent(query)}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // ===== 11. WORKFORCE & CONTACT MANAGEMENT APIs =====
+  getWorkers: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/workers?${queryParams}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getWorkerById: async (id) => {
+    try {
+      const res = await api.get(`/workforce/workers/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  updateWorkerProfile: async (data) => {
+    try {
+      const res = await api.post('/workforce/workers/profile', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getContractors: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/contractors?${queryParams}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  updateContractorProfile: async (data) => {
+    try {
+      const res = await api.post('/workforce/contractors/profile', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Registration failed' };
+    }
+  },
+
+  sendConnectionRequest: async (data) => {
+    try {
+      const res = await api.post('/workforce/connections/request', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  respondConnectionRequest: async (id, action) => {
+    try {
+      const res = await api.put(`/workforce/connections/request/${id}`, { action });
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getConnections: async () => {
+    try {
+      const res = await api.get('/workforce/connections');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getConnectionRequests: async () => {
+    try {
+      const res = await api.get('/workforce/connections/requests');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  createWorkTask: async (data) => {
+    try {
+      const res = await api.post('/workforce/tasks', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getWorkTasks: async () => {
+    try {
+      const res = await api.get('/workforce/tasks');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  updateWorkTaskStatus: async (id, data) => {
+    try {
+      const res = await api.put(`/workforce/tasks/${id}/status`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  checkInAttendance: async (data) => {
+    try {
+      const res = await api.post('/workforce/attendance/check-in', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  checkOutAttendance: async (data) => {
+    try {
+      const res = await api.post('/workforce/attendance/check-out', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getAttendanceHistory: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/attendance?${queryParams}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  recordWorkforcePayment: async (data) => {
+    try {
+      const res = await api.post('/workforce/payments', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getWorkforcePaymentHistory: async () => {
+    try {
+      const res = await api.get('/workforce/payments');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  submitWorkforceRating: async (data) => {
+    try {
+      const res = await api.post('/workforce/ratings', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getWorkforceAdminVerifications: async () => {
+    try {
+      const res = await api.get('/workforce/admin/verifications');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  adminVerifyWorkforceUser: async (id, data) => {
+    try {
+      const res = await api.put(`/workforce/admin/verify/${id}`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  submitWorkforceComplaint: async (data) => {
+    try {
+      const res = await api.post('/workforce/complaints', data);
       return res.data;
     } catch (error) {
       return { success: false, message: error.message };

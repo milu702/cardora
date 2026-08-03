@@ -65,7 +65,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Farmer', 'Expert', 'Investor', 'User', 'planter', 'admin'],
+      enum: ['Farmer', 'Expert', 'Investor', 'User', 'planter', 'admin', 'Plantation Owner', 'Labor Contractor', 'Worker', 'Admin'],
       default: 'Farmer',
     },
     isVerified: {

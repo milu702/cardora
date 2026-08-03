@@ -7,9 +7,26 @@ const notificationSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     type: {
       type: String,
-      enum: ['like', 'comment', 'recommendation', 'weather_alert', 'marketplace', 'system'],
+      enum: [
+        'like',
+        'comment',
+        'recommendation',
+        'weather_alert',
+        'marketplace',
+        'system',
+        'message',
+        'connection_request',
+        'connection_accepted',
+        'payment_received',
+        'task_assigned',
+      ],
       default: 'system',
     },
     title: {

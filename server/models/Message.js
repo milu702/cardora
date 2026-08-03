@@ -18,6 +18,11 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    messageType: {
+      type: String,
+      enum: ['text', 'image', 'file', 'voice', 'location'],
+      default: 'text',
+    },
     attachments: [
       {
         type: String,
@@ -27,9 +32,18 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    locationCoords: {
+      lat: { type: Number },
+      lng: { type: Number },
+      address: { type: String, default: '' },
+    },
     read: {
       type: Boolean,
       default: false,
+    },
+    readAt: {
+      type: Date,
+      default: null,
     },
     deletedFor: [
       {

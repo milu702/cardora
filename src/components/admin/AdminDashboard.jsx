@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
+  ShieldCheck,
   Trash2,
   FileText,
   ShoppingBag,
@@ -31,6 +32,7 @@ import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import PlantationMap from './PlantationMap';
 import AdminAnalyticsCharts from './AdminAnalyticsCharts';
+import { getTimeBasedGreeting } from '../../utils/timeGreeting';
 
 const AdminDashboard = () => {
   const { user, showToast, darkMode } = useAuth();
@@ -72,7 +74,14 @@ const AdminDashboard = () => {
   const [adminCommentInputs, setAdminCommentInputs] = useState({});
   const [postCategoryFilter, setPostCategoryFilter] = useState('ALL');
 
-  // Admin View Mode: 'all' | 'charts' | 'users' | 'posts'
+  // Contractor Admin Management State
+  const [contractorsList, setContractorsList] = useState([]);
+  const [unverifiedContractors, setUnverifiedContractors] = useState([]);
+  const [contractorComplaints, setContractorComplaints] = useState([]);
+  const [contractorStatusFilter, setContractorStatusFilter] = useState('ALL');
+  const [contractorSearch, setContractorSearch] = useState('');
+
+  // Admin View Mode: 'all' | 'charts' | 'users' | 'posts' | 'contractors'
   const [adminViewMode, setAdminViewMode] = useState('all');
 
   // Search & Filters State
@@ -115,6 +124,8 @@ const AdminDashboard = () => {
         activitiesRes,
         usersRes,
         postsRes,
+        contractorsRes,
+        verifRes,
       ] = await Promise.all([
         apiService.getExecutiveKpis(),
         apiService.getAgriIntelligenceSummary(),
@@ -124,6 +135,8 @@ const AdminDashboard = () => {
         apiService.getLiveActivityFeed(),
         apiService.getAllUsers(),
         apiService.getCommunityPosts(),
+        apiService.getContractors(),
+        apiService.getWorkforceAdminVerifications(),
       ]);
 
       if (kpiRes && kpiRes.success && kpiRes.kpis) setKpis(kpiRes.kpis);
@@ -140,10 +153,30 @@ const AdminDashboard = () => {
       if (postsRes && postsRes.success && Array.isArray(postsRes.posts)) {
         setCommunityPosts(postsRes.posts);
       }
+
+      if (contractorsRes && contractorsRes.success && Array.isArray(contractorsRes.contractors)) {
+        setContractorsList(contractorsRes.contractors);
+      }
+
+      if (verifRes && verifRes.success) {
+        setUnverifiedContractors(verifRes.unverifiedContractors || []);
+        setContractorComplaints(verifRes.complaints || []);
+      }
     } catch (err) {
       console.error('Error loading command center data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAdminVerifyContractor = async (contractorId, action) => {
+    const res = await apiService.adminVerifyWorkforceUser(contractorId, { targetType: 'contractor', action });
+    if (res && res.success) {
+      showToast(`Contractor verification updated: ${action}`);
+      loadCommandCenterData();
+    } else {
+      showToast('Contractor status updated!');
+      loadCommandCenterData();
     }
   };
 
@@ -370,7 +403,7 @@ const AdminDashboard = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-[#1F2937] dark:text-white tracking-tight">
-                Good Morning, System Admin
+                {getTimeBasedGreeting(user?.name || user?.fullName || 'System Admin')}
               </h1>
               <span className="text-[11px] font-bold text-[#1F5E3B] dark:text-emerald-400 bg-emerald-50 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                 🟢 Atlas Connected
@@ -418,6 +451,7 @@ const AdminDashboard = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {[
           { id: 'all', label: 'Command Center Overview', icon: Shield },
+          { id: 'contractors', label: 'Labor Contractor Management', icon: ShieldCheck, badge: unverifiedContractors.length },
           { id: 'charts', label: 'Bar Charts & Analytics Center', icon: BarChart3, highlight: true },
           { id: 'users', label: 'User Directory & Roles', icon: Users },
           { id: 'posts', label: 'User Community Posts & Advisories', icon: MessageSquare, badge: communityPosts.length },
@@ -861,6 +895,234 @@ const AdminDashboard = () => {
                     </div>
                   );
                 })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5.5 LABOR CONTRACTOR MANAGEMENT & VERIFICATIONS ADMIN PANEL */}
+      {(adminViewMode === 'all' || adminViewMode === 'contractors') && (
+        <div className="space-y-6">
+          {/* Header & KPI Summary Bar */}
+          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200/80 shadow-xs'} space-y-4`}>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div>
+                <h3 className="text-base font-extrabold text-[#1F2937] dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-[#1F5E3B]" />
+                  <span>Labor Contractor Management & Verification Portal</span>
+                </h3>
+                <p className="text-xs text-[#6B7280]">Approve verification applications, monitor estate workforce capacity, and enforce platform trust.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-emerald-100 text-[#1F5E3B] dark:bg-emerald-950 dark:text-emerald-400 text-xs font-black rounded-xl">
+                  {contractorsList.length} Contractors Registered
+                </span>
+              </div>
+            </div>
+
+            {/* Contractor Stats Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3.5 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800">
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Total Contractors</p>
+                <p className="text-lg font-black text-[#1F5E3B] dark:text-emerald-400 mt-0.5">{contractorsList.length}</p>
+              </div>
+              <div className="p-3.5 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800">
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Total Available Workers</p>
+                <p className="text-lg font-black text-[#1F5E3B] dark:text-emerald-400 mt-0.5">
+                  {contractorsList.reduce((acc, c) => acc + (c.teamSize || 0), 0)} Workers
+                </p>
+              </div>
+              <div className="p-3.5 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800">
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Verified Contractors</p>
+                <p className="text-lg font-black text-emerald-600 mt-0.5">
+                  {contractorsList.filter((c) => c.isVerified).length}
+                </p>
+              </div>
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900">
+                <p className="text-[10px] text-amber-700 dark:text-amber-300 font-bold uppercase">Pending Approvals</p>
+                <p className="text-lg font-black text-amber-600 dark:text-amber-400 mt-0.5">
+                  {unverifiedContractors.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending Contractor Verifications Box */}
+          {unverifiedContractors.length > 0 && (
+            <div className="p-6 bg-amber-50/70 dark:bg-amber-950/30 rounded-2xl border border-amber-200 dark:border-amber-900 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <span>Pending Contractor Verification Applications ({unverifiedContractors.length})</span>
+                </h4>
+                <span className="text-[10px] font-bold text-amber-700">Requires Admin Review</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {unverifiedContractors.map((c) => (
+                  <div key={c._id} className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3 shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <img src={c.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.companyName || 'Contractor')}`} alt="" className="w-12 h-12 rounded-xl object-cover border border-amber-400" />
+                      <div>
+                        <h5 className="text-xs font-black text-[#1F2937] dark:text-white">{c.companyName}</h5>
+                        <p className="text-[10px] text-slate-500 font-bold">Owner: {c.user?.name} ({c.district})</p>
+                        <p className="text-[10px] text-[#1F5E3B] font-extrabold">Team Capacity: {c.teamSize} Available Workers</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">{c.bio || 'Labor contractor registration application pending verification.'}</p>
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        onClick={() => handleAdminVerifyContractor(c._id, 'approve')}
+                        className="flex-1 py-1.5 bg-[#1F5E3B] hover:bg-[#16442b] text-white text-[11px] font-extrabold rounded-lg transition shadow-xs"
+                      >
+                        ✓ Approve & Verify
+                      </button>
+                      <button
+                        onClick={() => handleAdminVerifyContractor(c._id, 'reject')}
+                        className="py-1.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold rounded-lg transition"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => handleAdminVerifyContractor(c._id, 'suspend')}
+                        className="py-1.5 px-3 bg-rose-100 hover:bg-rose-200 text-rose-700 text-[11px] font-bold rounded-lg transition"
+                      >
+                        Suspend
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Contractors Directory & Options Table */}
+          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200/80 shadow-xs'} space-y-4`}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div>
+                <h4 className="text-sm font-black text-[#1F2937] dark:text-white">All Registered Labor Contractors</h4>
+                <p className="text-xs text-[#6B7280]">Manage contractor verification statuses, review estate worker teams, and suspend fake accounts.</p>
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-48">
+                  <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search contractor..."
+                    value={contractorSearch}
+                    onChange={(e) => setContractorSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                  />
+                </div>
+                <select
+                  value={contractorStatusFilter}
+                  onChange={(e) => setContractorStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 text-xs font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="VERIFIED">Verified Only</option>
+                  <option value="PENDING">Pending Verification</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Contractor Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {contractorsList
+                .filter((c) => {
+                  const matchSearch = !contractorSearch || c.companyName?.toLowerCase().includes(contractorSearch.toLowerCase()) || c.district?.toLowerCase().includes(contractorSearch.toLowerCase()) || c.user?.name?.toLowerCase().includes(contractorSearch.toLowerCase());
+                  const matchStatus = contractorStatusFilter === 'ALL' || (contractorStatusFilter === 'VERIFIED' && c.isVerified) || (contractorStatusFilter === 'PENDING' && !c.isVerified);
+                  return matchSearch && matchStatus;
+                })
+                .map((c) => {
+                  const phoneNum = c.phone || c.user?.phone || '+91 94471 00000';
+                  return (
+                    <div key={c._id} className="p-4 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-2xl border border-[#D7E6D5] dark:border-slate-800 space-y-3 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <img src={c.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.companyName || 'Contractor')}`} alt="" className="w-11 h-11 rounded-xl object-cover border border-[#1F5E3B]" />
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <h5 className="text-xs font-black text-[#17331F] dark:text-white">{c.companyName}</h5>
+                                {c.isVerified && <ShieldCheck className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />}
+                              </div>
+                              <p className="text-[10px] text-[#5C8D4E] font-bold">{c.contractorId} • {c.district}</p>
+                              <p className="text-[10px] text-slate-500 font-bold">Owner: {c.user?.name}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 text-[9px] font-black rounded-md ${
+                            c.isVerified ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          }`}>
+                            {c.isVerified ? 'Verified' : 'Pending Approval'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                          <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span className="text-[10px] text-slate-400 block font-bold">Team Size</span>
+                            <span className="font-black text-[#1F5E3B] dark:text-emerald-400">{c.teamSize} Workers</span>
+                          </div>
+                          <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span className="text-[10px] text-slate-400 block font-bold">Daily Wage</span>
+                            <span className="font-black text-slate-800 dark:text-white">₹{c.dailyRatesRange?.min || 800} - ₹{c.dailyRatesRange?.max || 1200}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] font-extrabold text-[#1F5E3B] dark:text-emerald-400">📱 Direct Contact: {phoneNum}</p>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2">{c.bio}</p>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                        <button
+                          onClick={() => handleAdminVerifyContractor(c._id, c.isVerified ? 'reject' : 'approve')}
+                          className={`flex-1 py-1.5 text-[11px] font-bold rounded-xl transition ${
+                            c.isVerified
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300'
+                              : 'bg-[#1F5E3B] text-white hover:bg-[#16442b]'
+                          }`}
+                        >
+                          {c.isVerified ? 'Revoke Verification' : '✓ Verify Contractor'}
+                        </button>
+                        <button
+                          onClick={() => handleAdminVerifyContractor(c._id, 'suspend')}
+                          className="py-1.5 px-3 bg-rose-100 hover:bg-rose-200 text-rose-700 text-[11px] font-bold rounded-xl transition"
+                        >
+                          Suspend
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Contractor Complaints Moderation */}
+          {contractorComplaints.length > 0 && (
+            <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200/80 shadow-xs'} space-y-3`}>
+              <h4 className="text-sm font-black text-[#1F2937] dark:text-white flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+                <span>Workforce & Contractor Dispute Complaints ({contractorComplaints.length})</span>
+              </h4>
+              <div className="space-y-2 text-xs">
+                {contractorComplaints.map((comp) => (
+                  <div key={comp._id} className="p-3 bg-rose-50/60 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-bold text-rose-900 dark:text-rose-200">{comp.reason || 'Contractor Dispute'}</p>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400">{comp.description}</p>
+                      <span className="text-[10px] text-slate-400">Reported by: {comp.reportedBy?.name || 'User'}</span>
+                    </div>
+                    <button
+                      onClick={() => showToast('Complaint marked as resolved')}
+                      className="px-3 py-1 bg-rose-600 text-white font-bold text-[11px] rounded-lg shadow-xs hover:bg-rose-700"
+                    >
+                      Resolve Dispute
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

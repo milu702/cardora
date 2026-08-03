@@ -17,6 +17,8 @@ import AdminDashboard from '../components/admin/AdminDashboard';
 import WeatherModule from '../components/weather/WeatherModule';
 import PublicProfileModal from '../components/profile/PublicProfileModal';
 import ChatDrawerModal from '../components/chat/ChatDrawerModal';
+import WorkforceModule from '../components/workforce/WorkforceModule';
+import { getTimeBasedGreeting } from '../utils/timeGreeting';
 
 const Dashboard = () => {
   const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
@@ -256,6 +258,29 @@ const Dashboard = () => {
   });
   const [plantationErrors, setPlantationErrors] = useState({});
 
+  // Dashboard Messaging Center State
+  const [dashboardConversations, setDashboardConversations] = useState([]);
+
+  const fetchDashboardConversations = async () => {
+    try {
+      const res = await apiService.getConversations();
+      if (res && res.success && Array.isArray(res.conversations)) {
+        setDashboardConversations(res.conversations);
+      }
+    } catch (err) {}
+  };
+
+  const currentUserIdVal = user?._id || user?.id || '';
+
+  useEffect(() => {
+    if (currentUserIdVal) {
+      fetchDashboardConversations();
+      const interval = setInterval(fetchDashboardConversations, 4000);
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserIdVal]);
+
   const validatePlantationForm = () => {
     const errs = {};
     if (!plantationForm.name.trim() || plantationForm.name.trim().length < 3) {
@@ -371,6 +396,48 @@ const Dashboard = () => {
       likes: 42,
       comments: 9,
       liked: false,
+    },
+    {
+      id: 'community-104',
+      author: 'Mathew George',
+      username: 'mathew_cardamom',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
+      time: '2 days ago',
+      category: 'Plantation Update',
+      content: 'Pruned overhead shade trees (Silver Oak & Cedar) to maintain optimal 50% sun filtered canopy over 12 acres in Vandanmedu estate. Tillers looking healthy!',
+      description: 'Pruned overhead shade trees (Silver Oak & Cedar) to maintain optimal 50% sun filtered canopy over 12 acres in Vandanmedu estate. Tillers looking healthy!',
+      image: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=600',
+      likes: 31,
+      comments: 5,
+      liked: false,
+    },
+    {
+      id: 'community-105',
+      author: 'Vijayan N.',
+      username: 'vijayan_planter',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
+      time: '3 days ago',
+      category: 'Farming Tip',
+      content: 'Njallani 777 high-yielding clone tillers transplanted 3 weeks ago are showing excellent root establishment in Kumily soil. Drip fertigation helped immensely.',
+      description: 'Njallani 777 high-yielding clone tillers transplanted 3 weeks ago are showing excellent root establishment in Kumily soil. Drip fertigation helped immensely.',
+      image: '',
+      likes: 27,
+      comments: 4,
+      liked: false,
+    },
+    {
+      id: 'community-106',
+      author: 'Anitha Selvam',
+      username: 'anitha_spices',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+      time: '4 days ago',
+      category: 'Expert Advice',
+      content: 'Cardamom dryer temperature should be maintained strictly between 45°C - 50°C during hot air curing to preserve the deep emerald green capsule color!',
+      description: 'Cardamom dryer temperature should be maintained strictly between 45°C - 50°C during hot air curing to preserve the deep emerald green capsule color!',
+      image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80&w=600',
+      likes: 56,
+      comments: 11,
+      liked: false,
     }
   ];
 
@@ -428,13 +495,10 @@ const Dashboard = () => {
 
         setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
-      if (dbPosts.length > 0) {
-        // Show all user DB posts at top, plus sample community posts for a full feed
-        const combined = [...dbPosts, ...defaultOtherPlanterPosts.filter(dp => !dbPosts.some(dbp => dbp.id === dp.id))];
-        setFeedPosts(combined);
-      } else {
-        setFeedPosts(defaultOtherPlanterPosts);
-      }
+      
+      // Combine user DB posts with default community posts so all old community posts remain visible
+      const combined = [...dbPosts, ...defaultOtherPlanterPosts.filter(dp => !dbPosts.some(dbp => dbp.id === dp.id || dbp.content === dp.content))];
+      setFeedPosts(combined);
     } catch (err) {
       setFeedPosts(defaultOtherPlanterPosts);
     }
@@ -732,11 +796,13 @@ const Dashboard = () => {
   const sidebarLinks = isAdminUser
     ? [
         { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
+        { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
         { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
         { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
       ]
     : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
+        { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
         { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടങ്ങൾ' : 'My Plantation', icon: Leaf },
         { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'Recommendations', icon: Sparkles },
@@ -852,7 +918,7 @@ const Dashboard = () => {
                     {lang === 'ml' ? '🌿 സ്മാർട്ട് കാർഷിക ഡാഷ്‌ബോർഡ്' : '🌿 Smart Agricultural Dashboard'}
                   </span>
                   <h2 className="text-2xl md:text-3xl font-black font-poppins mb-2">
-                    {lang === 'ml' ? 'സ്വാഗതം' : 'Welcome'} {user?.fullName || user?.name || user?.username || 'Planter'} 👋
+                    {getTimeBasedGreeting(user?.fullName || user?.name || user?.username || 'Planter', lang)}
                   </h2>
                   <p className="text-xs md:text-sm text-[#DDEFD9]/90 max-w-xl font-medium leading-relaxed">
                     {lang === 'ml' 
@@ -920,6 +986,85 @@ const Dashboard = () => {
                   <div className="text-3xl font-black text-[#5C8D4E] font-poppins">{predictedYield > 0 ? `${predictedYield} kg` : '--'}</div>
                   <p className="text-xs font-bold text-[#4A5568] mt-1">{lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield/Acre'}</p>
                 </Card>
+              </div>
+
+              {/* CONVENIENT DASHBOARD MESSAGING AREA */}
+              <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-soft space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#D7E6D5] dark:border-slate-800">
+                  <div>
+                    <h3 className="text-base font-black text-[#17331F] dark:text-white flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-[#1F5E3B] dark:text-emerald-400" />
+                      <span>{lang === 'ml' ? 'സന്ദേശ കേന്ദ്രം' : 'Messages & Instant Chat Center'}</span>
+                    </h3>
+                    <p className="text-xs text-[#4A5568] dark:text-slate-400">
+                      {lang === 'ml' 
+                        ? 'കർഷകരുമായും കരാറുകാരുമായും നേരിട്ട് സന്ദേശങ്ങൾ അയക്കുക.' 
+                        : 'Conveniently message planters, labor contractors, and estate workers directly from your dashboard.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
+                    className="px-4 py-2 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-md transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{lang === 'ml' ? 'പുതിയ സംഭാഷണം' : 'Open Messaging'}</span>
+                  </button>
+                </div>
+
+                {dashboardConversations.length === 0 ? (
+                  <div className="p-6 text-center bg-[#F8FAF7] dark:bg-slate-800/60 rounded-2xl border border-dashed border-[#D7E6D5] space-y-2">
+                    <MessageSquare className="w-8 h-8 text-[#5C8D4E] mx-auto opacity-50" />
+                    <p className="text-xs font-bold text-[#17331F] dark:text-white">
+                      {lang === 'ml' ? 'സന്ദേശങ്ങളൊന്നും ലഭ്യമല്ല' : 'No active message threads yet'}
+                    </p>
+                    <p className="text-[11px] text-[#4A5568]">
+                      {lang === 'ml' ? 'സന്ദേശം അയക്കാൻ കർഷകരെ തിരിഞ്ഞെടുക്കുക.' : 'Browse the workforce or community directory to start a chat.'}
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('community')}
+                      className="px-4 py-1.5 bg-[#1F5E3B] text-white text-xs font-bold rounded-xl mt-2"
+                    >
+                      Browse Planters & Workers Network
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {dashboardConversations.slice(0, 6).map((conv) => {
+                      const u = conv.user || {};
+                      const lastMsg = conv.lastMessage || {};
+                      return (
+                        <div
+                          key={u._id || u.id}
+                          onClick={() => { setChatTargetUser(u); setChatModalOpen(true); }}
+                          className="p-3.5 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800 hover:shadow-md hover:border-[#1F5E3B] transition cursor-pointer flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="relative flex-shrink-0">
+                              <img
+                                src={u.avatar || u.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=1F5E3B&color=ffffff`}
+                                alt=""
+                                className="w-10 h-10 rounded-full object-cover border border-[#1F5E3B]"
+                              />
+                              {conv.unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                                  {conv.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-black text-[#17331F] dark:text-white truncate">{u.name}</h4>
+                              <p className="text-[10px] text-[#5C8D4E] font-bold truncate">{u.role || 'Planter'} • {u.location || 'Idukki'}</p>
+                              <p className="text-[11px] text-[#4A5568] dark:text-slate-400 truncate mt-0.5">{lastMsg.text || 'Message thread'}</p>
+                            </div>
+                          </div>
+                          <button className="p-2 bg-[#1F5E3B] text-white rounded-lg text-xs font-bold hover:bg-[#17482D] flex-shrink-0 shadow-xs">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Plantation Preview List */}
@@ -1194,6 +1339,16 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {/* ===== WORKFORCE & WORKER CONNECTION SYSTEM ===== */}
+          {activeTab === 'workforce' && (
+            <WorkforceModule
+              onOpenChat={(targetUserId) => {
+                setChatTargetUser(targetUserId);
+                setChatModalOpen(true);
+              }}
+            />
           )}
 
           {/* ===== TAB 4: COMMUNITY ===== */}
