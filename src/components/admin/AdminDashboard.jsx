@@ -757,8 +757,10 @@ const AdminDashboard = () => {
                 .filter((p) => postCategoryFilter === 'ALL' || (p.category || '').toLowerCase().includes(postCategoryFilter.toLowerCase()))
                 .map((post) => {
                   const pId = post._id || post.id;
-                  const authorName = post.user?.name || post.userName || post.author || 'Cardamom Farmer';
-                  const authorLocation = post.user?.district || post.user?.location || post.location || 'Idukki, Kerala';
+                  const authorName = (typeof post.user === 'object' && post.user?.name) || post.authorName || post.username || post.userName || post.author || 'Cardamom Farmer';
+                  const authorLocation = (typeof post.user === 'object' && (post.user?.district || post.user?.location)) || post.location || 'Idukki, Kerala';
+                  const authorRole = (typeof post.user === 'object' && post.user?.role) || post.authorRole || 'Farmer';
+                  const authorAvatar = (typeof post.user === 'object' && (post.user?.avatar || post.user?.profileImage || post.user?.profilePhoto)) || post.authorAvatar || '';
 
                   return (
                     <div key={pId} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3 flex flex-col justify-between">
@@ -766,14 +768,18 @@ const AdminDashboard = () => {
                         {/* Author Header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-full bg-[#1F5E3B] text-white flex items-center justify-center font-extrabold text-xs shadow-xs">
-                              {getInitials(authorName)}
-                            </div>
+                            {authorAvatar ? (
+                              <img src={authorAvatar} alt="" className="w-9 h-9 rounded-full object-cover border-2 border-[#1F5E3B] flex-shrink-0" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-[#1F5E3B] text-white flex items-center justify-center font-extrabold text-xs shadow-xs flex-shrink-0">
+                                {getInitials(authorName)}
+                              </div>
+                            )}
                             <div>
                               <h4 className="text-xs font-black text-[#1F2937] dark:text-white flex items-center gap-1.5">
                                 <span>{authorName}</span>
                                 <span className="text-[9px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400">
-                                  {post.user?.role || 'Farmer'}
+                                  {authorRole}
                                 </span>
                               </h4>
                               <p className="text-[10px] text-slate-400 font-medium">{authorLocation} • {formatDate(post.createdAt)}</p>
@@ -890,11 +896,22 @@ const AdminDashboard = () => {
                   <tr key={uId} className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-850'}`}>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#1F5E3B] text-white flex items-center justify-center font-extrabold text-xs">
-                          {getInitials(u.name)}
-                        </div>
+                        {(u.avatar || u.profileImage || u.profilePhoto) ? (
+                          <img 
+                            src={u.avatar || u.profileImage || u.profilePhoto} 
+                            alt="" 
+                            className="w-8 h-8 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0" 
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#1F5E3B] text-white flex items-center justify-center font-extrabold text-xs flex-shrink-0">
+                            {getInitials(u.name)}
+                          </div>
+                        )}
                         <div>
-                          <div className="font-extrabold text-[#1F2937] dark:text-white">{u.name}</div>
+                          <div className="font-extrabold text-[#1F2937] dark:text-white flex items-center gap-1.5">
+                            <span>{u.name}</span>
+                            <span className="text-[10px] text-[#5C8D4E] font-medium">(@{u.username || 'user'})</span>
+                          </div>
                           <div className="text-[11px] text-slate-400">{u.email}</div>
                         </div>
                       </div>

@@ -16,12 +16,14 @@ exports.createPost = async (req, res) => {
     const postImages = req.files ? req.files.map((f) => f.path || f.secure_url) : (images || (image ? [image] : []));
     const singleImage = image || (postImages.length > 0 ? postImages[0] : '');
 
-    const post = await CommunityPost.create({
+    const userPhoto = user ? (user.avatar || user.profileImage || user.profilePhoto) : '';
+
+    const newPost = await CommunityPost.create({
       user: req.user._id || req.user.id,
       userId: (req.user._id || req.user.id).toString(),
       username: user ? (user.username || user.name) : req.user.username || 'Planter',
       authorName: user ? user.name : req.user.name || 'Planter',
-      authorAvatar: user ? (user.avatar || user.profileImage || user.profilePhoto) : '',
+      authorAvatar: userPhoto,
       content: postText,
       description: postText,
       category: category || 'Plantation Update',
@@ -29,10 +31,12 @@ exports.createPost = async (req, res) => {
       images: postImages,
     });
 
+    const post = await CommunityPost.findById(newPost._id).populate('user', 'name username role location district avatar profileImage profilePhoto email');
+
     res.status(201).json({
       success: true,
       message: 'Community post created in MongoDB Atlas',
-      post,
+      post: post || newPost,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -44,7 +48,9 @@ exports.createPost = async (req, res) => {
 // @access  Public
 exports.getPosts = async (req, res) => {
   try {
-    const posts = await CommunityPost.find().sort({ createdAt: -1 });
+    const posts = await CommunityPost.find()
+      .populate('user', 'name username role location district avatar profileImage profilePhoto email')
+      .sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: posts.length, posts });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

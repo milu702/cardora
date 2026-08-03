@@ -31,7 +31,7 @@ const decodeJwt = (token) => {
 };
 
 const Auth = () => {
-  const { login, signup, googleSignIn, showToast } = useAuth();
+  const { isAuthenticated, login, signup, googleSignIn, showToast } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -53,6 +53,16 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    // If user is already authenticated or token present in URL, redirect to dashboard immediately
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryToken = urlParams.get('token');
+    const storedToken = localStorage.getItem('cardora_token');
+    if (isAuthenticated || queryToken || storedToken) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
     // Dynamically load Google Identity Services SDK
     const scriptId = 'google-gsi-client-script';
     let script = document.getElementById(scriptId);
@@ -72,12 +82,16 @@ const Auth = () => {
       setAuthMode(modeParam);
     }
 
+    if (searchParams.get('error') === 'google_auth_failed') {
+      setFormGlobalError('Google Authentication failed. Please try again or sign in with your email/password.');
+    }
+
     if (searchParams.get('google_auth') === 'success') {
       googleSignIn({
         name: 'Cardora Planter',
         email: 'cardora702@gmail.com',
         googleId: `google_${Date.now()}`,
-      }).then(() => navigate('/dashboard'));
+      }).then(() => navigate('/dashboard', { replace: true }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modeParam, searchParams]);
@@ -245,9 +259,50 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     const GOOGLE_CLIENT_ID = '925366036725-cnljgpjudhra4p3vn2tlp0873u5ueaf1.apps.googleusercontent.com';
-    
+
+    // 1. Try OAuth2 Token Client Popup (Seamless Popup Auth)
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              try {
+                const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const gUser = await userInfoRes.json();
+                if (gUser && gUser.email) {
+                  const res = await googleSignIn({
+                    name: gUser.name || gUser.given_name || gUser.email.split('@')[0],
+                    email: gUser.email,
+                    googleId: gUser.sub,
+                    profileImage: gUser.picture || '',
+                    profilePhoto: gUser.picture || '',
+                  });
+                  if (res && res.success) {
+                    navigate('/dashboard', { replace: true });
+                    window.location.href = '/dashboard';
+                    return;
+                  }
+                }
+              } catch (fetchErr) {
+                console.error('Error fetching Google userinfo:', fetchErr);
+              }
+            }
+          },
+        });
+        tokenClient.requestAccessToken();
+        return;
+      } catch (e) {
+        console.warn('OAuth2 token client failed, trying GIS ID Client:', e);
+      }
+    }
+
+    // 2. Try GIS ID Client
     if (window.google && window.google.accounts && window.google.accounts.id) {
       try {
         window.google.accounts.id.initialize({
@@ -255,15 +310,17 @@ const Auth = () => {
           callback: async (response) => {
             if (response && response.credential) {
               const decoded = decodeJwt(response.credential);
-              if (decoded) {
+              if (decoded && decoded.email) {
                 const res = await googleSignIn({
                   name: decoded.name || decoded.given_name || decoded.email.split('@')[0],
                   email: decoded.email,
                   googleId: decoded.sub,
                   profileImage: decoded.picture || '',
+                  profilePhoto: decoded.picture || '',
                 });
                 if (res && res.success) {
-                  navigate('/dashboard');
+                  navigate('/dashboard', { replace: true });
+                  window.location.href = '/dashboard';
                   return;
                 }
               }
@@ -276,12 +333,16 @@ const Auth = () => {
             window.location.href = 'http://localhost:5000/api/auth/google';
           }
         });
+        return;
       } catch (e) {
+        console.warn('Google Identity Client error, falling back to server OAuth:', e);
         window.location.href = 'http://localhost:5000/api/auth/google';
+        return;
       }
-    } else {
-      window.location.href = 'http://localhost:5000/api/auth/google';
     }
+
+    // 3. Fallback to Server OAuth Redirect
+    window.location.href = 'http://localhost:5000/api/auth/google';
   };
 
   const handleForgotPassword = async (e) => {

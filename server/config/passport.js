@@ -12,12 +12,30 @@ module.exports = function(passport) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          const email = profile.emails[0].value;
+          const email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value.toLowerCase().trim() : null;
+          if (!email) {
+            return done(new Error('No email found in Google profile'), null);
+          }
+
+          const photoUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
+
           let user = await User.findOne({ $or: [{ googleId: profile.id }, { email }] });
 
           if (user) {
+            let needsSave = false;
             if (!user.googleId) {
               user.googleId = profile.id;
+              needsSave = true;
+            }
+            if (photoUrl && (!user.avatar && !user.profileImage)) {
+              user.avatar = photoUrl;
+              user.profileImage = photoUrl;
+              user.profilePhoto = photoUrl;
+              user.hasCustomPhoto = true;
+              needsSave = true;
+            }
+            user.isVerified = true;
+            if (needsSave) {
               await user.save({ validateBeforeSave: false });
             }
             return done(null, user);
@@ -30,8 +48,6 @@ module.exports = function(passport) {
           if (existingUsername) {
             uniqueUsername = `${generatedUsername}_${Math.floor(100 + Math.random() * 900)}`;
           }
-
-          const photoUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : '';
 
           let displayName = profile.displayName || (profile.name ? profile.name.givenName : generatedUsername);
           if (!displayName || displayName === 'Cardora Planter') {

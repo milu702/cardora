@@ -8,14 +8,40 @@ import NotFound from './pages/NotFound';
 
 // Protected Route for Dashboard & Sub-pages
 const ProtectedDashboard = () => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Dashboard /> : <Navigate to="/auth?mode=login" replace />;
+  const { isAuthenticated, loadingUser } = useAuth();
+  const hasToken = Boolean(localStorage.getItem('cardora_token'));
+
+  if (loadingUser && hasToken) {
+    return (
+      <div className="min-h-screen bg-[#F8FAF7] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-[#1F5E3B] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs font-bold text-[#1F5E3B]">Authenticating Cardora Session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (isAuthenticated || hasToken) ? <Dashboard /> : <Navigate to="/auth?mode=login" replace />;
 };
 
 // Auth Route Redirector (if already logged in, go to dashboard)
 const AuthRoute = () => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Auth />;
+  const { isAuthenticated, loadingUser } = useAuth();
+  const hasToken = Boolean(localStorage.getItem('cardora_token'));
+
+  if (loadingUser && hasToken) {
+    return (
+      <div className="min-h-screen bg-[#F8FAF7] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-[#1F5E3B] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs font-bold text-[#1F5E3B]">Authenticating Cardora Session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (isAuthenticated || hasToken) ? <Navigate to="/dashboard" replace /> : <Auth />;
 };
 
 const MainContent = () => {

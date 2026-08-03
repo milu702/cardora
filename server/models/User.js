@@ -85,6 +85,55 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    coverImage: {
+      type: String,
+      default: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1200',
+    },
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    experience: {
+      type: String,
+      default: '10+ Years Cardamom & Spice Cultivation',
+    },
+    skills: {
+      type: [String],
+      default: ['Organic Cardamom Farming', 'Drip & Sprinkler Irrigation', 'Azhukal Disease Control', 'Soil NPK Optimization'],
+    },
+    certifications: {
+      type: [String],
+      default: ['Certified Spice Cultivator (Spices Board India)', 'Organic Agriculture Specialist'],
+    },
+    education: {
+      type: String,
+      default: 'B.Sc. Agriculture / Horticulture',
+    },
+    organization: {
+      type: String,
+      default: 'Cardamom Growers Association, Idukki',
+    },
+    privacy: {
+      allowMessagesFrom: { type: String, enum: ['everyone', 'following', 'none'], default: 'everyone' },
+      viewPlantations: { type: String, enum: ['public', 'followers', 'private'], default: 'public' },
+      viewContact: { type: String, enum: ['public', 'followers', 'private'], default: 'public' },
+      viewFollowers: { type: String, enum: ['public', 'private'], default: 'public' },
+      isPrivateAccount: { type: Boolean, default: false },
+    },
+    blockedUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     timestamps: true,

@@ -49,24 +49,45 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const syncProfileFromDB = async () => {
-      const storedToken = localStorage.getItem('cardora_token');
-      if (storedToken) {
-        try {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryToken = urlParams.get('token');
+        if (queryToken) {
+          localStorage.setItem('cardora_token', queryToken);
+          setToken(queryToken);
+          setIsAuthenticated(true);
+          // Clean the URL query parameters so token is not exposed in URL bar
+          const cleanUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+
+        const storedToken = localStorage.getItem('cardora_token') || queryToken;
+        if (storedToken) {
+          setIsAuthenticated(true);
           const res = await apiService.getProfile();
           if (res && res.success && res.user) {
-            setUser((prev) => {
-              const merged = { ...prev, ...res.user };
-              try {
-                localStorage.setItem('cardora_user', JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
+            const fetchedUser = {
+              id: res.user.id || res.user._id,
+              name: res.user.name || res.user.fullName,
+              fullName: res.user.fullName || res.user.name,
+              username: res.user.username || res.user.email?.split('@')[0],
+              email: res.user.email,
+              phone: res.user.phone || '',
+              location: res.user.location || 'Idukki, Kerala',
+              district: res.user.district || res.user.location || 'Idukki, Kerala',
+              role: res.user.role || 'Farmer',
+              avatar: res.user.avatar || res.user.profileImage || res.user.profilePhoto || '',
+              profileImage: res.user.profileImage || res.user.avatar || '',
+              hasCustomPhoto: res.user.hasCustomPhoto || Boolean(res.user.avatar || res.user.profileImage),
+              bio: res.user.bio || '',
+            };
+            setUser(fetchedUser);
+            localStorage.setItem('cardora_user', JSON.stringify(fetchedUser));
           }
-        } catch (e) {
-        } finally {
-          setLoadingUser(false);
         }
-      } else {
+      } catch (e) {
+        console.warn('Profile sync note:', e.message);
+      } finally {
         setLoadingUser(false);
       }
     };
@@ -237,10 +258,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await apiService.googleLogin(googleData);
       if (res && res.success && res.user) {
-        if (res.token) {
-          localStorage.setItem('cardora_token', res.token);
-          setToken(res.token);
-        }
+        const authToken = res.token || localStorage.getItem('cardora_token') || `google_token_${Date.now()}`;
+        localStorage.setItem('cardora_token', authToken);
+        setToken(authToken);
+
         const userEmail = res.user.email || googleData.email || 'cardora702@gmail.com';
         const gUser = {
           id: res.user.id || res.user._id,
@@ -259,7 +280,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('cardora_user', JSON.stringify(gUser));
         setIsAuthenticated(true);
         showToast(`Signed in as ${gUser.email}!`);
-        return { success: true };
+        return { success: true, token: authToken, user: gUser };
       }
     } catch (err) {
       console.warn('Google Auth note:', err.message);
@@ -267,6 +288,7 @@ export const AuthProvider = ({ children }) => {
 
     // Dynamic Session using the typed or authenticated email address
     const dynamicEmail = googleData.email || 'cardora702@gmail.com';
+    const tokenVal = `demo_token_${Date.now()}`;
     const fallbackUser = {
       id: `google_${Date.now()}`,
       fullName: googleData.name || dynamicEmail.split('@')[0],
@@ -282,10 +304,11 @@ export const AuthProvider = ({ children }) => {
     };
     setUser(fallbackUser);
     localStorage.setItem('cardora_user', JSON.stringify(fallbackUser));
-    localStorage.setItem('cardora_token', `demo_token_${Date.now()}`);
+    localStorage.setItem('cardora_token', tokenVal);
+    setToken(tokenVal);
     setIsAuthenticated(true);
     showToast(`Signed in as ${fallbackUser.email}!`);
-    return { success: true };
+    return { success: true, token: tokenVal, user: fallbackUser };
   };
 
   const logout = async () => {

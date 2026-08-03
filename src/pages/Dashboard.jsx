@@ -5,7 +5,7 @@ import {
   Home, Leaf, MapPin, Users, User, Settings, 
   Search, Heart, MessageSquare, Share2, 
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
-  Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield
+  Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield, CloudSun
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -14,6 +14,9 @@ import Footer from '../components/layout/Footer';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import AdminDashboard from '../components/admin/AdminDashboard';
+import WeatherModule from '../components/weather/WeatherModule';
+import PublicProfileModal from '../components/profile/PublicProfileModal';
+import ChatDrawerModal from '../components/chat/ChatDrawerModal';
 
 const Dashboard = () => {
   const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
@@ -32,16 +35,25 @@ const Dashboard = () => {
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [selectedPublicUser, setSelectedPublicUser] = useState(null);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [chatTargetUser, setChatTargetUser] = useState(null);
 
   // Profile Edit Form State & Errors
   const [profileForm, setProfileForm] = useState({
     fullName: user?.fullName || user?.name || '',
+    username: user?.username || '',
     phone: user?.phone || '',
     district: user?.district || user?.location || 'Idukki, Kerala',
     location: user?.location || 'Kattappana',
     bio: user?.bio || '',
     avatar: user?.avatar || '',
+    coverImage: user?.coverImage || '',
     role: user?.role || 'Farmer',
+    experience: user?.experience || '',
+    skills: Array.isArray(user?.skills) ? user.skills.join(', ') : (user?.skills || ''),
+    certifications: Array.isArray(user?.certifications) ? user.certifications.join(', ') : (user?.certifications || ''),
+    education: user?.education || '',
+    organization: user?.organization || '',
   });
   const [profileErrors, setProfileErrors] = useState({});
 
@@ -62,12 +74,19 @@ const Dashboard = () => {
     if (user) {
       setProfileForm({
         fullName: user.fullName || user.name || '',
+        username: user.username || '',
         phone: user.phone || '',
         district: user.district || user.location || 'Idukki, Kerala',
         location: user.location || user.district || 'Idukki, Kerala',
         bio: user.bio || '',
         avatar: currentPhotoUrl,
+        coverImage: user.coverImage || '',
         role: user.role || 'Farmer',
+        experience: user.experience || '',
+        skills: Array.isArray(user.skills) ? user.skills.join(', ') : (user.skills || ''),
+        certifications: Array.isArray(user.certifications) ? user.certifications.join(', ') : (user.certifications || ''),
+        education: user.education || '',
+        organization: user.organization || '',
       });
       setPhotoUrlInput(currentPhotoUrl);
     }
@@ -133,11 +152,18 @@ const Dashboard = () => {
     const payload = {
       fullName: profileForm.fullName.trim(),
       name: profileForm.fullName.trim(),
+      username: profileForm.username.trim(),
       district: (profileForm.district || profileForm.location || 'Idukki, Kerala').trim(),
       location: (profileForm.district || profileForm.location || 'Idukki, Kerala').trim(),
       phone: (profileForm.phone || '').trim(),
       bio: (profileForm.bio || '').trim(),
       role: profileForm.role || 'Farmer',
+      coverImage: profileForm.coverImage || '',
+      experience: profileForm.experience || '',
+      skills: profileForm.skills || '',
+      certifications: profileForm.certifications || '',
+      education: profileForm.education || '',
+      organization: profileForm.organization || '',
     };
 
     if (currentPhoto) {
@@ -149,6 +175,7 @@ const Dashboard = () => {
 
     await updateProfile(payload);
     setProfileEditOpen(false);
+    showToast('Profile updated & saved to MongoDB Atlas!');
   };
 
   const handleChangePassword = (e) => {
@@ -378,11 +405,16 @@ const Dashboard = () => {
           const currentUserId = user?.id || user?._id;
           const isLiked = Array.isArray(p.likes) && currentUserId ? p.likes.some((l) => (l._id || l || '').toString() === currentUserId.toString()) : false;
 
+          const authorUser = typeof p.user === 'object' && p.user ? p.user : null;
+          const authorName = authorUser?.name || p.authorName || p.username || 'Planter';
+          const authorUsername = authorUser?.username || p.username || p.authorName || 'planter';
+          const authorAvatar = authorUser?.avatar || authorUser?.profileImage || authorUser?.profilePhoto || p.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=1F5E3B&color=ffffff`;
+
           return {
             id: pId,
-            author: p.authorName || p.username || 'Planter',
-            username: p.username || p.authorName || 'planter',
-            avatar: p.authorAvatar || p.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            author: authorName,
+            username: authorUsername,
+            avatar: authorAvatar,
             time: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jul 26, 2026',
             category: p.category || 'Plantation Update',
             content: p.description || p.content || '',
@@ -397,7 +429,9 @@ const Dashboard = () => {
         setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
       if (dbPosts.length > 0) {
-        setFeedPosts(dbPosts);
+        // Show all user DB posts at top, plus sample community posts for a full feed
+        const combined = [...dbPosts, ...defaultOtherPlanterPosts.filter(dp => !dbPosts.some(dbp => dbp.id === dp.id))];
+        setFeedPosts(combined);
       } else {
         setFeedPosts(defaultOtherPlanterPosts);
       }
@@ -703,6 +737,7 @@ const Dashboard = () => {
       ]
     : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
+        { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടങ്ങൾ' : 'My Plantation', icon: Leaf },
         { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'Recommendations', icon: Sparkles },
         { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Users },
@@ -931,6 +966,22 @@ const Dashboard = () => {
                 )}
               </div>
 
+              {/* Weather Intelligence & Smart Advisory Section on Dashboard Home */}
+              <WeatherModule 
+                userLocation={user?.district || user?.location || 'Idukki, Kerala'} 
+                onToast={showToast} 
+              />
+
+            </div>
+          )}
+
+          {/* ===== TAB: WEATHER INTELLIGENCE ===== */}
+          {activeTab === 'weather' && (
+            <div className="space-y-6">
+              <WeatherModule 
+                userLocation={user?.district || user?.location || 'Idukki, Kerala'} 
+                onToast={showToast} 
+              />
             </div>
           )}
 
@@ -1715,11 +1766,21 @@ const Dashboard = () => {
                 <form onSubmit={handleSaveProfile} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Full Name / Username *</label>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Full Name *</label>
                       <input 
                         type="text"
                         value={profileForm.fullName}
                         onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Username (@handle)</label>
+                      <input 
+                        type="text"
+                        value={profileForm.username}
+                        onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+                        placeholder="e.g. suresh_planter"
                         className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
                       />
                     </div>
@@ -1731,9 +1792,11 @@ const Dashboard = () => {
                         className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] bg-white focus:outline-none focus:border-[#1F5E3B] font-bold"
                       >
                         <option value="Farmer">Farmer / Cardamom Cultivator</option>
-                        <option value="Expert">Agricultural Specialist / Expert</option>
+                        <option value="Supervisor">Plantation Supervisor</option>
+                        <option value="Expert">Agronomist / Specialist</option>
+                        <option value="Labor Contractor">Labor Contractor</option>
+                        <option value="Buyer">Cardamom Buyer / Trader</option>
                         <option value="Investor">Plantation Investor</option>
-                        <option value="User">General Member</option>
                       </select>
                     </div>
                     <div>
@@ -1755,6 +1818,16 @@ const Dashboard = () => {
                         className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Cover Photo URL</label>
+                      <input 
+                        type="text"
+                        value={profileForm.coverImage}
+                        onChange={(e) => setProfileForm({ ...profileForm, coverImage: e.target.value })}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -1768,8 +1841,61 @@ const Dashboard = () => {
                     />
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#D7E6D5]">
+                    <div>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Cultivation Experience</label>
+                      <input 
+                        type="text"
+                        value={profileForm.experience}
+                        onChange={(e) => setProfileForm({ ...profileForm, experience: e.target.value })}
+                        placeholder="e.g. 12 Years Cardamom & Spice Cultivation"
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Skills & Techniques (comma separated)</label>
+                      <input 
+                        type="text"
+                        value={profileForm.skills}
+                        onChange={(e) => setProfileForm({ ...profileForm, skills: e.target.value })}
+                        placeholder="Organic Farming, Drip Irrigation, Azhukal Prevention"
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Certifications (comma separated)</label>
+                      <input 
+                        type="text"
+                        value={profileForm.certifications}
+                        onChange={(e) => setProfileForm({ ...profileForm, certifications: e.target.value })}
+                        placeholder="Spices Board India Certified, Organic Specialist"
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Education / Qualifications</label>
+                      <input 
+                        type="text"
+                        value={profileForm.education}
+                        onChange={(e) => setProfileForm({ ...profileForm, education: e.target.value })}
+                        placeholder="e.g. B.Sc. Agriculture / Horticulture"
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">Organization / Society</label>
+                      <input 
+                        type="text"
+                        value={profileForm.organization}
+                        onChange={(e) => setProfileForm({ ...profileForm, organization: e.target.value })}
+                        placeholder="e.g. Cardamom Growers Association, Idukki"
+                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    </div>
+                  </div>
+
                   <Button type="submit" variant="primary" size="sm">
-                    Save Account Details
+                    Save Profile Details to MongoDB Atlas
                   </Button>
                 </form>
               </div>
@@ -2004,81 +2130,26 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* PUBLIC PLANTER PROFILE MODAL */}
-      <AnimatePresence>
-        {selectedPublicUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div onClick={() => setSelectedPublicUser(null)} className="absolute inset-0 bg-[#17331F]/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-[24px] p-6 max-w-md w-full border border-[#D7E6D5] shadow-2xl z-10 space-y-5">
-              <div className="flex justify-between items-start border-b border-[#D7E6D5] pb-4">
-                <div className="flex items-center gap-4">
-                  <img 
-                    src={selectedPublicUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedPublicUser.author || selectedPublicUser.name || 'Planter')}&background=1F5E3B&color=ffffff`} 
-                    alt="" 
-                    className="w-16 h-16 rounded-full object-cover border-3 border-[#1F5E3B] shadow-md" 
-                  />
-                  <div>
-                    <h3 className="text-lg font-black text-[#17331F] font-poppins flex items-center gap-1.5">
-                      {selectedPublicUser.author || selectedPublicUser.name || 'Planter'}
-                      <CheckCircle className="w-4 h-4 text-[#1F5E3B]" />
-                    </h3>
-                    <p className="text-xs text-[#5C8D4E] font-bold">@{selectedPublicUser.username || 'planter'} • {selectedPublicUser.role || 'Cardamom Cultivator'}</p>
-                    <p className="text-[11px] text-[#4A5568] flex items-center gap-1 mt-0.5 font-medium">
-                      <MapPin className="w-3 h-3 text-[#1F5E3B]" />
-                      <span>{selectedPublicUser.district || selectedPublicUser.location || 'Idukki, Kerala'}</span>
-                    </p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedPublicUser(null)} className="p-1 rounded-full hover:bg-gray-100"><X className="w-5 h-5 text-[#4A5568]" /></button>
-              </div>
+      {/* PUBLIC USER PROFILE SYSTEM MODAL (Instagram/LinkedIn Style) */}
+      <PublicProfileModal
+        username={selectedPublicUser?.username || selectedPublicUser?.author}
+        userId={selectedPublicUser?._id || selectedPublicUser?.id}
+        isOpen={Boolean(selectedPublicUser)}
+        onClose={() => setSelectedPublicUser(null)}
+        onOpenChat={(targetUser) => {
+          setChatTargetUser(targetUser);
+          setChatModalOpen(true);
+        }}
+        onToast={showToast}
+      />
 
-              {/* Bio & Member Metrics */}
-              <div className="space-y-3">
-                <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                  <p className="text-xs font-bold text-[#17331F] mb-1">About Planter</p>
-                  <p className="text-xs text-[#4A5568] leading-relaxed">
-                    {selectedPublicUser.bio || `${selectedPublicUser.author || selectedPublicUser.name || 'This member'} is a verified cardamom planter participating in the Cardora community ecosystem.`}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="p-3 rounded-2xl bg-[#DDEFD9]/50 border border-[#5C8D4E]/30">
-                    <p className="text-[10px] font-bold text-[#5C8D4E] uppercase">Community Posts</p>
-                    <p className="text-lg font-black text-[#1F5E3B] mt-0.5">{feedPosts.filter(p => p.author === (selectedPublicUser.author || selectedPublicUser.name)).length || 1}</p>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-[#DDEFD9]/50 border border-[#5C8D4E]/30">
-                    <p className="text-[10px] font-bold text-[#5C8D4E] uppercase">Ecosystem Rank</p>
-                    <p className="text-lg font-black text-[#1F5E3B] mt-0.5">Verified Member</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <Button 
-                  variant="primary" 
-                  size="sm" 
-                  className="flex-1 justify-center"
-                  onClick={() => {
-                    const targetName = selectedPublicUser.author || selectedPublicUser.name || 'Planter';
-                    setSelectedPublicUser(null);
-                    showToast(`Contact request sent to ${targetName}!`);
-                  }}
-                >
-                  Connect & Message
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  size="sm" 
-                  onClick={() => setSelectedPublicUser(null)}
-                >
-                  Close
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* REAL-TIME 1-TO-1 MESSAGING DRAWER MODAL */}
+      <ChatDrawerModal
+        targetUser={chatTargetUser}
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+        onToast={showToast}
+      />
 
       <Footer />
     </div>

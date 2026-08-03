@@ -90,6 +90,8 @@ app.use('/api/community', require('./routes/communityRoutes'));
 app.use('/api/marketplace', require('./routes/marketplaceRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/recommendations', require('./routes/recommendationRoutes'));
+app.use('/api/weather', require('./routes/weatherRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
 // 404 & Error Handlers

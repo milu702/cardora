@@ -39,8 +39,8 @@ router.get(
     passport.authenticate('google', { session: false }, (err, user, info) => {
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       if (err || !user) {
-        console.log('[Google Auth] OAuth exchange completed. Redirecting to auth portal.');
-        return res.redirect(`${clientUrl}/auth?mode=login`);
+        console.error('[Google Auth Callback] Error during Google OAuth exchange:', err ? err.message : 'No user object returned from Passport');
+        return res.redirect(`${clientUrl}/auth?error=google_auth_failed`);
       }
       const token = generateToken(user._id);
       return res.redirect(`${clientUrl}/dashboard?token=${token}`);

@@ -370,7 +370,7 @@ export const apiService = {
     }
   },
 
-  // ===== 7. AI RECOMMENDATIONS APIs =====
+  // ===== 7. AI RECOMMENDATIONS & WEATHER APIs =====
   createRecommendation: async (data) => {
     try {
       const res = await api.post('/recommendations', data);
@@ -389,7 +389,124 @@ export const apiService = {
     }
   },
 
-  // ===== 8. ADMIN APIs =====
+  getWeather: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.lat && params.lon) {
+        queryParams.append('lat', params.lat);
+        queryParams.append('lon', params.lon);
+      }
+      if (params.district || params.location) {
+        queryParams.append('district', params.district || params.location);
+      }
+      const res = await api.get(`/weather?${queryParams.toString()}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getWeatherForecast: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.lat && params.lon) {
+        queryParams.append('lat', params.lat);
+        queryParams.append('lon', params.lon);
+      }
+      if (params.district || params.location) {
+        queryParams.append('district', params.district || params.location);
+      }
+      const res = await api.get(`/weather/forecast?${queryParams.toString()}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // ===== 8. PUBLIC PROFILE & SOCIAL FOLLOW APIs =====
+  getPublicProfile: async (identifier) => {
+    try {
+      const res = await api.get(`/users/public/${encodeURIComponent(identifier)}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Failed to fetch user profile' };
+    }
+  },
+
+  toggleFollowUser: async (userId) => {
+    try {
+      const res = await api.post(`/users/${userId}/follow`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Follow action failed' };
+    }
+  },
+
+  getFollowersList: async (userId) => {
+    try {
+      const res = await api.get(`/users/${userId}/followers`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getFollowingList: async (userId) => {
+    try {
+      const res = await api.get(`/users/${userId}/following`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // ===== 9. REAL-TIME MESSAGING APIs =====
+  getConversations: async () => {
+    try {
+      const res = await api.get('/messages/conversations');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getChatMessages: async (userId) => {
+    try {
+      const res = await api.get(`/messages/${userId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  sendMessage: async (userId, payload) => {
+    try {
+      const res = await api.post(`/messages/${userId}`, payload);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Failed to send message' };
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    try {
+      const res = await api.delete(`/messages/${messageId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  blockUser: async (userId) => {
+    try {
+      const res = await api.post(`/messages/block/${userId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  // ===== 10. ADMIN APIs =====
   getAdminStats: async () => {
     try {
       const res = await api.get('/admin/stats');
