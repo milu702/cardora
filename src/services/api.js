@@ -133,9 +133,13 @@ export const apiService = {
       }
       return res.data;
     } catch (error) {
+      const serverMsg = error.response?.data?.message;
+      const netMsg = (error.message === 'Network Error' || error.code === 'ERR_NETWORK')
+        ? 'Cannot connect to Cardora backend server (port 5000). Please ensure the backend server is running.'
+        : error.message;
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Login failed',
+        message: serverMsg || netMsg || 'Login failed',
       };
     }
   },
@@ -220,7 +224,7 @@ export const apiService = {
       const res = await api.get('/plantations');
       return res.data;
     } catch (error) {
-      return { success: false, message: error.message };
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to fetch plantations' };
     }
   },
 
@@ -229,16 +233,25 @@ export const apiService = {
       const res = await api.post('/plantations', plantationData);
       return res.data;
     } catch (error) {
-      return { success: true, plantation: plantationData };
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to create plantation' };
     }
   },
 
-  updatePlantation: async (id, plantationData) => {
+  getPlantationById: async (id) => {
     try {
-      const res = await api.put(`/plantations/${id}`, plantationData);
+      const res = await api.get(`/plantations/${id}`);
       return res.data;
     } catch (error) {
-      return { success: true, message: 'Plantation updated' };
+      return { success: false, message: error.response?.data?.message || error.message || 'Plantation not found' };
+    }
+  },
+
+  updatePlantation: async (id, data) => {
+    try {
+      const res = await api.put(`/plantations/${id}`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to update plantation' };
     }
   },
 
@@ -247,9 +260,19 @@ export const apiService = {
       const res = await api.delete(`/plantations/${id}`);
       return res.data;
     } catch (error) {
-      return { success: true, message: 'Plantation deleted' };
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to delete plantation' };
     }
   },
+
+  addPlantationExpense: async (id, expenseData) => {
+    try {
+      const res = await api.post(`/plantations/${id}/expenses`, expenseData);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to add expense' };
+    }
+  },
+
 
   // ===== 4. COMMUNITY APIs =====
   getCommunityPosts: async () => {
@@ -919,3 +942,5 @@ export const apiService = {
     }
   },
 };
+
+

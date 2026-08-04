@@ -202,28 +202,27 @@ export const AuthProvider = ({ children }) => {
           setToken(res.token);
         }
         if (res.user) {
-          const enteredEmail = payload.email || payload.usernameOrEmail || '';
-          const userEmail = res.user.email || (enteredEmail.includes('@') ? enteredEmail : `${enteredEmail}@gmail.com`);
           const userData = {
             id: res.user.id || res.user._id,
-            fullName: res.user.fullName || res.user.name || userEmail.split('@')[0],
-            name: res.user.name || res.user.fullName || userEmail.split('@')[0],
-            username: res.user.username || userEmail.split('@')[0],
-            email: userEmail,
+            _id: res.user._id || res.user.id,
+            fullName: res.user.fullName || res.user.name || res.user.username || 'Planter',
+            name: res.user.name || res.user.fullName || res.user.username || 'Planter',
+            username: res.user.username || '',
+            email: res.user.email || '',
             phone: res.user.phone || '',
             location: res.user.location || 'Idukki, Kerala',
             district: res.user.district || res.user.location || 'Idukki, Kerala',
             role: res.user.role || 'Farmer',
-            avatar: res.user.avatar || res.user.profileImage || res.user.profilePhoto || '',
-            profileImage: res.user.profileImage || res.user.avatar || res.user.profilePhoto || '',
-            hasCustomPhoto: res.user.hasCustomPhoto || Boolean(res.user.avatar || res.user.profileImage),
+            avatar: res.user.avatar || res.user.profileImage || '',
+            profileImage: res.user.profileImage || res.user.avatar || '',
+            hasCustomPhoto: Boolean(res.user.avatar || res.user.profileImage),
             bio: res.user.bio || '',
           };
           setUser(userData);
           localStorage.setItem('cardora_user', JSON.stringify(userData));
         }
         setIsAuthenticated(true);
-        showToast(`Welcome back 👋 (${res.user?.email || payload.email || 'Planter'})`);
+        showToast(`Welcome back 👋 ${res.user?.fullName || res.user?.name || res.user?.email || 'Planter'}`);
         return { success: true };
       } else {
         const errorMsg = res?.message || 'Invalid email or password';
@@ -231,7 +230,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: errorMsg };
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || err.message || 'Login failed';
+      const errorMsg = err.response?.data?.message || err.message || 'Login failed. Please check your credentials or backend connection.';
       showToast(errorMsg);
       return { success: false, message: errorMsg };
     }

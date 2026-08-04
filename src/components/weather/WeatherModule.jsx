@@ -351,18 +351,23 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
             <div className={`p-4 rounded-2xl border text-xs font-medium leading-relaxed ${
               weatherData?.isRecognizedCardamomRegion
                 ? 'bg-[#DDEFD9]/50 border-[#5C8D4E]/40 text-[#1F5E3B]'
-                : 'bg-[#F8FAF7] border-[#D7E6D5] text-[#4A5568]'
+                : 'bg-amber-50 border-amber-300 text-amber-900'
             }`}>
               <div className="flex items-start gap-2.5">
-                <ShieldCheck className="w-5 h-5 text-[#1F5E3B] flex-shrink-0 mt-0.5" />
+                {weatherData?.isRecognizedCardamomRegion ? (
+                  <ShieldCheck className="w-5 h-5 text-[#1F5E3B] flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                )}
                 <div>
-                  <span className="font-extrabold block text-[#17331F] mb-0.5">
-                    {weatherData?.isRecognizedCardamomRegion ? 'Recognized Cardamom Region' : 'Dynamic Climate Evaluation'}
+                  <span className="font-extrabold block text-sm mb-0.5">
+                    {weatherData?.isRecognizedCardamomRegion ? 'Suitable Cardamom Region (Idukki & Wayanad)' : '⚠️ Unsuitable Cardamom Zone Advisory'}
                   </span>
                   <span>{weatherData?.regionNotice}</span>
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* Quick Summary Notice */}

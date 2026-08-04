@@ -31,14 +31,14 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 // Rate Limiting Security
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 2000,
   message: { success: false, message: 'Too many requests from this IP' },
 });
 app.use('/api', limiter);
 
-// Express Middleware
+// Express Middleware - Enable full CORS for local development
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: true,
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));

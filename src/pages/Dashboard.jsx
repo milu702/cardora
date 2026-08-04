@@ -6,6 +6,8 @@ import {
   Search, Heart, MessageSquare, Share2, 
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
   Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield, CloudSun
+
+
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -18,7 +20,10 @@ import WeatherModule from '../components/weather/WeatherModule';
 import PublicProfileModal from '../components/profile/PublicProfileModal';
 import ChatDrawerModal from '../components/chat/ChatDrawerModal';
 import WorkforceModule from '../components/workforce/WorkforceModule';
+import PlantationModule from '../components/plantation/PlantationModule';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
+import { KERALA_DISTRICTS } from '../utils/districts';
+
 
 const Dashboard = () => {
   const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
@@ -209,14 +214,14 @@ const Dashboard = () => {
         const formatted = res.plantations.map((p) => ({
           id: p._id || p.id,
           name: p.name,
-          location: p.location,
+          location: p.district || p.location || 'Idukki, Kerala',
           area: p.area,
           plants: p.plantsCount || p.plants || 1500,
-          variety: p.variety || 'Malabar',
-          moisture: p.moisture || 72,
-          ph: p.soilPh || 6.2,
-          health: p.healthScore || 94,
-          history: p.history || 'Plantation registered',
+          variety: p.variety || 'Njallani',
+          moisture: p.soil?.moisture ?? p.moisture ?? 72,
+          ph: p.soil?.ph ?? p.soilPh ?? 6.2,
+          health: p.healthScore || p.health || 94,
+          history: (p.history && Array.isArray(p.history) && p.history[0]?.title) || 'Plantation registered',
         }));
         setPlantations(formatted);
       }
@@ -225,7 +230,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchPlantations();
-  }, []);
+  }, [activeTab]);
+
 
   const handleLoadSamplePlantations = () => {
     setPlantations([
@@ -338,13 +344,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeletePlantation = async (id) => {
-    try {
-      await apiService.deletePlantation(id);
-    } catch (e) {}
-    setPlantations(plantations.filter((p) => p.id !== id));
-    showToast('Plantation removed from MongoDB Atlas.');
-  };
+  // Legacy delete helper
+  // const handleDeletePlantation = async (id) => { ... }
+
 
   // ===== 2. COMMUNITY FEED STATE & VALIDATION =====
   const [feedPosts, setFeedPosts] = useState([]);
@@ -1084,17 +1086,14 @@ const Dashboard = () => {
                 </div>
 
                 {plantations.length === 0 ? (
-                  <div className="text-center py-8 px-4 bg-[#F8FAF7] rounded-xl border border-dashed border-[#D7E6D5]">
-                    <Leaf className="w-10 h-10 text-[#5C8D4E] mx-auto mb-2 opacity-50" />
-                    <p className="text-sm font-bold text-[#17331F]">{lang === 'ml' ? 'തോട്ടങ്ങൾ ഒന്നും ചേർത്തിട്ടില്ല' : 'No plantations registered yet'}</p>
-                    <p className="text-xs text-[#4A5568] mt-1 mb-4">{lang === 'ml' ? 'ഏലം തോട്ടം രജിസ്റ്റർ ചെയ്ത് AI നിർദ്ദേശങ്ങൾ നേടൂ.' : 'Register your cardamom estate to unlock telemetry metrics and AI recommendations.'}</p>
-                    <div className="flex justify-center gap-3">
-                      <Button variant="primary" size="sm" icon={Plus} onClick={() => setNewPlantationModalOpen(true)}>
-                        {lang === 'ml' ? 'തോട്ടം ചേർക്കുക' : 'Register Plantation'}
-                      </Button>
-                    </div>
+                  <div className="text-center py-6">
+                    <p className="text-xs text-[#4A5568] font-bold mb-3">{lang === 'ml' ? 'തോട്ടങ്ങൾ ഒന്നും ചേർത്തിട്ടില്ല' : 'No plantations registered yet'}</p>
+                    <Button variant="primary" size="sm" icon={Plus} onClick={() => setActiveTab('plantations')}>
+                      {lang === 'ml' ? 'തോട്ടം ചേർക്കുക' : 'Register Plantation'}
+                    </Button>
                   </div>
                 ) : (
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {plantations.map((p) => (
                       <div key={p.id} className="p-4 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] flex items-center justify-between">
@@ -1132,96 +1131,9 @@ const Dashboard = () => {
 
           {/* ===== TAB 2: MY PLANTATION ===== */}
           {activeTab === 'plantations' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-black text-[#17331F] font-poppins">My Plantations</h2>
-                  <p className="text-xs text-[#4A5568] font-medium">Manage and track your cardamom crops, soil metrics, and history.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {plantations.length === 0 && (
-                    <Button variant="secondary" size="sm" onClick={handleLoadSamplePlantations}>
-                      Load Demo Data
-                    </Button>
-                  )}
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
-                    icon={Plus}
-                    onClick={() => {
-                      setNewPlantationModalOpen(true);
-                      setPlantationErrors({});
-                    }}
-                  >
-                    Add Plantation
-                  </Button>
-                </div>
-              </div>
-
-              {/* Plantations List */}
-              {plantations.length === 0 ? (
-                <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-10 text-center shadow-soft">
-                  <Leaf className="w-12 h-12 text-[#5C8D4E] mx-auto mb-3 opacity-50" />
-                  <h3 className="text-base font-extrabold text-[#17331F]">No Plantations Registered</h3>
-                  <p className="text-xs text-[#4A5568] mt-1 mb-6 max-w-sm mx-auto">Start managing your cardamom estate by adding your first plot details, plant varieties, and soil metrics.</p>
-                  <div className="flex justify-center gap-3">
-                    <Button variant="primary" size="md" icon={Plus} onClick={() => setNewPlantationModalOpen(true)}>
-                      Add Your First Plantation
-                    </Button>
-                    <Button variant="secondary" size="md" onClick={handleLoadSamplePlantations}>
-                      Load Sample Estate
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {plantations.map((p) => (
-                    <Card key={p.id} className="flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-extrabold text-[#1F5E3B] bg-[#DDEFD9] px-3 py-1 rounded-full">
-                            {p.variety} Variety
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleDeletePlantation(p.id)} className="text-red-500 p-1 hover:bg-red-50 rounded-full">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <h3 className="text-lg font-extrabold text-[#17331F] mb-1">{p.name}</h3>
-                        <p className="text-xs text-[#4A5568] mb-4">{p.location}</p>
-
-                        <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] mb-4 text-center">
-                          <div>
-                            <p className="text-[10px] text-[#4A5568]">Area</p>
-                            <p className="text-xs font-black text-[#17331F]">{p.area} Acres</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#4A5568]">Moisture</p>
-                            <p className="text-xs font-black text-[#1F5E3B]">{p.moisture}%</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-[#4A5568]">pH Level</p>
-                            <p className="text-xs font-black text-[#17331F]">{p.ph}</p>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-[#4A5568] italic">History: {p.history}</p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-[#D7E6D5] flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#5C8D4E]">Health Rating: {p.health}%</span>
-                        <button onClick={() => showToast(`Diagnostics opened for ${p.name}`)} className="text-xs font-extrabold text-[#1F5E3B] hover:underline">
-                          View Report →
-                        </button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PlantationModule onToast={showToast} />
           )}
+
 
           {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
           {activeTab === 'ai' && (
@@ -1955,14 +1867,37 @@ const Dashboard = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">District / Location *</label>
-                      <input 
-                        type="text"
-                        value={profileForm.district}
-                        onChange={(e) => setProfileForm({ ...profileForm, district: e.target.value, location: e.target.value })}
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
+                      <label className="block text-xs font-bold text-[#17331F] mb-1">District / Place *</label>
+                      <select 
+                        value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Other') {
+                            setProfileForm({ ...profileForm, district: 'Other', location: 'Other' });
+                          } else {
+                            setProfileForm({ ...profileForm, district: val, location: val });
+                          }
+                        }}
+                        className="w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B] cursor-pointer"
+                      >
+                        {KERALA_DISTRICTS.map((dist) => (
+                          <option key={dist} value={dist}>{dist}</option>
+                        ))}
+                      </select>
+                      {(profileForm.district === 'Other' || (!KERALA_DISTRICTS.includes(profileForm.district) && profileForm.district !== 'Idukki, Kerala')) && (
+                        <input
+                          type="text"
+                          placeholder="Type your specific district or location"
+                          value={profileForm.district === 'Other' ? '' : profileForm.district}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setProfileForm({ ...profileForm, district: val || 'Other', location: val || 'Other' });
+                          }}
+                          className="w-full mt-2 p-2.5 rounded-xl text-xs bg-white border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+                        />
+                      )}
                     </div>
+
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Mobile Phone Number</label>
                       <input 
@@ -2258,15 +2193,38 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold mb-1">District / Location <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    value={profileForm.district} 
-                    onChange={(e) => setProfileForm({...profileForm, district: e.target.value, location: e.target.value})} 
-                    className={`w-full p-2.5 rounded-xl text-xs border ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
-                  />
+                  <label className="block text-xs font-bold mb-1">District / Place <span className="text-red-500">*</span></label>
+                  <select 
+                    value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setProfileForm({ ...profileForm, district: 'Other', location: 'Other' });
+                      } else {
+                        setProfileForm({ ...profileForm, district: val, location: val });
+                      }
+                    }}
+                    className={`w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border cursor-pointer ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
+                  >
+                    {KERALA_DISTRICTS.map((dist) => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                  {(profileForm.district === 'Other' || (!KERALA_DISTRICTS.includes(profileForm.district) && profileForm.district !== 'Idukki, Kerala')) && (
+                    <input
+                      type="text"
+                      placeholder="Type your specific district or location"
+                      value={profileForm.district === 'Other' ? '' : profileForm.district}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProfileForm({ ...profileForm, district: val || 'Other', location: val || 'Other' });
+                      }}
+                      className="w-full mt-2 p-2.5 rounded-xl text-xs bg-white border border-[#D7E6D5] text-[#17331F] focus:outline-none"
+                    />
+                  )}
                   {profileErrors.district && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.district}</p>}
                 </div>
+
                 <div>
                   <label className="block text-xs font-bold mb-1">Bio</label>
                   <textarea 

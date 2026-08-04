@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { KERALA_DISTRICTS } from '../utils/districts';
 
 // REGEX HELPER CONSTANTS
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -573,20 +574,44 @@ const Auth = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1.5">
-                        District / Location <span className="text-red-500">*</span>
+                        District / Place <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
+                      <select
                         name="district"
-                        value={formData.district}
+                        value={KERALA_DISTRICTS.includes(formData.district) ? formData.district : (formData.district === 'Other' || formData.district ? (KERALA_DISTRICTS.includes(formData.district) ? formData.district : 'Other') : 'Idukki, Kerala')}
                         onChange={(e) => {
-                          handleChange(e);
-                          setFormData(prev => ({ ...prev, district: e.target.value, location: e.target.value }));
+                          const val = e.target.value;
+                          if (val === 'Other') {
+                            setFormData(prev => ({ ...prev, district: 'Other', location: 'Other' }));
+                          } else {
+                            setFormData(prev => ({ ...prev, district: val, location: val }));
+                          }
+                          if (touchedFields.district) {
+                            setFieldErrors((prev) => ({ ...prev, district: '' }));
+                          }
                         }}
-                        placeholder="e.g. Idukki, Wayanad, Palakkad"
-                        className="w-full px-4 py-2.5 rounded-xl text-xs font-medium bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:border-[#1F5E3B]"
-                      />
+                        className="w-full px-4 py-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:border-[#1F5E3B] focus:outline-none transition-colors cursor-pointer"
+                      >
+                        {KERALA_DISTRICTS.map((dist) => (
+                          <option key={dist} value={dist}>
+                            {dist}
+                          </option>
+                        ))}
+                      </select>
+                      {(formData.district === 'Other' || (!KERALA_DISTRICTS.includes(formData.district) && formData.district !== 'Idukki, Kerala')) && (
+                        <input
+                          type="text"
+                          placeholder="Type your specific district or location"
+                          value={formData.district === 'Other' ? '' : formData.district}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormData(prev => ({ ...prev, district: val || 'Other', location: val || 'Other' }));
+                          }}
+                          className="w-full mt-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-[#D7E6D5] text-[#17331F] focus:border-[#1F5E3B] focus:outline-none"
+                        />
+                      )}
                     </div>
+
 
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1.5">
