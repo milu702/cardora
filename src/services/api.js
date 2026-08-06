@@ -273,6 +273,15 @@ export const apiService = {
     }
   },
 
+  analyzePlantation: async (id) => {
+    try {
+      const res = await api.post(`/plantations/${id}/analyze`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to analyze plantation' };
+    }
+  },
+
 
   // ===== 4. COMMUNITY APIs =====
   getCommunityPosts: async () => {
@@ -559,6 +568,18 @@ export const apiService = {
       return {
         success: false,
         message: error.response?.data?.message || error.message,
+      };
+    }
+  },
+
+  createUserAdmin: async (userData) => {
+    try {
+      const res = await api.post('/admin/users', userData);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to create user',
       };
     }
   },

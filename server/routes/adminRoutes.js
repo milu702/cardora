@@ -25,6 +25,7 @@ const {
   updateUserRole,
   deletePostAdmin,
   deleteListingAdmin,
+  createUserByAdmin,
 } = require('../controllers/adminController');
 
 // Secure all admin endpoints
@@ -46,6 +47,7 @@ router.get('/experts', protect, adminOnly, getExpertsList);
 router.post('/experts', protect, adminOnly, createExpert);
 router.put('/users/:userId/status', protect, adminOnly, toggleUserStatus);
 router.get('/users', protect, adminOnly, getAllUsers);
+router.post('/users', protect, adminOnly, createUserByAdmin);
 router.get('/users/:userId/activity', protect, adminOnly, getUserActivity);
 router.put('/users/:userId/role', protect, adminOnly, updateUserRole);
 router.delete('/users/:userId', protect, adminOnly, deleteUser);

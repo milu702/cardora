@@ -21,6 +21,8 @@ import PublicProfileModal from '../components/profile/PublicProfileModal';
 import ChatDrawerModal from '../components/chat/ChatDrawerModal';
 import WorkforceModule from '../components/workforce/WorkforceModule';
 import PlantationModule from '../components/plantation/PlantationModule';
+import AiAnalysisModule from '../components/ai/AiAnalysisModule';
+import CardamomMarketplace from '../components/marketplace/CardamomMarketplace';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
 import { KERALA_DISTRICTS } from '../utils/districts';
 
@@ -1116,6 +1118,12 @@ const Dashboard = () => {
                 onToast={showToast} 
               />
 
+              {/* AI Plantation Analysis Section below Weather widget */}
+              <AiAnalysisModule 
+                plantation={plantations[0]} 
+                onToast={showToast} 
+              />
+
             </div>
           )}
 
@@ -1138,118 +1146,10 @@ const Dashboard = () => {
           {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
           {activeTab === 'ai' && (
             <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-[#C9A227]" />
-                  AI Decision Support & Recommendations
-                </h2>
-                <p className="text-xs text-[#4A5568] font-medium">Input current soil readings to compute personalized fertilization and irrigation guidance.</p>
-              </div>
-
-              {/* Interactive Soil Inputs */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft">
-                <h3 className="text-sm font-extrabold text-[#17331F] mb-4">Plantation Telemetry Inputs</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Moisture (%) *</label>
-                    <input 
-                      type="number" 
-                      value={aiInputs.moisture} 
-                      onChange={(e) => setAiInputs({...aiInputs, moisture: e.target.value})} 
-                      className={`w-full p-2.5 rounded-xl text-xs border ${aiErrors.moisture ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
-                    />
-                    {aiErrors.moisture && <p className="text-[10px] text-red-600 font-bold mt-1">{aiErrors.moisture}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Soil pH *</label>
-                    <input 
-                      type="number" 
-                      step="0.1" 
-                      value={aiInputs.ph} 
-                      onChange={(e) => setAiInputs({...aiInputs, ph: e.target.value})} 
-                      className={`w-full p-2.5 rounded-xl text-xs border ${aiErrors.ph ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
-                    />
-                    {aiErrors.ph && <p className="text-[10px] text-red-600 font-bold mt-1">{aiErrors.ph}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Nitrogen (N) *</label>
-                    <input 
-                      type="number" 
-                      value={aiInputs.n} 
-                      onChange={(e) => setAiInputs({...aiInputs, n: e.target.value})} 
-                      className={`w-full p-2.5 rounded-xl text-xs border ${aiErrors.n ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
-                    />
-                    {aiErrors.n && <p className="text-[10px] text-red-600 font-bold mt-1">{aiErrors.n}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Phosphorus (P) *</label>
-                    <input 
-                      type="number" 
-                      value={aiInputs.p} 
-                      onChange={(e) => setAiInputs({...aiInputs, p: e.target.value})} 
-                      className={`w-full p-2.5 rounded-xl text-xs border ${aiErrors.p ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
-                    />
-                    {aiErrors.p && <p className="text-[10px] text-red-600 font-bold mt-1">{aiErrors.p}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Potassium (K) *</label>
-                    <input 
-                      type="number" 
-                      value={aiInputs.k} 
-                      onChange={(e) => setAiInputs({...aiInputs, k: e.target.value})} 
-                      className={`w-full p-2.5 rounded-xl text-xs border ${aiErrors.k ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
-                    />
-                    {aiErrors.k && <p className="text-[10px] text-red-600 font-bold mt-1">{aiErrors.k}</p>}
-                  </div>
-                </div>
-
-                <Button variant="primary" size="md" onClick={handleRunAI} icon={Sparkles} className="w-full justify-center">
-                  Run AI Crop Analysis
-                </Button>
-              </div>
-
-              {/* AI Output Result Box */}
-              {!aiResult ? (
-                <div className="bg-[#F8FAF7] rounded-[20px] border-2 border-dashed border-[#D7E6D5] p-8 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto shadow-sm">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-base font-extrabold text-[#17331F]">No Recommendation Generated Yet</h3>
-                  <p className="text-xs text-[#4A5568] max-w-md mx-auto leading-relaxed">
-                    Enter your soil moisture, pH, and NPK values in the fields above and click <strong className="text-[#1F5E3B]">"Run AI Crop Analysis"</strong> to generate your custom plantation health index and recommendations.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
-                  <div className="flex items-center justify-between pb-4 border-b border-[#D7E6D5]">
-                    <div>
-                      <p className="text-xs font-bold text-[#5C8D4E]">Calculated Health Index</p>
-                      <h3 className="text-3xl font-black text-[#1F5E3B] font-poppins">{aiResult.healthScore} / 100</h3>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-[#4A5568]">Yield Forecast</p>
-                      <p className="text-lg font-black text-[#C9A227]">{aiResult.yieldPrediction}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                      <p className="text-xs font-extrabold text-[#17331F]">Disease Risk Diagnostic</p>
-                      <p className="text-xs text-[#4A5568] mt-0.5">{aiResult.diseaseRisk}</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                      <p className="text-xs font-extrabold text-[#17331F]">Organic Fertilization Advice</p>
-                      <p className="text-xs text-[#4A5568] mt-0.5">{aiResult.fertilizerAdvice}</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                      <p className="text-xs font-extrabold text-[#17331F]">Irrigation Schedule</p>
-                      <p className="text-xs text-[#4A5568] mt-0.5">{aiResult.irrigationAdvice}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <AiAnalysisModule 
+                plantation={plantations[0]} 
+                onToast={showToast} 
+              />
             </div>
           )}
 
@@ -1658,43 +1558,8 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* ===== TAB 5: MARKETPLACE PLOTS ===== */}
-          {activeTab === 'plots' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-black text-[#17331F] font-poppins">Cardamom Plot Marketplace</h2>
-                  <p className="text-xs text-[#4A5568] font-medium">Browse verified cardamom plantations available for sale or lease in Idukki.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {plots.map((plot) => (
-                  <Card key={plot.id} className="overflow-hidden p-0">
-                    <img src={plot.image} alt="" className="w-full h-44 object-cover" />
-                    <div className="p-5">
-                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#DDEFD9] text-[#1F5E3B] mb-2 inline-block">
-                        Verified Listing
-                      </span>
-                      <h4 className="font-extrabold text-[#17331F] text-base mb-2">{plot.title}</h4>
-                      <p className="text-xs text-[#4A5568] mb-4">{plot.location} • {plot.area} • {plot.price}</p>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#C9A227]">Expected ROI: {plot.roi}</span>
-                        <Button 
-                          variant="primary" 
-                          size="sm" 
-                          onClick={() => showToast(`Contact details sent for owner: ${plot.owner}`)}
-                        >
-                          Contact Owner
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* ===== TAB 5: FUTURISTIC CARDAMOM MARKETPLACE ===== */}
+          {activeTab === 'plots' && <CardamomMarketplace />}
 
           {/* ===== TAB: ADMIN PORTAL ===== */}
           {activeTab === 'admin' && <AdminDashboard />}

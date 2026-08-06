@@ -104,9 +104,9 @@ const Navbar = () => {
         </div>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center gap-5">
-          {!isAuthenticated ? (
-            loggedOutNavLinks.map((link) => (
+        {!isAuthenticated && (
+          <div className="hidden lg:flex items-center gap-5">
+            {loggedOutNavLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
@@ -114,20 +114,9 @@ const Navbar = () => {
               >
                 {link.name}
               </a>
-            ))
-          ) : (
-            loggedInNavLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.href}
-                className="animated-underline flex items-center gap-1.5 text-xs font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors py-1"
-              >
-                <link.icon className="w-3.5 h-3.5 text-[#5C8D4E]" />
-                <span>{link.name}</span>
-              </Link>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Global Planter Search Bar */}
         {isAuthenticated && (

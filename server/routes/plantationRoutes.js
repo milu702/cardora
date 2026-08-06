@@ -7,6 +7,7 @@ const {
   updatePlantation,
   deletePlantation,
   addExpense,
+  analyzePlantation,
 } = require('../controllers/plantationController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
@@ -22,5 +23,8 @@ router.route('/:id')
 
 router.route('/:id/expenses')
   .post(protect, addExpense);
+
+router.route('/:id/analyze')
+  .post(protect, analyzePlantation);
 
 module.exports = router;

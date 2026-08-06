@@ -8,6 +8,7 @@ const IoTSensor = require('../models/IoTSensor');
 const Expert = require('../models/Expert');
 const SystemAlert = require('../models/SystemAlert');
 const ActivityLog = require('../models/ActivityLog');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Get 8 Core Executive KPI cards dynamically aggregated from MongoDB collections
 // @route   GET /api/admin/executive-kpis
@@ -753,6 +754,194 @@ exports.deleteListingAdmin = async (req, res) => {
 
     await MarketplaceListing.findByIdAndDelete(listingId);
     res.status(200).json({ success: true, message: 'Marketplace listing deleted by admin', listingId });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Create a new user account by Admin & send Welcome Email with login credentials
+// @route   POST /api/admin/users
+// @access  Private/Admin
+exports.createUserByAdmin = async (req, res) => {
+  try {
+    const { name, fullName, username, email, password, role, phone, location, district, bio } = req.body;
+    const displayName = (name || fullName || '').trim();
+    const userEmail = (email || '').trim().toLowerCase();
+
+    if (!displayName || !userEmail) {
+      return res.status(400).json({ success: false, message: 'Please provide full name and email address.' });
+    }
+
+    // Generate clean username if not provided
+    let userUsername = username ? username.trim().toLowerCase() : '';
+    if (!userUsername) {
+      const baseName = displayName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      userUsername = `${baseName || 'user'}${randomNum}`;
+    }
+
+    // Generate random password if not provided
+    const userPassword = (password && typeof password === 'string' && password.trim().length >= 4)
+      ? password.trim()
+      : `Cardora@${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const userRole = role || 'Farmer';
+    const userDistrict = district || location || 'Idukki, Kerala';
+
+    // Check duplicate email
+    const emailExists = await User.findOne({ email: userEmail });
+    if (emailExists) {
+      return res.status(400).json({ success: false, message: 'A user account with this email address already exists.' });
+    }
+
+    // Check duplicate username
+    const usernameExists = await User.findOne({ username: userUsername });
+    if (usernameExists) {
+      return res.status(400).json({ success: false, message: `Username '${userUsername}' is already taken. Please choose another username.` });
+    }
+
+    // Create user in DB
+    const user = await User.create({
+      name: displayName,
+      username: userUsername,
+      email: userEmail,
+      password: userPassword,
+      role: userRole,
+      phone: phone || '',
+      location: userDistrict,
+      district: userDistrict,
+      bio: bio || 'Registered Cardora Platform Cultivator',
+      isVerified: true,
+      status: 'active',
+    });
+
+    // Send Welcome Email with Login Credentials
+    const appLoginUrl = process.env.CLIENT_URL || 'http://localhost:3000/login';
+    const emailSubject = '🌿 Welcome to Cardora - Your Account Login Credentials';
+
+    const emailHtml = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #F8FAF7; border: 1px solid #D7E6D5; border-radius: 16px; overflow: hidden; color: #17331F;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #1F5E3B 0%, #16442B 100%); padding: 30px 24px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">🌿 Welcome to Cardora</h1>
+          <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.9;">Smart Cardamom Agriculture & Plantation Platform</p>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 28px 24px;">
+          <h2 style="color: #1F5E3B; font-size: 18px; margin-top: 0;">Hello ${displayName},</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #2D3748;">
+            Welcome to <strong>Cardora</strong>! Your account has been created by the system administrator. You can now log in to access smart plantation management, agronomic advisories, live weather telemetry, and community marketplace.
+          </p>
+
+          <!-- Credentials Box -->
+          <div style="background-color: #ffffff; border: 2px dashed #1F5E3B; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <h3 style="margin: 0 0 14px 0; color: #1F5E3B; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px;">
+              🔑 Your Login Credentials
+            </h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 6px 0; color: #718096; font-weight: 600; width: 120px;">Username:</td>
+                <td style="padding: 6px 0; color: #1A202C; font-weight: 700; font-family: monospace; font-size: 15px;">${userUsername}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #718096; font-weight: 600;">Email:</td>
+                <td style="padding: 6px 0; color: #1A202C; font-weight: 700;">${userEmail}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #718096; font-weight: 600;">Password:</td>
+                <td style="padding: 6px 0; color: #1F5E3B; font-weight: 800; font-family: monospace; font-size: 16px; background-color: #F0FFF4; padding: 4px 8px; border-radius: 4px; display: inline-block;">${userPassword}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #718096; font-weight: 600;">Role:</td>
+                <td style="padding: 6px 0; color: #2B6CB0; font-weight: 700;">${userRole}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Login Instructions CTA -->
+          <div style="text-align: center; margin: 28px 0 20px 0;">
+            <a href="${appLoginUrl}" style="background-color: #1F5E3B; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(31, 94, 59, 0.25);">
+              Sign In to Cardora Platform →
+            </a>
+          </div>
+
+          <p style="font-size: 12px; color: #718096; text-align: center; margin-top: 16px;">
+            🔒 For security, we recommend logging in using the credentials above and updating your password in Profile Settings.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #EDF2F7; padding: 16px 24px; text-align: center; font-size: 12px; color: #718096; border-top: 1px solid #E2E8F0;">
+          <p style="margin: 0;">Cardora Agriculture & Spice Plantation Network • High-Altitude Agronomy Platform</p>
+          <p style="margin: 4px 0 0 0;">Idukki & Wayanad Spice Cultivation Support</p>
+        </div>
+      </div>
+    `;
+
+    const emailText = `
+Welcome to Cardora Smart Agriculture Platform!
+
+Hello ${displayName},
+An admin has created an account for you on Cardora.
+
+Here are your login credentials:
+- Username: ${userUsername}
+- Email: ${userEmail}
+- Password: ${userPassword}
+- Assigned Role: ${userRole}
+
+You can log in at: ${appLoginUrl}
+
+We recommend changing your password after signing in.
+
+Cardora Platform Team
+    `;
+
+    let emailSent = false;
+    try {
+      await sendEmail({
+        email: userEmail,
+        subject: emailSubject,
+        text: emailText,
+        html: emailHtml,
+      });
+      emailSent = true;
+    } catch (mailErr) {
+      console.warn(`Email sending notice for ${userEmail}: ${mailErr.message}`);
+    }
+
+    // Log Activity
+    try {
+      await ActivityLog.create({
+        type: 'USER_CREATED',
+        description: `Admin created new user account for ${displayName} (${userEmail}) as ${userRole}`,
+        actorName: req.user?.name || 'System Admin',
+        actorRole: 'Admin',
+      });
+    } catch (actErr) {}
+
+    res.status(201).json({
+      success: true,
+      message: `User account created successfully! Welcome email sent to ${userEmail}.`,
+      user: {
+        _id: user._id,
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        district: user.district,
+        status: user.status,
+        createdAt: user.createdAt,
+      },
+      credentials: {
+        username: user.username,
+        email: user.email,
+        password: userPassword,
+      },
+      emailSent,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

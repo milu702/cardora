@@ -98,6 +98,14 @@ const plantationSchema = new mongoose.Schema(
       type: String,
       default: '3.5 Years',
     },
+    shadePercentage: {
+      type: Number,
+      default: 55,
+    },
+    irrigationSource: {
+      type: String,
+      default: 'Mountain Stream & Borewell',
+    },
     // Soil Information
     soil: {
       soilType: { type: String, default: 'Loamy Forest Soil' },
@@ -124,6 +132,37 @@ const plantationSchema = new mongoose.Schema(
       enum: ['Drip', 'Sprinkler', 'Manual', 'Rainfed', 'Mixed'],
       default: 'Drip',
     },
+    // Historical Records
+    fertilizerHistory: [{
+      date: { type: Date, default: Date.now },
+      type: { type: String, default: 'Organic NPK & Neem Cake' },
+      dosage: { type: String, default: '500g per clump' },
+    }],
+    irrigationHistory: [{
+      date: { type: Date, default: Date.now },
+      method: { type: String, default: 'Pulse Drip' },
+      durationMinutes: { type: Number, default: 120 },
+    }],
+    harvestHistory: [{
+      date: { type: Date, default: Date.now },
+      quantityKg: { type: Number, default: 350 },
+      grade: { type: String, default: '8mm Bold Green' },
+    }],
+    diseaseHistory: [{
+      date: { type: Date, default: Date.now },
+      diseaseName: { type: String, default: 'Minor Azhukal Spotting' },
+      status: { type: String, default: 'Resolved' },
+    }],
+    pestHistory: [{
+      date: { type: Date, default: Date.now },
+      pestName: { type: String, default: 'Cardamom Thrips' },
+      status: { type: String, default: 'Controlled' },
+    }],
+    previousAiReports: [{
+      analyzedAt: { type: Date, default: Date.now },
+      healthScore: Number,
+      summary: String,
+    }],
     // Sensor Metadata
     sensor: {
       sensorId: { type: String, default: 'SENSOR-IDK-01' },
