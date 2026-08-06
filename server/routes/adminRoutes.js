@@ -26,6 +26,7 @@ const {
   deletePostAdmin,
   deleteListingAdmin,
   createUserByAdmin,
+  queryAdminAiAssistant,
 } = require('../controllers/adminController');
 
 // Secure all admin endpoints
@@ -48,6 +49,7 @@ router.post('/experts', protect, adminOnly, createExpert);
 router.put('/users/:userId/status', protect, adminOnly, toggleUserStatus);
 router.get('/users', protect, adminOnly, getAllUsers);
 router.post('/users', protect, adminOnly, createUserByAdmin);
+router.post('/ai-assistant', protect, adminOnly, queryAdminAiAssistant);
 router.get('/users/:userId/activity', protect, adminOnly, getUserActivity);
 router.put('/users/:userId/role', protect, adminOnly, updateUserRole);
 router.delete('/users/:userId', protect, adminOnly, deleteUser);
@@ -55,3 +57,4 @@ router.delete('/posts/:postId', protect, adminOnly, deletePostAdmin);
 router.delete('/listings/:listingId', protect, adminOnly, deleteListingAdmin);
 
 module.exports = router;
+

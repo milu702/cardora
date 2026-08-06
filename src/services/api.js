@@ -584,6 +584,19 @@ export const apiService = {
     }
   },
 
+  queryAdminAi: async (prompt, category = 'overview') => {
+    try {
+      const res = await api.post('/admin/ai-assistant', { prompt, category });
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'AI Assistant service unavailable',
+      };
+    }
+  },
+
+
   getUserActivity: async (userId) => {
     try {
       const res = await api.get(`/admin/users/${userId}/activity`);
