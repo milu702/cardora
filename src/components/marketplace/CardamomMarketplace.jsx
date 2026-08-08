@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../services/api';
 
 // Import Marketplace Sub-Components
 import MarketplaceHero from './MarketplaceHero';
@@ -48,14 +49,122 @@ const CardamomMarketplace = () => {
   const [selectedDetailPlot, setSelectedDetailPlot] = useState(null);
   const [selectedMapPlot, setSelectedMapPlot] = useState(null);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [editingPlot, setEditingPlot] = useState(null);
   const [userPlantations, setUserPlantations] = useState([]);
+  const [dbPlantations, setDbPlantations] = useState([]);
   const [communicationModal, setCommunicationModal] = useState({
     open: false,
     plot: null,
     mode: 'chat',
   });
 
-  // Sample High-Grade Cardamom Plantation Listings
+  // Fetch Live MongoDB Marketplace Listings on Mount
+  useEffect(() => {
+    const fetchDbListings = async () => {
+      try {
+        const res = await apiService.getMarketplaceListings();
+        if (res && res.success && Array.isArray(res.listings)) {
+          const mapped = res.listings.map((item) => ({
+            id: item._id || item.id,
+            _id: item._id,
+            title: item.title,
+            location: item.location,
+            district: item.location ? item.location.split(',').pop().trim() : 'Idukki',
+            area: item.area,
+            price: item.price,
+            priceRaw: Number(item.price ? item.price.replace(/[^0-9]/g, '') : 10000000),
+            altitude: item.altitude || '1,100m',
+            yield: item.yield || '420 kg / acre',
+            roi: item.roi || '24% Annual',
+            trustScore: '99.4%',
+            healthScore: `${item.healthScore || 94}%`,
+            soilPh: '6.2 (Optimal)',
+            plants: item.plants || 'Njallani Plants',
+            owner: item.ownerName || 'Verified Planter',
+            ownerEmail: item.ownerEmail,
+            ownerPhone: item.ownerPhone,
+            ownerAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.ownerName || 'Planter')}&background=1B5E20&color=ffffff`,
+            image: item.images && item.images.length > 0 ? item.images[0] : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
+            verified: true,
+            organic: true,
+            roadAccess: true,
+            listingType: item.type || 'sale',
+            description: item.description,
+            userId: item.user?._id || item.user,
+          }));
+          setDbPlantations(mapped);
+        }
+      } catch (err) {
+        console.warn('Failed to load MongoDB marketplace listings:', err);
+      }
+    };
+    fetchDbListings();
+  }, []);
+
+  // Ownership Check: Returns true ONLY if currently logged-in user uploaded/owns the plot
+  const isOwner = (plot) => {
+    if (!user || !plot) return false;
+    const userEmail = (user.email || '').toLowerCase().trim();
+    const userName = (user.name || '').toLowerCase().trim();
+    const userId = (user._id || user.id || '').toString();
+
+    const plotEmail = (plot.ownerEmail || '').toLowerCase().trim();
+    const plotOwner = (plot.owner || plot.ownerName || '').toLowerCase().trim();
+    const plotUserId = (plot.userId || plot.user || '').toString();
+
+    if (plotEmail && userEmail && plotEmail === userEmail) return true;
+    if (plotUserId && userId && plotUserId === userId) return true;
+    if (plotOwner && userName && plotOwner === userName) return true;
+    if (userPlantations.some((p) => p.id === plot.id || p._id === plot._id)) return true;
+
+    return false;
+  };
+
+  const handlePublishClick = () => {
+    if (!user) {
+      showToast(lang === 'ml' ? 'ദയവായി തുടരുന്നതിന് ലോഗിൻ ചെയ്യുക.' : 'Please log in to publish a marketplace plot listing.');
+      return;
+    }
+    setEditingPlot(null);
+    setIsPublishModalOpen(true);
+  };
+
+  const handleOpenEditPlot = (plot) => {
+    if (!isOwner(plot)) {
+      showToast(lang === 'ml' ? 'അനുമതിയില്ല. നിങ്ങളുടെ സ്വന്തം ലിസ്റ്റിംഗ് മാത്രം എഡിറ്റ് ചെയ്യാം.' : 'Permission denied. You can only edit your own uploaded listings.');
+      return;
+    }
+    setEditingPlot(plot);
+    setIsPublishModalOpen(true);
+  };
+
+  const handleSavePlot = (savedPlot) => {
+    setUserPlantations((prev) => {
+      const exists = prev.some((p) => p.id === savedPlot.id || (p._id && p._id === savedPlot._id));
+      if (exists) {
+        return prev.map((p) => (p.id === savedPlot.id || (p._id && p._id === savedPlot._id) ? savedPlot : p));
+      }
+      return [savedPlot, ...prev];
+    });
+
+    setDbPlantations((prev) => {
+      const exists = prev.some((p) => p.id === savedPlot.id || (p._id && p._id === savedPlot._id));
+      if (exists) {
+        return prev.map((p) => (p.id === savedPlot.id || (p._id && p._id === savedPlot._id) ? savedPlot : p));
+      }
+      return [savedPlot, ...prev];
+    });
+
+    setIsPublishModalOpen(false);
+    showToast(
+      editingPlot
+        ? (lang === 'ml' ? 'ഏലത്തോട്ടം എഡിറ്റ് ചെയ്തു!' : 'Listing updated & saved in MongoDB! Updated PDF report emailed.')
+        : (lang === 'ml' ? 'ഏലത്തോട്ടം വിജയികരമായി ചേർത്തു!' : 'Plantation published & stored in MongoDB! PDF certificate emailed.')
+    );
+    setEditingPlot(null);
+  };
+
+  // Sample Default High-Grade Cardamom Plantation Listings
   const mockPlantations = [
     {
       id: 'p1',
@@ -155,25 +264,27 @@ const CardamomMarketplace = () => {
     },
   ];
 
-  const allPlantations = [...userPlantations, ...mockPlantations];
+  // Combine user-uploaded session plots, MongoDBAtlas listings, and default mock plots (deduplicated by ID)
+  const combinedMap = new Map();
+  [...userPlantations, ...dbPlantations, ...mockPlantations].forEach((p) => {
+    const key = p._id || p.id;
+    if (key && !combinedMap.has(key)) {
+      combinedMap.set(key, p);
+    }
+  });
+  const allPlantations = Array.from(combinedMap.values());
 
   // Filtering Logic
   const filteredPlantations = allPlantations.filter((plot) => {
-    // District Filter
     if (selectedDistrict !== 'All' && plot.district !== selectedDistrict) return false;
-
-    // Listing Category (Sale / Lease)
     if (filters.listingType !== 'all' && plot.listingType !== filters.listingType) return false;
-
-    // Organic Filter
     if (filters.organicOnly && !plot.organic) return false;
 
-    // Search Query Text Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchTitle = plot.title.toLowerCase().includes(q);
-      const matchLoc = plot.location.toLowerCase().includes(q);
-      const matchOwner = plot.owner.toLowerCase().includes(q);
+      const matchTitle = (plot.title || '').toLowerCase().includes(q);
+      const matchLoc = (plot.location || '').toLowerCase().includes(q);
+      const matchOwner = (plot.owner || plot.ownerName || '').toLowerCase().includes(q);
       if (!matchTitle && !matchLoc && !matchOwner) return false;
     }
 
@@ -229,42 +340,78 @@ const CardamomMarketplace = () => {
       </div>
 
       {/* 4. FEATURED VERIFIED PLANTATIONS GRID */}
-      <div className="space-y-6 mb-12">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-[#1B5E20] dark:text-emerald-400 font-poppins flex items-center gap-2">
-              {lang === 'ml' ? 'സ്ഥിരീകരിച്ച ഏലത്തോട്ടങ്ങൾ' : 'Featured Verified Cardamom Estates'}
-              <span className="px-2.5 py-0.5 rounded-full bg-[#1B5E20] text-[#66BB6A] text-xs font-black">
-                {filteredPlantations.length} LISTINGS
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
+        className="space-y-6 mb-12"
+      >
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950 via-[#1B5E20] to-emerald-900 text-white border-2 border-emerald-400/50 shadow-2xl flex items-center justify-between flex-wrap gap-5 relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Bilingual Title Header */}
+          <div className="space-y-1.5 z-10 max-w-xl">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white font-poppins tracking-tight leading-tight">
+                  Featured Verified Cardamom Estates
+                </h2>
+                <h3 className="text-sm sm:text-base font-bold text-emerald-300 font-poppins mt-0.5">
+                  സ്ഥിരീകരിച്ച ഏലത്തോട്ടങ്ങൾ
+                </h3>
+              </div>
+
+              <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/30 text-emerald-200 text-xs font-black tracking-wider uppercase border border-emerald-400/60 shadow-lg flex items-center gap-1.5 animate-pulse">
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>{filteredPlantations.length} VERIFIED LISTINGS</span>
               </span>
-            </h2>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">
-              {lang === 'ml' ? 'എഐ ലീഗൽ റിപ്പോർട്ടുകളും 360° ഡ്രോൺ വിഷ്വലുകളും സഹിതം' : 'All listings backed by 99.4% AI Legal Verification & Soil Quality Index'}
+            </div>
+
+            <p className="text-xs sm:text-sm text-emerald-100 font-semibold flex items-center gap-2 pt-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                All listings backed by 99.4% AI Legal Verification & Soil Quality Index • എഐ ലീഗൽ റിപ്പോർട്ടുകൾ സഹിതം
+              </span>
             </p>
           </div>
 
-          <button
-            onClick={() => setIsPublishModalOpen(true)}
-            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 border border-[#66BB6A]/40"
+          {/* Bilingual Ultra-Visible Action Button */}
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handlePublishClick}
+            className="z-10 px-7 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-400 text-slate-950 hover:text-slate-950 font-black hover:shadow-2xl hover:shadow-amber-400/50 transition-all shadow-2xl flex items-center gap-3 border-2 border-white relative overflow-hidden group cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#66BB6A]" />
-            <span>{lang === 'ml' ? 'തോട്ടം വിൽപ്പനയ്ക്ക് ചേർക്കുക' : '+ Publish Plot for Sale'}</span>
-          </button>
+            <div className="absolute inset-0 bg-white/30 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            <div className="p-2 rounded-xl bg-slate-950 text-amber-400 group-hover:scale-110 transition-transform">
+              <Plus className="w-5 h-5 stroke-[3]" />
+            </div>
+            <div className="text-left">
+              <span className="block text-sm sm:text-base font-black tracking-wide uppercase leading-tight text-slate-950">
+                + Publish Plot for Sale
+              </span>
+              <span className="block text-[11px] font-extrabold text-slate-900 leading-tight">
+                (തോട്ടം വിൽപ്പനയ്ക്ക് ചേർക്കുക)
+              </span>
+            </div>
+          </motion.button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           {filteredPlantations.map((plot) => (
             <PlantationCard
-              key={plot.id}
+              key={plot.id || plot._id}
               plot={plot}
               lang={lang}
               onOpenDetail={(p) => setSelectedDetailPlot(p)}
               onOpenContact={(p) => setCommunicationModal({ open: true, plot: p, mode: 'chat' })}
+              onEditPlot={isOwner(plot) ? handleOpenEditPlot : null}
               onShare={handleShare}
             />
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* 5. LIVE MARKET ANALYTICS */}
       <MarketAnalytics lang={lang} />
@@ -339,6 +486,7 @@ const CardamomMarketplace = () => {
               setSelectedDetailPlot(null);
               setCommunicationModal({ open: true, plot, mode: 'visit' });
             }}
+            onEditPlot={isOwner(selectedDetailPlot) ? handleOpenEditPlot : null}
             lang={lang}
             toggleLang={toggleLang}
           />
@@ -357,22 +505,23 @@ const CardamomMarketplace = () => {
         )}
       </AnimatePresence>
 
-      {/* 10. PUBLISH PLANTATION PLOT MODAL */}
+      {/* 10. PUBLISH / EDIT PLANTATION PLOT MODAL */}
       <AnimatePresence>
         {isPublishModalOpen && (
           <PublishPlotModal
-            onClose={() => setIsPublishModalOpen(false)}
-            onPublish={(newPlot) => {
-              setUserPlantations((prev) => [newPlot, ...prev]);
+            onClose={() => {
               setIsPublishModalOpen(false);
-              showToast(lang === 'ml' ? 'ഏലത്തോട്ടം വിജയികരമായി ചേർത്തു!' : 'Plantation published to ecosystem!');
+              setEditingPlot(null);
             }}
+            editPlot={editingPlot}
+            onPublish={handleSavePlot}
+            onUpdate={handleSavePlot}
             lang={lang}
           />
         )}
       </AnimatePresence>
 
-      {/* 10. FLOATING VOICE AI ASSISTANT WIDGET */}
+      {/* 11. FLOATING VOICE AI ASSISTANT WIDGET */}
       <VoiceAiWidget
         lang={lang}
         toggleLang={toggleLang}

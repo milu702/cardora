@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, Phone, Video, Calendar, MapPin, Paperclip, Mic, 
@@ -6,22 +6,37 @@ import {
 } from 'lucide-react';
 
 const LiveCommunicationModal = ({ plot, mode = 'chat', onClose, lang }) => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'owner',
-      text: lang === 'ml'
-        ? `നമസ്കാരം! ${plot?.title || 'ഏലത്തോട്ടം'}-ത്തെക്കുറിച്ച് എന്തെങ്കിലും സംശയങ്ങൾ ഉണ്ടോ?`
-        : `Hello! Do you have any questions regarding ${plot?.title || 'this cardamom plantation'}?`,
-      time: '10:30 AM',
-    },
-    {
-      id: 2,
-      sender: 'ai',
-      text: '🤖 Cardora AI Assistant: Legal pattayam title and survey sketch verified 100%.',
-      time: '10:31 AM',
-    },
-  ]);
+  const chatKey = `cardora_chat_${plot?._id || plot?.id || 'general'}`;
+
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem(chatKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return [
+      {
+        id: 1,
+        sender: 'owner',
+        text: lang === 'ml'
+          ? `നമസ്കാരം! ${plot?.title || 'ഏലത്തോട്ടം'}-ത്തെക്കുറിച്ച് എന്തെങ്കിലും സംശയങ്ങൾ ഉണ്ടോ?`
+          : `Hello! Do you have any questions regarding ${plot?.title || 'this cardamom plantation'}?`,
+        time: '10:30 AM',
+      },
+      {
+        id: 2,
+        sender: 'ai',
+        text: '🤖 Cardora AI Assistant: Legal pattayam title and survey sketch verified 100%.',
+        time: '10:31 AM',
+      },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(chatKey, JSON.stringify(messages));
+  }, [messages, chatKey]);
 
   const [inputMsg, setInputMsg] = useState('');
   const [activeMode, setActiveMode] = useState(mode); // 'chat' | 'call' | 'video' | 'visit'

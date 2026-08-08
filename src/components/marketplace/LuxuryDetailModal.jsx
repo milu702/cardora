@@ -4,15 +4,20 @@ import {
   X, ShieldCheck, Award, Eye, Video, Map, Volume2, Globe, Download, Printer, 
   Share2, Bookmark, CheckCircle, AlertTriangle, FileText, User, MessageSquare, 
   Phone, Video as VideoIcon, Calendar, Clock, Sparkles, TrendingUp, Droplets, 
-  Thermometer, Trees, Mountain, Check, ArrowRight, CornerDownRight
+  Thermometer, Trees, Mountain, Check, ArrowRight, CornerDownRight, Edit3
 } from 'lucide-react';
 
-const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, lang, toggleLang }) => {
+const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, onEditPlot, lang, toggleLang }) => {
   const [activeMediaTab, setActiveMediaTab] = useState('360'); // '360' | 'drone' | 'gallery' | 'map'
   const [activeDetailTab, setActiveDetailTab] = useState('overview'); // 'overview' | 'docs' | 'trust' | 'agriculture' | 'owner'
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
 
   if (!plot) return null;
+
+  const plotPhotos = (plot.images && plot.images.length > 0)
+    ? plot.images
+    : [plot.image || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'];
 
   // Text-To-Speech Reader
   const handleReadAloud = () => {
@@ -181,7 +186,7 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, lang, t
               {activeMediaTab === '360' && (
                 <div className="relative w-full h-full">
                   <img
-                    src={plot.image}
+                    src={plotPhotos[activePhotoIdx] || plot.image}
                     alt=""
                     className="w-full h-full object-cover filter brightness-90 animate-pulse"
                   />
@@ -204,7 +209,7 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, lang, t
               )}
 
               {activeMediaTab === 'gallery' && (
-                <img src={plot.image} alt="" className="w-full h-full object-cover" />
+                <img src={plotPhotos[activePhotoIdx] || plot.image} alt="" className="w-full h-full object-cover" />
               )}
 
               {activeMediaTab === 'map' && (
@@ -214,6 +219,32 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, lang, t
                 </div>
               )}
             </div>
+
+            {/* Photo Gallery Thumbnails Strip (Up to 10 photos) */}
+            {plotPhotos.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-1">
+                {plotPhotos.map((imgUrl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setActivePhotoIdx(idx);
+                      setActiveMediaTab('gallery');
+                    }}
+                    className={`relative w-16 h-14 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                      activePhotoIdx === idx && activeMediaTab === 'gallery'
+                        ? 'border-[#66BB6A] ring-2 ring-[#66BB6A]/40 scale-105'
+                        : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={imgUrl} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                    <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-black/70 text-white text-[8px] font-black">
+                      #{idx + 1}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SECTION 2: DETAIL NAVIGATION TABS */}
@@ -437,6 +468,19 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, lang, t
           </div>
 
           <div className="flex items-center gap-3">
+            {onEditPlot && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onEditPlot(plot);
+                }}
+                className="px-5 py-3 rounded-2xl bg-amber-500 text-slate-950 font-black text-xs hover:bg-amber-400 transition-all shadow-md flex items-center gap-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Edit Listing</span>
+              </button>
+            )}
+
             <button
               onClick={() => onOpenChat(plot)}
               className="px-6 py-3 rounded-2xl bg-[#1B5E20] text-white font-black text-xs hover:bg-[#2E7D32] transition-all shadow-xl flex items-center gap-2"

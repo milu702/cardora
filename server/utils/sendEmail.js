@@ -4,8 +4,11 @@ const sendEmail = async (options) => {
   try {
     // If SMTP credentials are not configured in environment, log and simulate email send immediately
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.log(`📧 [Dev Mode] Simulated Welcome Email sent to ${options.email}`);
+      console.log(`📧 [Dev Mode] Simulated Email sent to ${options.email}`);
       console.log(`   Subject: ${options.subject}`);
+      if (options.attachments && options.attachments.length > 0) {
+        console.log(`   Attachments: ${options.attachments.map(a => a.filename).join(', ')}`);
+      }
       return { simulated: true, messageId: `simulated-${Date.now()}` };
     }
 
@@ -35,6 +38,7 @@ const sendEmail = async (options) => {
           <p style="font-size: 12px; color: #4A5568;">Sent securely by Cardora Agricultural Platform</p>
         </div>
       `,
+      attachments: options.attachments || [],
     };
 
     const info = await transporter.sendMail(message);

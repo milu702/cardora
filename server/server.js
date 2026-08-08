@@ -88,6 +88,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/plantations', require('./routes/plantationRoutes'));
 app.use('/api/community', require('./routes/communityRoutes'));
 app.use('/api/marketplace', require('./routes/marketplaceRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/recommendations', require('./routes/recommendationRoutes'));
 app.use('/api/weather', require('./routes/weatherRoutes'));

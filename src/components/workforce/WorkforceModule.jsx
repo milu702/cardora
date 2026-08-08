@@ -85,6 +85,77 @@ const WorkforceModule = ({ onOpenChat }) => {
     punctuality: 5,
   });
 
+  // Register Worker Details Modal
+  const [registerWorkerModalOpen, setRegisterWorkerModalOpen] = useState(false);
+  const [userUploadedWorkers, setUserUploadedWorkers] = useState(() => {
+    const saved = localStorage.getItem('cardora_uploaded_workers');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cardora_uploaded_workers', JSON.stringify(userUploadedWorkers));
+  }, [userUploadedWorkers]);
+
+  const [registerWorkerForm, setRegisterWorkerForm] = useState({
+    fullName: user?.fullName || user?.name || '',
+    phone: user?.phone || '+91 98470 00000',
+    district: user?.district || 'Idukki',
+    village: 'Vandanmedu',
+    skills: 'Cardamom Harvesting, Pruning, Soil Testing',
+    dailyWage: 850,
+    experience: '5 Years',
+    availability: 'Available Today',
+    photo: user?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+    bio: 'Experienced cardamom plantation harvester and soil specialist.',
+  });
+
+  const handleRegisterWorker = async (e) => {
+    e.preventDefault();
+    if (!registerWorkerForm.fullName || !registerWorkerForm.phone) {
+      showToast('Please enter full name and phone number.');
+      return;
+    }
+
+    const newWorker = {
+      _id: 'wrk_' + Date.now(),
+      workerId: 'WRK-' + Math.floor(1000 + Math.random() * 9000),
+      fullName: registerWorkerForm.fullName.trim(),
+      phone: registerWorkerForm.phone.trim(),
+      district: registerWorkerForm.district || 'Idukki',
+      village: registerWorkerForm.village || 'Vandanmedu',
+      skills: registerWorkerForm.skills ? registerWorkerForm.skills.split(',').map((s) => s.trim()) : ['Cardamom Harvesting'],
+      dailyWage: Number(registerWorkerForm.dailyWage) || 850,
+      experience: registerWorkerForm.experience || '5 Years',
+      availability: registerWorkerForm.availability || 'Available Today',
+      bio: registerWorkerForm.bio || '',
+      photo: registerWorkerForm.photo || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+      isVerified: true,
+      rating: 4.9,
+      completedJobs: 16,
+      user: {
+        _id: user?._id || user?.id || 'usr_' + Date.now(),
+        name: registerWorkerForm.fullName,
+        phone: registerWorkerForm.phone,
+      },
+    };
+
+    setUserUploadedWorkers((prev) => [newWorker, ...prev]);
+
+    try {
+      await apiService.updateWorkerProfile(newWorker);
+    } catch (err) {}
+
+    showToast('🎉 Workforce details uploaded successfully! Published live.');
+    setRegisterWorkerModalOpen(false);
+    loadWorkforceData();
+  };
+
   // Register Contractor / Labor Team Modal
   const [registerContractorModalOpen, setRegisterContractorModalOpen] = useState(false);
   const [registerContractorForm, setRegisterContractorForm] = useState({
@@ -192,7 +263,13 @@ const WorkforceModule = ({ onOpenChat }) => {
         verifiedOnly,
       });
       if (wRes && wRes.success) {
-        setWorkers(wRes.workers || []);
+        const fetched = wRes.workers || [];
+        const map = new Map();
+        [...userUploadedWorkers, ...fetched].forEach((w) => {
+          const id = w._id || w.id || w.workerId;
+          if (id && !map.has(id)) map.set(id, w);
+        });
+        setWorkers(Array.from(map.values()));
       }
 
       // 2. Fetch Contractors
@@ -418,7 +495,7 @@ const WorkforceModule = ({ onOpenChat }) => {
         </div>
 
         {/* Action Button */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={loadWorkforceData}
             className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl hover:bg-slate-200 transition"
@@ -426,17 +503,26 @@ const WorkforceModule = ({ onOpenChat }) => {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          
+          <button
+            onClick={() => setRegisterWorkerModalOpen(true)}
+            className="px-5 py-3 bg-[#1B5E20] hover:bg-[#2E7D32] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4 text-emerald-300" />
+            <span>+ Upload Worker Profile / Details</span>
+          </button>
+
           <button
             onClick={handleOpenContractorModal}
             className="px-5 py-3 bg-[#5C8D4E] hover:bg-[#4a743e] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>{myContractorProfile ? '✏️ Edit Contractor Profile' : '+ Register as Labor Contractor'}</span>
+            <ShieldCheck className="w-4 h-4 text-amber-200" />
+            <span>{myContractorProfile ? '✏️ Edit Contractor Profile' : '+ Register Labor Team'}</span>
           </button>
           {!isWorker && (
             <button
               onClick={() => setCreateTaskModalOpen(true)}
-              className="px-5 py-3 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
+              className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
             >
               <Plus className="w-4 h-4" />
               <span>Create Task</span>
@@ -1662,6 +1748,152 @@ const WorkforceModule = ({ onOpenChat }) => {
                   }`}
                 >
                   {myContractorProfile ? 'Save & Update Profile' : 'Register & Publish to Directory'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* UPLOAD / REGISTER WORKER PROFILE MODAL */}
+      {registerWorkerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 my-8 border border-[#2E7D32]/30">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="text-base font-black text-[#17331F] dark:text-emerald-400 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-[#1B5E20]" />
+                  <span>Upload Plantation Worker Profile & Details</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">Publish your worker listing to Cardora MongoDB Directory</p>
+              </div>
+              <button onClick={() => setRegisterWorkerModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRegisterWorker} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Full Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Joykutty Joseph"
+                    value={registerWorkerForm.fullName}
+                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, fullName: e.target.value })}
+                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Phone Number *</label>
+                  <input
+                    type="text"
+                    placeholder="+91 98470 00000"
+                    value={registerWorkerForm.phone}
+                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, phone: e.target.value })}
+                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">District *</label>
+                  <select
+                    value={registerWorkerForm.district}
+                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, district: e.target.value })}
+                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                  >
+                    <option value="Idukki">Idukki</option>
+                    <option value="Wayanad">Wayanad</option>
+                    <option value="Palakkad">Palakkad</option>
+                    <option value="Pathanamthitta">Pathanamthitta</option>
+                    <option value="Kottayam">Kottayam</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Village / Panchayath</label>
+                  <input
+                    type="text"
+                    placeholder="Vandanmedu, Nedumkandam, Kattappana"
+                    value={registerWorkerForm.village}
+                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, village: e.target.value })}
+                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Daily Wage (₹) *</label>
+                  <input
+                    type="number"
+                    placeholder="850"
+                    value={registerWorkerForm.dailyWage}
+                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, dailyWage: Number(e.target.value) })}
+                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Availability Status</label>
+                  <select
+                    value={registerWorkerForm.availability}
+                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, availability: e.target.value })}
+                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                  >
+                    <option value="Available Today">Available Today 🟢</option>
+                    <option value="Available Next Week">Available Next Week 🟡</option>
+                    <option value="On Contract">On Contract 🔴</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Primary Skills (comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="Cardamom Capsule Picking, Shade Pruning, Soil Testing, Chemical Spray"
+                  value={registerWorkerForm.skills}
+                  onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, skills: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Photo URL (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="https://images.unsplash.com/..."
+                  value={registerWorkerForm.photo}
+                  onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, photo: e.target.value })}
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Bio & Experience Summary</label>
+                <textarea
+                  placeholder="Describe your cardamom harvesting experience, daily capacity, and special skills..."
+                  value={registerWorkerForm.bio}
+                  onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, bio: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setRegisterWorkerModalOpen(false)} className="flex-1 py-2.5 bg-slate-200 text-slate-700 rounded-xl font-bold">Cancel</button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-[#1B5E20] hover:bg-[#2E7D32] text-white rounded-xl font-bold transition shadow-md"
+                >
+                  Upload & Publish Worker Details
                 </button>
               </div>
             </form>

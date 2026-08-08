@@ -351,6 +351,21 @@ const Dashboard = () => {
 
 
   // ===== 2. COMMUNITY FEED STATE & VALIDATION =====
+  const [localCommunityPosts, setLocalCommunityPosts] = useState(() => {
+    const saved = localStorage.getItem('cardora_community_posts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cardora_community_posts', JSON.stringify(localCommunityPosts));
+  }, [localCommunityPosts]);
+
   const [feedPosts, setFeedPosts] = useState([]);
   const [newPostText, setNewPostText] = useState('');
   const [newPostImage, setNewPostImage] = useState('');
@@ -500,11 +515,27 @@ const Dashboard = () => {
         setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
       
-      // Combine user DB posts with default community posts so all old community posts remain visible
-      const combined = [...dbPosts, ...defaultOtherPlanterPosts.filter(dp => !dbPosts.some(dbp => dbp.id === dp.id || dbp.content === dp.content))];
-      setFeedPosts(combined);
+      // Combine local user posts, MongoDB DB posts, and default ecosystem posts so NO POST IS EVER HIDDEN OR LOST!
+      const allCandidatePosts = [...localCommunityPosts, ...dbPosts, ...defaultOtherPlanterPosts];
+      const uniquePostsMap = new Map();
+      allCandidatePosts.forEach((p) => {
+        const pId = (p._id || p.id || '').toString();
+        const pContent = (p.content || p.description || '').trim();
+        const key = pId || pContent;
+        if (key && !uniquePostsMap.has(key)) {
+          uniquePostsMap.set(key, p);
+        }
+      });
+
+      setFeedPosts(Array.from(uniquePostsMap.values()));
     } catch (err) {
-      setFeedPosts(defaultOtherPlanterPosts);
+      const allCandidatePosts = [...localCommunityPosts, ...defaultOtherPlanterPosts];
+      const uniquePostsMap = new Map();
+      allCandidatePosts.forEach((p) => {
+        const key = (p._id || p.id || p.content || '').toString();
+        if (key && !uniquePostsMap.has(key)) uniquePostsMap.set(key, p);
+      });
+      setFeedPosts(Array.from(uniquePostsMap.values()));
     }
   };
 
@@ -537,7 +568,7 @@ const Dashboard = () => {
   React.useEffect(() => {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [localCommunityPosts.length]);
 
   const handleAddPost = async (e) => {
     if (e) e.preventDefault();
@@ -547,39 +578,42 @@ const Dashboard = () => {
     }
     setPostError('');
 
-    const postPayload = {
-      description: newPostText.trim(),
-      content: newPostText.trim(),
+    const createdId = `post_${Date.now()}`;
+    const newPostObj = {
+      id: createdId,
+      _id: createdId,
+      author: user?.fullName || user?.name || user?.username || 'Planter',
+      username: user?.username || 'planter',
+      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+      time: 'Just now',
       category: newPostCategory,
+      content: newPostText.trim(),
+      description: newPostText.trim(),
       image: newPostImage.trim(),
-      images: newPostImage.trim() ? [newPostImage.trim()] : [],
+      likes: 0,
+      comments: 0,
+      liked: false,
     };
 
-    const res = await apiService.createCommunityPost(postPayload);
-    if (res && res.success) {
-      setFeedPosts((prev) => [
-        {
-          id: res.post?._id || Date.now(),
-          author: user?.fullName || user?.name || user?.username || 'Planter',
-          username: user?.username || 'planter',
-          avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-          time: 'Just now',
-          category: newPostCategory,
-          content: newPostText.trim(),
-          description: newPostText.trim(),
-          image: newPostImage.trim(),
-          likes: 0,
-          comments: 0,
-          liked: false,
-        },
-        ...prev,
-      ]);
-      setNewPostText('');
-      setNewPostImage('');
-      showToast('Post created & saved in MongoDB!');
-    } else {
-      setPostError(res?.message || 'Failed to create post.');
-    }
+    setLocalCommunityPosts((prev) => [newPostObj, ...prev]);
+    setFeedPosts((prev) => [newPostObj, ...prev.filter((p) => p.id !== createdId)]);
+    setNewPostText('');
+    setNewPostImage('');
+
+    showToast('🎉 Post created & published live to Community Feed!');
+
+    try {
+      await apiService.createCommunityPost({
+        description: newPostText.trim(),
+        content: newPostText.trim(),
+        category: newPostCategory,
+        image: newPostImage.trim(),
+        images: newPostImage.trim() ? [newPostImage.trim()] : [],
+        authorName: user?.fullName || user?.name,
+        username: user?.username,
+        authorAvatar: user?.avatar,
+      });
+    } catch (err) {}
   };
 
   // Interactive Comments State

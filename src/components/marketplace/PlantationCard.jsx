@@ -2,10 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   ShieldCheck, Award, CheckCircle, Video, Eye, Sparkles, MapPin, 
-  TrendingUp, Thermometer, Droplets, ArrowUpRight, Download, Heart, Share2, FileText, User 
+  TrendingUp, Thermometer, Droplets, ArrowUpRight, Download, Heart, Share2, FileText, User, Edit3, Camera
 } from 'lucide-react';
 
-const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onShare, lang }) => {
+const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onEditPlot, onShare, lang }) => {
+  const photoCount = plot.images ? plot.images.length : 1;
+
   return (
     <motion.div
       whileHover={{ y: -6 }}
@@ -15,7 +17,7 @@ const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onShare, lang }) =>
       {/* Top Image Container */}
       <div className="relative h-56 w-full overflow-hidden">
         <img
-          src={plot.image}
+          src={plot.images && plot.images.length > 0 ? plot.images[0] : plot.image}
           alt={plot.title}
           className="w-full h-full object-cover group-hover:scale-108 transition duration-700 filter brightness-95"
         />
@@ -24,12 +26,17 @@ const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onShare, lang }) =>
         {/* Verification Badges Row */}
         <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-1.5 z-10">
           <div className="flex flex-wrap gap-1.5">
-            <span className="px-2.5 py-1 rounded-full bg-[#1B5E20]/90 backdrop-blur-md text-white text-[10px] font-black tracking-wider flex items-center gap-1 border border-[#66BB6A]/40 shadow-sm">
-              <ShieldCheck className="w-3 h-3 text-[#66BB6A]" /> AI VERIFIED
+            <span className="px-3 py-1.5 rounded-full bg-emerald-950/90 backdrop-blur-md text-emerald-300 text-[10px] font-black tracking-wider flex items-center gap-1 border border-emerald-400/60 shadow-lg">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#66BB6A]" /> AI VERIFIED
             </span>
-            <span className="px-2 py-1 rounded-full bg-amber-500/90 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-sm">
-              <Award className="w-3 h-3" /> PATTAYAM
+            <span className="px-3 py-1.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow-lg border border-amber-300">
+              <Award className="w-3.5 h-3.5 text-slate-950" /> PATTAYAM
             </span>
+            {photoCount > 1 && (
+              <span className="px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md text-emerald-300 text-[10px] font-black flex items-center gap-1 border border-emerald-400/40 shadow-lg">
+                <Camera className="w-3.5 h-3.5 text-emerald-400" /> {photoCount} Photos
+              </span>
+            )}
           </div>
 
           <button
@@ -140,18 +147,29 @@ const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onShare, lang }) =>
       </div>
 
       {/* Footer Price & Action Bar */}
-      <div className="p-5 pt-0 flex items-center justify-between gap-3 border-t border-[#2E7D32]/10 mt-auto">
+      <div className="p-5 pt-0 flex items-center justify-between gap-2 border-t border-[#2E7D32]/10 mt-auto">
         <div>
           <span className="text-[10px] uppercase font-black text-gray-400 block">{lang === 'ml' ? 'ആകെ വില' : 'Valuation Price'}</span>
-          <span className="text-lg font-black text-[#1B5E20] dark:text-emerald-400 font-poppins">{plot.price}</span>
+          <span className="text-base font-black text-[#1B5E20] dark:text-emerald-400 font-poppins">{plot.price}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {onEditPlot && (
+            <button
+              onClick={() => onEditPlot(plot)}
+              className="px-3 py-2 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-black text-xs hover:bg-amber-500 hover:text-slate-950 transition-all flex items-center gap-1 border border-amber-500/40"
+              title="Edit Plantation Listing"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+          )}
+
           <button
             onClick={() => onOpenDetail(plot)}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
+            className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md flex items-center gap-1"
           >
-            <span>{lang === 'ml' ? 'വിശദാംശങ്ങൾ' : 'Luxury Detail'}</span>
+            <span>{lang === 'ml' ? 'വിശദാംശങ്ങൾ' : 'Detail'}</span>
             <ArrowUpRight className="w-4 h-4" />
           </button>
         </div>

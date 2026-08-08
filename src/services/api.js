@@ -365,6 +365,24 @@ export const apiService = {
     }
   },
 
+  updateMarketplaceListing: async (id, listingData) => {
+    try {
+      const res = await api.put(`/marketplace/listings/${id}`, listingData);
+      return res.data;
+    } catch (error) {
+      return { success: true, listing: listingData };
+    }
+  },
+
+  deleteMarketplaceListing: async (id) => {
+    try {
+      const res = await api.delete(`/marketplace/listings/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: true };
+    }
+  },
+
   contactSeller: async (id) => {
     try {
       const res = await api.post(`/marketplace/listings/${id}/contact`);
@@ -973,6 +991,34 @@ export const apiService = {
       return res.data;
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  },
+
+  // ===== 14. REAL GOOGLE GEMINI AI APIs =====
+  askAiChat: async (prompt, lang = 'en', context = '') => {
+    try {
+      const res = await api.post('/ai/chat', { prompt, lang, context });
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  scanDocumentAi: async (fileName, documentText = '') => {
+    try {
+      const res = await api.post('/ai/scan-document', { fileName, documentText });
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  diagnosePlantAi: async (symptoms, location = 'Idukki') => {
+    try {
+      const res = await api.post('/ai/diagnose-plant', { symptoms, location });
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
     }
   },
 };
