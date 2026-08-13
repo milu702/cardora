@@ -42,6 +42,7 @@ const {
   updateSmsSettingsController,
   getOwnerMonitoringSummary,
   assignSupervisorToPlantation,
+  inviteAndAssignSupervisor,
 } = require('../controllers/supervisorWorkerController');
 
 // Supervisor–Worker Management Module Routes
@@ -66,6 +67,7 @@ router.put('/supervisor/sms/settings', protect, updateSmsSettingsController);
 
 router.get('/owner-summary/:plantationId', protect, getOwnerMonitoringSummary);
 router.post('/plantations/:plantationId/assign-supervisor', protect, assignSupervisorToPlantation);
+router.post('/plantations/:plantationId/invite-supervisor', protect, inviteAndAssignSupervisor);
 
 // Worker Routes
 router.get('/workers', getWorkers);

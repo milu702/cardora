@@ -10,6 +10,81 @@ const Complaint = require('../models/Complaint');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 
+// Helper to ensure a worker document has a valid linked User account for connections & chat
+const ensureWorkerUserAccount = async (worker) => {
+  if (!worker) return null;
+  if (worker.user) {
+    if (typeof worker.user === 'object' && worker.user._id) return worker.user;
+    const existingUser = await User.findById(worker.user);
+    if (existingUser) return existingUser;
+  }
+
+  const cleanPhone = worker.phone || `+919847${Math.floor(100000 + Math.random() * 900000)}`;
+  const workerCode = worker.workerId || (worker._id ? worker._id.toString().slice(-6) : Math.floor(1000 + Math.random() * 9000));
+  const username = `worker_${workerCode}`.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const email = `${username}@cardora.com`;
+
+  let user = await User.findOne({ $or: [{ phone: cleanPhone }, { email }] });
+  if (!user) {
+    user = await User.create({
+      name: worker.fullName || 'Cardamom Worker',
+      username,
+      email,
+      password: 'password123',
+      role: 'Worker',
+      phone: cleanPhone,
+      location: `${worker.village || 'Vandanmedu'}, ${worker.district || 'Idukki'}`,
+      district: worker.district || 'Idukki',
+      bio: worker.bio || `Skilled cardamom estate worker (${worker.workType || 'Capsule Harvesting'})`,
+      avatar: worker.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(worker.fullName || 'Worker')}&background=1F5E3B&color=ffffff`,
+      isVerified: true,
+    });
+  }
+
+  worker.user = user._id;
+  await worker.save();
+  return user;
+};
+
+// Helper to ensure a contractor document has a valid linked User account for connections & chat
+const ensureContractorUserAccount = async (contractor) => {
+  if (!contractor) return null;
+  if (contractor.user) {
+    if (typeof contractor.user === 'object' && contractor.user._id) return contractor.user;
+    const existingUser = await User.findById(contractor.user);
+    if (existingUser) return existingUser;
+  }
+
+  const cleanPhone = contractor.phone || `+919447${Math.floor(100000 + Math.random() * 900000)}`;
+  const contractorCode = contractor.contractorId || (contractor._id ? contractor._id.toString().slice(-6) : Math.floor(1000 + Math.random() * 9000));
+  const username = `contractor_${contractorCode}`.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const email = `${username}@cardora.com`;
+
+  let user = await User.findOne({ $or: [{ phone: cleanPhone }, { email }] });
+  if (!user) {
+    user = await User.create({
+      name: contractor.companyName || 'Labor Guild Owner',
+      username,
+      email,
+      password: 'password123',
+      role: 'Labor Contractor',
+      phone: cleanPhone,
+      location: `${contractor.district || 'Idukki'}, Kerala`,
+      district: contractor.district || 'Idukki',
+      bio: contractor.bio || 'Licensed labor contractor delivering trained workforce.',
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(contractor.companyName || 'Contractor')}&background=1F5E3B&color=ffffff`,
+      isVerified: true,
+    });
+  }
+
+  contractor.user = user._id;
+  await contractor.save();
+  return user;
+};
+
+exports.ensureWorkerUserAccount = ensureWorkerUserAccount;
+exports.ensureContractorUserAccount = ensureContractorUserAccount;
+
 // @desc    Get all workers with search & filters
 // @route   GET /api/workforce/workers
 // @access  Public / Protected
@@ -75,6 +150,13 @@ exports.getWorkers = async (req, res) => {
     const workers = await Worker.find(filter)
       .populate('user', 'name username email profilePhoto avatar phone location isVerified role')
       .sort({ rating: -1, completedJobs: -1 });
+
+    for (let i = 0; i < workers.length; i++) {
+      if (!workers[i].user) {
+        const shadowUser = await ensureWorkerUserAccount(workers[i]);
+        workers[i].user = shadowUser;
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -191,6 +273,13 @@ exports.getContractors = async (req, res) => {
       .populate('managedWorkers', 'fullName workerId skills dailyWage photo availability')
       .sort({ rating: -1 });
 
+    for (let i = 0; i < contractors.length; i++) {
+      if (!contractors[i].user) {
+        const shadowUser = await ensureContractorUserAccount(contractors[i]);
+        contractors[i].user = shadowUser;
+      }
+    }
+
     res.status(200).json({
       success: true,
       count: contractors.length,
@@ -272,7 +361,27 @@ exports.updateContractorProfile = async (req, res) => {
 exports.sendConnectionRequest = async (req, res) => {
   try {
     const senderId = req.user._id;
-    const { receiverId, note, roleType } = req.body;
+    let { receiverId, note, roleType } = req.body;
+
+    if (!receiverId) {
+      return res.status(400).json({ success: false, message: 'Receiver user ID is required' });
+    }
+
+    // Resolve receiverId if passed as a Contractor ID or Worker ID
+    let targetUser = await User.findById(receiverId);
+    if (!targetUser) {
+      const contractor = await Contractor.findById(receiverId);
+      if (contractor) {
+        targetUser = await ensureContractorUserAccount(contractor);
+        receiverId = targetUser._id.toString();
+      } else {
+        const worker = await Worker.findById(receiverId);
+        if (worker) {
+          targetUser = await ensureWorkerUserAccount(worker);
+          receiverId = targetUser._id.toString();
+        }
+      }
+    }
 
     if (senderId.toString() === receiverId.toString()) {
       return res.status(400).json({ success: false, message: 'You cannot connect with yourself' });

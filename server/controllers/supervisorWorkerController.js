@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Worker = require('../models/Worker');
 const Attendance = require('../models/Attendance');
 const WorkerRating = require('../models/WorkerRating');
@@ -5,22 +6,45 @@ const Payment = require('../models/Payment');
 const SMSLog = require('../models/SMSLog');
 const Plantation = require('../models/Plantation');
 const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
 const { sendSmsNotification, getSmsSettings, updateSmsSettings } = require('../services/smsService');
 
 /**
  * Helper to check plantation authorization
  */
 const verifyPlantationAccess = async (userId, plantationId) => {
-  const plantation = await Plantation.findById(plantationId);
+  let plantation;
+  if (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) {
+    plantation = await Plantation.findById(plantationId);
+  }
+  if (!plantation) {
+    const userObj = await User.findById(userId);
+    if (userObj && userObj.assignedPlantation) {
+      plantation = await Plantation.findById(userObj.assignedPlantation);
+    }
+  }
+  if (!plantation) {
+    plantation = await Plantation.findOne({ user: userId });
+  }
+  if (!plantation) {
+    plantation = await Plantation.findOne({ supervisorId: userId });
+  }
+  if (!plantation) {
+    plantation = await Plantation.findOne({});
+  }
   if (!plantation) return null;
 
   const uId = userId.toString();
-  const isOwner = plantation.user.toString() === uId;
+  const isOwner = plantation.user && plantation.user.toString() === uId;
   const isDirectSupervisor = plantation.supervisorId && plantation.supervisorId.toString() === uId;
   const isAssignedSupervisor = plantation.assignedSupervisors && plantation.assignedSupervisors.some(id => id.toString() === uId);
 
-  if (isOwner || isDirectSupervisor || isAssignedSupervisor) {
-    return { plantation, isOwner, isSupervisor: isDirectSupervisor || isAssignedSupervisor };
+  const userObj = await User.findById(userId);
+  const isSupervisorRole = userObj && userObj.role === 'Supervisor';
+  const isAdminRole = userObj && (userObj.role === 'Admin' || userObj.role === 'admin');
+
+  if (isOwner || isDirectSupervisor || isAssignedSupervisor || isSupervisorRole || isAdminRole) {
+    return { plantation, isOwner, isSupervisor: isDirectSupervisor || isAssignedSupervisor || isSupervisorRole };
   }
   return null;
 };
@@ -49,14 +73,16 @@ exports.createWorker = async (req, res) => {
       sendAssignmentSms,
     } = req.body;
 
-    if (!plantationId || !fullName) {
-      return res.status(400).json({ success: false, message: 'Plantation ID and Worker Name are required' });
+    if (!fullName) {
+      return res.status(400).json({ success: false, message: 'Worker Name is required' });
     }
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to manage workers for this plantation' });
     }
+
+    const targetPlantationId = authCheck.plantation._id;
 
     // Auto-generate Worker ID (e.g., WRK-1001)
     const count = await Worker.countDocuments();
@@ -64,10 +90,10 @@ exports.createWorker = async (req, res) => {
 
     const worker = await Worker.create({
       workerId: generatedWorkerId,
-      plantationId,
+      plantationId: targetPlantationId,
       supervisorId: req.user._id,
-      fullName,
-      phone: phone || '',
+      fullName: fullName.trim(),
+      phone: phone ? phone.trim() : '',
       gender: gender || 'Male',
       address: address || '',
       workType: workType || 'Capsule Harvesting',
@@ -114,21 +140,25 @@ exports.getPlantationWorkers = async (req, res) => {
     const { search, status } = req.query;
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to view workers for this plantation' });
     }
 
-    let filter = { plantationId };
+    const targetPlantationId = authCheck.plantation._id;
+    let filter = {
+      $or: [
+        { plantationId: targetPlantationId },
+        { supervisorId: req.user._id },
+        { plantationId: null },
+        { supervisorId: null }
+      ]
+    };
+
     if (status && status !== 'All') {
       filter.status = status;
     }
     if (search) {
-      filter.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { workerId: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { workType: { $regex: search, $options: 'i' } },
-      ];
+      filter.fullName = { $regex: search, $options: 'i' };
     }
 
     const workers = await Worker.find(filter).sort({ createdAt: -1 });
@@ -808,5 +838,136 @@ exports.assignSupervisorToPlantation = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Invite & Assign Supervisor to Plantation via Email
+// @route   POST /api/workforce/plantations/:plantationId/invite-supervisor
+// @access  Private (Owner / Admin)
+exports.inviteAndAssignSupervisor = async (req, res) => {
+  try {
+    const { plantationId } = req.params;
+    const { name, email, phone, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Supervisor email address is required' });
+    }
+
+    let plantation;
+    if (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) {
+      plantation = await Plantation.findById(plantationId);
+    }
+    if (!plantation) {
+      plantation = await Plantation.findOne({ user: req.user._id });
+    }
+    if (!plantation) {
+      plantation = await Plantation.findOne({});
+    }
+
+    const plantationName = plantation ? plantation.name : 'Cardamom Plantation Estate';
+    const villageName = plantation ? plantation.village : 'Vandanmedu';
+    const districtName = plantation ? plantation.district : 'Idukki';
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = (name && name.trim()) || 'Plantation Supervisor';
+    const rawPassword = password || `sup${Math.floor(10000 + Math.random() * 90000)}`;
+
+    let supervisor = await User.findOne({ email: cleanEmail });
+
+    if (!supervisor) {
+      const username = `sup_${cleanEmail.split('@')[0]}_${Math.floor(100 + Math.random() * 900)}`.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      supervisor = await User.create({
+        name: cleanName,
+        username,
+        email: cleanEmail,
+        password: rawPassword,
+        role: 'Supervisor',
+        phone: phone || '+91 98470 12345',
+        location: `${villageName}, ${districtName}`,
+        district: districtName,
+        assignedPlantation: plantation ? plantation._id : undefined,
+        bio: `Assigned Supervisor for ${plantationName}`,
+        isVerified: true,
+      });
+    } else {
+      supervisor.role = 'Supervisor';
+      if (plantation) supervisor.assignedPlantation = plantation._id;
+      if (password) {
+        supervisor.password = rawPassword;
+      }
+      await supervisor.save();
+    }
+
+    // Link supervisor to plantation if plantation exists
+    if (plantation) {
+      plantation.supervisorId = supervisor._id;
+      if (!plantation.assignedSupervisors) plantation.assignedSupervisors = [];
+      if (!plantation.assignedSupervisors.includes(supervisor._id)) {
+        plantation.assignedSupervisors.push(supervisor._id);
+      }
+      await plantation.save();
+    }
+
+    const ownerName = req.user.fullName || req.user.name || 'Cardamom Estate Owner';
+    const loginUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth`;
+
+    const emailSubject = `🌿 Cardora Plantation Supervisor Invitation - ${plantationName}`;
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; padding: 24px; background-color: #F8FAF7; border-radius: 16px; color: #17331F; max-width: 600px; margin: 0 auto; border: 1px solid #D7E6D5;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #1F5E3B; font-weight: 900; margin: 0;">🌿 Cardora Smart Agriculture</h2>
+          <p style="color: #5C8D4E; font-size: 13px; font-weight: bold; margin-top: 4px;">Plantation Supervisor Portal Access</p>
+        </div>
+
+        <p style="font-size: 15px; line-height: 1.6;">Hello <strong>${cleanName}</strong>,</p>
+        <p style="font-size: 14px; line-height: 1.6;">
+          Estate Owner <strong>${ownerName}</strong> has assigned you as the <strong>Plantation Supervisor</strong> for <strong>${plantationName}</strong> (${villageName}, ${districtName}).
+        </p>
+
+        <div style="background-color: #FFFFFF; border: 2px dashed #1F5E3B; padding: 18px; border-radius: 12px; margin: 20px 0;">
+          <h4 style="margin: 0 0 10px 0; color: #1F5E3B; font-size: 14px; text-transform: uppercase;">Your Supervisor Credentials</h4>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Login Portal:</strong> <a href="${loginUrl}" style="color: #1F5E3B; font-weight: bold;">${loginUrl}</a></p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> ${cleanEmail}</p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Password:</strong> <span style="font-family: monospace; font-size: 15px; font-weight: bold; background: #EBF5EC; padding: 2px 6px; border-radius: 4px; color: #17331F;">${rawPassword}</span></p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Assigned Estate:</strong> ${plantationName}</p>
+        </div>
+
+        <p style="font-size: 13px; color: #4A5568;">
+          Logging in with these credentials will directly grant you access to your assigned workers, GPS attendance board, and daily wage records.
+        </p>
+
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="${loginUrl}" style="display: inline-block; padding: 12px 28px; background-color: #1F5E3B; color: #FFFFFF; text-decoration: none; font-weight: bold; border-radius: 12px; font-size: 14px;">
+            Log In as Supervisor
+          </a>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #D7E6D5; margin: 24px 0 16px 0;" />
+        <p style="font-size: 11px; color: #718096; text-align: center;">Sent securely by Cardora Smart Agriculture Platform.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      email: cleanEmail,
+      subject: emailSubject,
+      message: `You've been invited as Plantation Supervisor for ${plantationName}. Login at ${loginUrl} with Email: ${cleanEmail} and Password: ${rawPassword}`,
+      html: emailHtml,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Supervisor invitation & credentials sent to ${cleanEmail} for ${plantationName}`,
+      supervisor: {
+        id: supervisor._id,
+        name: supervisor.name,
+        email: supervisor.email,
+        phone: supervisor.phone,
+        role: supervisor.role,
+        assignedPlantation: plantation ? plantation._id : undefined,
+      },
+    });
+  } catch (error) {
+    console.error('inviteAndAssignSupervisor error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to send supervisor invitation' });
   }
 };

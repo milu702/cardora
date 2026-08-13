@@ -65,8 +65,12 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Farmer', 'Expert', 'Investor', 'User', 'planter', 'admin', 'Plantation Owner', 'Labor Contractor', 'Worker', 'Admin'],
+      enum: ['Farmer', 'Expert', 'Investor', 'User', 'planter', 'admin', 'Plantation Owner', 'Labor Contractor', 'Worker', 'Supervisor', 'Admin'],
       default: 'Farmer',
+    },
+    assignedPlantation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plantation',
     },
     isVerified: {
       type: Boolean,

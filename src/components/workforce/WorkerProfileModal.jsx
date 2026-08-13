@@ -2,7 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { X, Briefcase, Calendar, IndianRupee, CreditCard, Send, Star } from 'lucide-react';
 import apiService from '../../services/api';
 
-const WorkerProfileModal = ({ isOpen, onClose, worker, plantationId, showToast }) => {
+const WorkerProfileModal = ({
+  isOpen,
+  onClose,
+  worker,
+  plantationId,
+  showToast,
+  onOpenChat,
+  onConnect,
+  isConnected,
+  isPending,
+}) => {
   const [activeTab, setActiveTab] = useState('attendance'); // attendance | work | rating | wages | payments | sms
   const [wageDetails, setWageDetails] = useState(null);
   const [ratings, setRatings] = useState([]);
@@ -66,9 +76,46 @@ const WorkerProfileModal = ({ isOpen, onClose, worker, plantationId, showToast }
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {onOpenChat && (
+              <button
+                onClick={() => {
+                  const targetId = worker.user?._id || worker.user?.id || (typeof worker.user === 'string' ? worker.user : null) || worker._id;
+                  onClose();
+                  onOpenChat(targetId);
+                }}
+                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition shadow-sm"
+              >
+                💬 Message
+              </button>
+            )}
+            {onConnect && !isConnected && !isPending && (
+              <button
+                onClick={() => {
+                  const targetId = worker.user?._id || worker.user?.id || (typeof worker.user === 'string' ? worker.user : null) || worker._id;
+                  onClose();
+                  onConnect(targetId);
+                }}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition shadow-sm"
+              >
+                🤝 Connect
+              </button>
+            )}
+            {isConnected && (
+              <span className="px-3 py-1.5 bg-emerald-700/80 text-white text-xs font-bold rounded-xl">
+                ✓ Connected
+              </span>
+            )}
+            {isPending && (
+              <span className="px-3 py-1.5 bg-amber-600/80 text-white text-xs font-bold rounded-xl">
+                ⏳ Requested
+              </span>
+            )}
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* 6 Tabs Navigation */}

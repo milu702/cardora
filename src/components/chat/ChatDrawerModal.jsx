@@ -10,6 +10,15 @@ import { useAuth } from '../../context/AuthContext';
 
 const QUICK_EMOJIS = ['🌿', '❤️', '👍', '👏', '🌧️', '🌾', '📍', '🤝', '☕', '💡'];
 
+const extractUserId = (u) => {
+  if (!u) return null;
+  if (typeof u === 'string') return u;
+  if (u._id) return u._id.toString();
+  if (u.id) return u.id.toString();
+  if (u.user) return extractUserId(u.user);
+  return null;
+};
+
 const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
   const { user: currentUser } = useAuth();
   const [conversations, setConversations] = useState([]);
@@ -33,10 +42,26 @@ const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
   const audioRefMap = useRef({});
 
   useEffect(() => {
-    if (targetUser) {
-      setActivePartner(targetUser);
+    if (isOpen && targetUser) {
+      const pId = extractUserId(targetUser);
+      if (typeof targetUser === 'object' && targetUser !== null) {
+        const pName = targetUser.companyName || targetUser.fullName || targetUser.name || targetUser.user?.name || 'Planter Partner';
+        const pAvatar = targetUser.avatar || targetUser.photo || targetUser.user?.avatar || targetUser.profilePhoto || '';
+        const pRole = targetUser.role || (targetUser.companyName ? 'Labor Contractor' : targetUser.fullName ? 'Worker' : 'Farmer');
+        const pUsername = targetUser.username || targetUser.user?.username || 'planter';
+        setActivePartner({
+          _id: pId,
+          id: pId,
+          name: pName,
+          avatar: pAvatar,
+          role: pRole,
+          username: pUsername,
+        });
+      } else {
+        setActivePartner({ _id: pId, id: pId, name: 'Planter Partner', username: 'planter', role: 'Farmer' });
+      }
     }
-  }, [targetUser]);
+  }, [isOpen, targetUser]);
 
   const fetchConversations = async () => {
     try {
@@ -54,7 +79,9 @@ const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
       const res = await apiService.getChatMessages(partnerId);
       if (res && res.success) {
         setMessages(res.messages || []);
-        if (res.partner) setActivePartner(res.partner);
+        if (res.partner && res.partner.name) {
+          setActivePartner(res.partner);
+        }
       }
     } catch (err) {
       console.error('Error fetching chat messages:', err);
@@ -64,29 +91,29 @@ const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
     }
   };
 
+  const currentPartnerId = extractUserId(activePartner);
+
   useEffect(() => {
     let interval;
-    if (isOpen) {
+    if (isOpen && currentPartnerId) {
       fetchConversations();
-      if (activePartner?._id || activePartner?.id) {
-        const partnerId = activePartner._id || activePartner.id;
-        fetchChatMessages(partnerId);
-        interval = setInterval(() => {
-          apiService.getChatMessages(partnerId).then((res) => {
-            if (res && res.success && Array.isArray(res.messages)) {
-              setMessages(res.messages);
-            }
-          });
-        }, 3500);
-      } else {
-        setLoading(false);
-      }
+      fetchChatMessages(currentPartnerId);
+      interval = setInterval(() => {
+        apiService.getChatMessages(currentPartnerId).then((res) => {
+          if (res && res.success && Array.isArray(res.messages)) {
+            setMessages(res.messages);
+          }
+        });
+      }, 3500);
+    } else if (isOpen) {
+      fetchConversations();
+      setLoading(false);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, activePartner?._id || activePartner?.id]);
+  }, [isOpen, currentPartnerId]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -96,12 +123,12 @@ const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
 
   const handleSendMessage = async (payload = {}) => {
     const textToSend = payload.text !== undefined ? payload.text : messageText;
-    const partnerId = activePartner?._id || activePartner?.id;
-    if (!partnerId || (!textToSend.trim() && !payload.audioUrl && (!payload.attachments || payload.attachments.length === 0))) return;
+    const pId = extractUserId(activePartner) || extractUserId(targetUser);
+    if (!pId || (!textToSend.trim() && !payload.audioUrl && (!payload.attachments || payload.attachments.length === 0))) return;
 
     setSending(true);
     try {
-      const res = await apiService.sendMessage(partnerId, {
+      const res = await apiService.sendMessage(pId, {
         text: textToSend.trim(),
         attachments: payload.attachments || [],
         audioUrl: payload.audioUrl || '',
@@ -113,9 +140,11 @@ const ChatDrawerModal = ({ targetUser, isOpen, onClose, onToast }) => {
         setShowEmojiPicker(false);
         scrollToBottom();
         fetchConversations();
+      } else {
+        if (onToast) onToast(res?.message || 'Failed to send message');
       }
     } catch (err) {
-      if (onToast) onToast('Failed to send message');
+      if (onToast) onToast(err.response?.data?.message || 'Failed to send message');
     } finally {
       setSending(false);
     }

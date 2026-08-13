@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Filter, ShieldCheck, MapPin, Star, DollarSign,
   CheckCircle, Clock, Plus, UserPlus, MessageSquare, Briefcase,
-  Shield, ChevronRight, Navigation, RefreshCw
+  Shield, ChevronRight, Navigation, RefreshCw, Mail, X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
@@ -16,6 +16,7 @@ const WorkforceModule = ({ onOpenChat }) => {
   const userRole = (user?.role || 'Farmer').toLowerCase();
   const isAdmin = userRole === 'admin';
   const isWorker = userRole === 'worker';
+  const isSupervisor = userRole === 'supervisor';
 
   // Active Tab: 'supervisor' | 'dashboard' | 'search' | 'connections' | 'contractors' | 'tasks' | 'attendance' | 'payments' | 'admin'
   const [activeTab, setActiveTab] = useState(isAdmin ? 'admin' : 'supervisor');
@@ -32,6 +33,7 @@ const WorkforceModule = ({ onOpenChat }) => {
   const [tasks, setTasks] = useState([]);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [myPlantations, setMyPlantations] = useState([]);
   const [adminVerifications, setAdminVerifications] = useState({ unverifiedWorkers: [], unverifiedContractors: [], complaints: [] });
 
   // Filter States for Worker Search
@@ -50,6 +52,57 @@ const WorkforceModule = ({ onOpenChat }) => {
 
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+
+  // Invite Supervisor Modal State
+  const [inviteSupervisorModalOpen, setInviteSupervisorModalOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    plantationId: '',
+  });
+  const [inviting, setInviting] = useState(false);
+
+  const handleInviteSupervisor = async (e) => {
+    e.preventDefault();
+    const nameClean = (inviteForm.name || '').trim();
+    if (!nameClean || nameClean.length < 2) {
+      showToast('⚠️ Please enter full supervisor name (at least 2 characters)');
+      return;
+    }
+    const emailClean = (inviteForm.email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailClean || !emailRegex.test(emailClean)) {
+      showToast('⚠️ Please enter a valid email address (e.g. supervisor@gmail.com)');
+      return;
+    }
+    if (!inviteForm.password || inviteForm.password.length < 4) {
+      showToast('⚠️ Password must be at least 4 characters long');
+      return;
+    }
+
+    const targetPlantationId = inviteForm.plantationId || (myPlantations && myPlantations[0]?._id) || 'default';
+    setInviting(true);
+    try {
+      const res = await apiService.inviteSupervisor(targetPlantationId, {
+        ...inviteForm,
+        name: nameClean,
+        email: emailClean,
+      });
+      if (res && res.success) {
+        showToast(`✉️ ${res.message || 'Supervisor invitation sent via email!'}`);
+        setInviteSupervisorModalOpen(false);
+        setInviteForm({ name: '', email: '', phone: '', password: '', plantationId: '' });
+      } else {
+        showToast(res?.message || 'Failed to send supervisor invitation');
+      }
+    } catch (err) {
+      showToast('Failed to send supervisor invitation');
+    } finally {
+      setInviting(false);
+    }
+  };
 
   // Create Task Modal
   const [createTaskModalOpen, setCreateTaskModalOpen] = useState(false);
@@ -309,7 +362,13 @@ const WorkforceModule = ({ onOpenChat }) => {
         setPayments(pRes.payments || []);
       }
 
-      // 7. Fetch Admin Verifications if Admin
+      // 7. Fetch Plantations
+      const plantRes = await apiService.getPlantations();
+      if (plantRes && plantRes.success) {
+        setMyPlantations(plantRes.plantations || []);
+      }
+
+      // 8. Fetch Admin Verifications if Admin
       if (isAdmin) {
         const admRes = await apiService.getWorkforceAdminVerifications();
         if (admRes && admRes.success) {
@@ -337,14 +396,78 @@ const WorkforceModule = ({ onOpenChat }) => {
     loadWorkforceData();
   };
 
+  const [connectingId, setConnectingId] = useState(null);
+
+  // Helper to extract User ID from any target item (Contractor, Worker, User object, or String ID)
+  const resolveTargetUserId = (target) => {
+    if (!target) return null;
+    if (typeof target === 'string') return target;
+    if (target.user) {
+      if (typeof target.user === 'string') return target.user;
+      if (target.user._id) return target.user._id.toString();
+      if (target.user.id) return target.user.id.toString();
+    }
+    if (target.userId) {
+      if (typeof target.userId === 'string') return target.userId;
+      if (target.userId._id) return target.userId._id.toString();
+    }
+    if (target._id) return target._id.toString();
+    if (target.id) return target.id.toString();
+    return null;
+  };
+
+  // Connection status resolver for any contractor or worker target
+  const getConnectionStatus = (target) => {
+    const targetId = resolveTargetUserId(target);
+    const currentUserId = user?._id || user?.id;
+
+    if (!targetId || !currentUserId) return { status: 'none', targetId };
+    if (targetId.toString() === currentUserId.toString()) return { status: 'self', targetId };
+
+    // Check active connections
+    const activeConn = connections.find((c) => {
+      const connUserId = resolveTargetUserId(c.user || c);
+      return connUserId && connUserId.toString() === targetId.toString();
+    });
+    if (activeConn) return { status: 'connected', data: activeConn, targetId };
+
+    // Check outgoing pending requests
+    const outReq = outgoingRequests.find((r) => {
+      const rId = resolveTargetUserId(r.receiver);
+      return rId && rId.toString() === targetId.toString() && r.status === 'pending';
+    });
+    if (outReq) return { status: 'outgoing_pending', data: outReq, targetId };
+
+    // Check incoming pending requests
+    const inReq = incomingRequests.find((r) => {
+      const sId = resolveTargetUserId(r.sender);
+      return sId && sId.toString() === targetId.toString() && r.status === 'pending';
+    });
+    if (inReq) return { status: 'incoming_pending', data: inReq, targetId };
+
+    return { status: 'none', targetId };
+  };
+
   // Connection Actions
-  const handleSendConnection = async (targetUserId) => {
-    const res = await apiService.sendConnectionRequest({ receiverId: targetUserId });
-    if (res && res.success) {
-      showToast('Connection request sent!');
-      loadWorkforceData();
-    } else {
-      showToast(res?.message || 'Failed to send request');
+  const handleSendConnection = async (target) => {
+    const targetUserId = resolveTargetUserId(target);
+    if (!targetUserId) {
+      showToast('⚠️ Contact user details unavailable');
+      return;
+    }
+    setConnectingId(targetUserId);
+    try {
+      const res = await apiService.sendConnectionRequest({ receiverId: targetUserId });
+      if (res && res.success) {
+        showToast('🎉 Connection request sent successfully!');
+        await loadWorkforceData();
+      } else {
+        showToast(res?.message || 'Failed to send request');
+      }
+    } catch (err) {
+      showToast('Failed to send connection request');
+    } finally {
+      setConnectingId(null);
     }
   };
 
@@ -467,13 +590,8 @@ const WorkforceModule = ({ onOpenChat }) => {
     }
   };
 
-  const isUserConnected = (targetUserId) => {
-    return connections.some((c) => (c.user?._id || c.user?.id || '').toString() === (targetUserId || '').toString());
-  };
-
-  const isUserPending = (targetUserId) => {
-    return outgoingRequests.some((r) => (r.receiver?._id || r.receiver?.id || '').toString() === (targetUserId || '').toString());
-  };
+  const isUserConnected = (target) => getConnectionStatus(target).status === 'connected';
+  const isUserPending = (target) => getConnectionStatus(target).status === 'outgoing_pending';
 
   return (
     <div className="space-y-6">
@@ -505,75 +623,90 @@ const WorkforceModule = ({ onOpenChat }) => {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           
-          <button
-            onClick={() => setRegisterWorkerModalOpen(true)}
-            className="px-5 py-3 bg-[#1B5E20] hover:bg-[#2E7D32] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4 text-emerald-300" />
-            <span>+ Upload Worker Profile / Details</span>
-          </button>
+          {!isSupervisor && (
+            <>
+              <button
+                onClick={() => setRegisterWorkerModalOpen(true)}
+                className="px-5 py-3 bg-[#1B5E20] hover:bg-[#2E7D32] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4 text-emerald-300" />
+                <span>+ Upload Worker Profile / Details</span>
+              </button>
 
-          <button
-            onClick={handleOpenContractorModal}
-            className="px-5 py-3 bg-[#5C8D4E] hover:bg-[#4a743e] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
-          >
-            <ShieldCheck className="w-4 h-4 text-amber-200" />
-            <span>{myContractorProfile ? '✏️ Edit Contractor Profile' : '+ Register Labor Team'}</span>
-          </button>
-          {!isWorker && (
-            <button
-              onClick={() => setCreateTaskModalOpen(true)}
-              className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Task</span>
-            </button>
+              <button
+                onClick={handleOpenContractorModal}
+                className="px-5 py-3 bg-[#5C8D4E] hover:bg-[#4a743e] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-200" />
+                <span>{myContractorProfile ? '✏️ Edit Contractor Profile' : '+ Register Labor Team'}</span>
+              </button>
+              {!isWorker && (
+                <button
+                  onClick={() => setInviteSupervisorModalOpen(true)}
+                  className="px-4 py-3 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
+                >
+                  <Mail className="w-4 h-4 text-amber-300" />
+                  <span>✉️ Invite Supervisor</span>
+                </button>
+              )}
+              {!isWorker && (
+                <button
+                  onClick={() => setCreateTaskModalOpen(true)}
+                  className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black rounded-2xl shadow-lg flex items-center gap-2 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Task</span>
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* TOP NAVIGATION TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { id: 'supervisor', label: 'Supervisor Hub', icon: ShieldCheck },
-          { id: 'dashboard', label: 'Overview', icon: Users },
-          { id: 'search', label: 'Search Workers', icon: Search, badge: workers.length },
-          { id: 'connections', label: 'Connections', icon: UserPlus, badge: connections.length },
-          { id: 'contractors', label: 'Labor Contractors', icon: ShieldCheck, badge: contractors.length },
-          { id: 'tasks', label: 'Task Manager', icon: Briefcase, badge: tasks.length },
-          { id: 'attendance', label: 'GPS Attendance', icon: MapPin },
-          { id: 'payments', label: 'Payments & Receipts', icon: DollarSign, badge: payments.length },
-          ...(isAdmin ? [{ id: 'admin', label: 'Admin Moderation', icon: Shield }] : []),
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-[#1F5E3B] text-white shadow-md'
-                  : 'bg-white dark:bg-slate-900 text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-800 hover:bg-[#DDEFD9]/40'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-              {tab.badge > 0 && (
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-[#DDEFD9] text-[#1F5E3B] dark:bg-slate-800 dark:text-emerald-400'
-                }`}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {/* TOP NAVIGATION TABS (Hidden for Supervisor who has 1 dedicated dashboard) */}
+      {!isSupervisor && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {[
+            { id: 'supervisor', label: 'Supervisor Hub', icon: ShieldCheck },
+            { id: 'dashboard', label: 'Overview', icon: Users },
+            { id: 'search', label: 'Search Workers', icon: Search, badge: workers.length },
+            { id: 'connections', label: 'Connections', icon: UserPlus, badge: connections.length },
+            { id: 'contractors', label: 'Labor Contractors', icon: ShieldCheck, badge: contractors.length },
+            { id: 'tasks', label: 'Task Manager', icon: Briefcase, badge: tasks.length },
+            { id: 'attendance', label: 'GPS Attendance', icon: MapPin },
+            { id: 'payments', label: 'Payments & Receipts', icon: DollarSign, badge: payments.length },
+            ...(isAdmin ? [{ id: 'admin', label: 'Admin Moderation', icon: Shield }] : []),
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                  isActive
+                    ? 'bg-[#1F5E3B] text-white shadow-md'
+                    : 'bg-white dark:bg-slate-900 text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-800 hover:bg-[#DDEFD9]/40'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+                {tab.badge > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-[#DDEFD9] text-[#1F5E3B] dark:bg-slate-800 dark:text-emerald-400'
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ===== SUPERVISOR HUB MODULE ===== */}
       {activeTab === 'supervisor' && (
-        <SupervisorDashboard showToast={showToast} />
+        <SupervisorDashboard plantationId={(myPlantations && myPlantations[0]?._id) || 'default_plantation_id'} showToast={showToast} />
       )}
 
       {/* ===== TAB 1: OVERVIEW DASHBOARD ===== */}
@@ -725,6 +858,9 @@ const WorkforceModule = ({ onOpenChat }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {contractors.slice(0, 3).map((c) => {
                   const phoneNum = c.phone || c.user?.phone || '+91 94471 00000';
+                  const targetUserId = resolveTargetUserId(c);
+                  const connState = getConnectionStatus(c);
+
                   return (
                     <div key={c._id} className="p-4 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-2xl border border-[#D7E6D5] dark:border-slate-800 space-y-3 flex flex-col justify-between">
                       <div className="space-y-2">
@@ -740,20 +876,39 @@ const WorkforceModule = ({ onOpenChat }) => {
                         <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2">{c.bio}</p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
                         <a
                           href={`tel:${phoneNum}`}
-                          className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-xl flex items-center justify-center gap-1 transition"
+                          className="flex-1 min-w-[90px] py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-xl flex items-center justify-center gap-1 transition"
                         >
                           📞 Call {phoneNum}
                         </a>
                         <button
-                          onClick={() => onOpenChat && onOpenChat(c.user?._id || c.user?.id || c.user)}
-                          className="flex-1 py-1.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-[11px] font-bold rounded-xl flex items-center justify-center gap-1 transition"
+                          onClick={() => {
+                            const uId = resolveTargetUserId(c);
+                            if (uId) onOpenChat && onOpenChat(c);
+                          }}
+                          className="flex-1 min-w-[90px] py-1.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-[11px] font-bold rounded-xl flex items-center justify-center gap-1 transition"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>Message</span>
                         </button>
+                        {connState.status === 'none' && (
+                          <button
+                            disabled={connectingId === targetUserId}
+                            onClick={() => handleSendConnection(c)}
+                            className="py-1.5 px-2.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-xl flex items-center gap-1 transition disabled:opacity-50"
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            <span>Connect</span>
+                          </button>
+                        )}
+                        {connState.status === 'connected' && (
+                          <span className="py-1.5 px-2 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-xl">✓ Connected</span>
+                        )}
+                        {connState.status === 'outgoing_pending' && (
+                          <span className="py-1.5 px-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-xl">⏳ Requested</span>
+                        )}
                       </div>
                     </div>
                   );
@@ -889,8 +1044,8 @@ const WorkforceModule = ({ onOpenChat }) => {
           {/* Workers Results Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {workers.map((w) => {
-              const connected = isUserConnected(w.user?._id || w.user?.id);
-              const pending = isUserPending(w.user?._id || w.user?.id);
+              const targetUserId = resolveTargetUserId(w);
+              const connState = getConnectionStatus(w);
 
               return (
                 <div
@@ -901,7 +1056,7 @@ const WorkforceModule = ({ onOpenChat }) => {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <img
-                          src={w.photo || w.user?.avatar}
+                          src={w.photo || w.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(w.fullName || 'Worker')}`}
                           alt=""
                           className="w-14 h-14 rounded-2xl object-cover border-2 border-[#1F5E3B] shadow-sm"
                         />
@@ -938,30 +1093,59 @@ const WorkforceModule = ({ onOpenChat }) => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => { setSelectedWorker(w); setWorkerModalOpen(true); }}
-                        className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition text-center"
+                        className="flex-1 min-w-[90px] py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition text-center"
                       >
                         View Profile
                       </button>
 
-                      {connected ? (
+                      <button
+                        onClick={() => {
+                          const uId = resolveTargetUserId(w);
+                          if (uId) onOpenChat && onOpenChat(uId);
+                          else showToast('⚠️ Contact details unavailable');
+                        }}
+                        className="py-2 px-3 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl transition flex items-center gap-1 shadow-sm"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Message</span>
+                      </button>
+
+                      {connState.status === 'self' ? (
+                        <span className="py-2 px-3 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold rounded-xl flex items-center gap-1">
+                          👤 Your Profile
+                        </span>
+                      ) : connState.status === 'connected' ? (
+                        <span className="py-2 px-3 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-bold rounded-xl flex items-center gap-1">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Connected</span>
+                        </span>
+                      ) : connState.status === 'outgoing_pending' ? (
+                        <span className="py-2 px-3 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900 text-xs font-bold rounded-xl flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Requested</span>
+                        </span>
+                      ) : connState.status === 'incoming_pending' ? (
                         <button
-                          onClick={() => onOpenChat && onOpenChat(w.user?._id || w.user)}
-                          className="py-2 px-3 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl transition flex items-center gap-1"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>Chat</span>
-                        </button>
-                      ) : pending ? (
-                        <span className="py-2 px-3 bg-slate-200 text-slate-500 text-[10px] font-bold rounded-xl">Requested</span>
-                      ) : (
-                        <button
-                          onClick={() => handleSendConnection(w.user?._id || w.user)}
-                          className="py-2 px-3 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl transition flex items-center gap-1"
+                          onClick={() => handleRespondRequest(connState.data._id, 'accepted')}
+                          className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition shadow-sm"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
+                          <span>Accept Request</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled={connectingId === targetUserId}
+                          onClick={() => handleSendConnection(w)}
+                          className="py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition shadow-sm disabled:opacity-50"
+                        >
+                          {connectingId === targetUserId ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <UserPlus className="w-3.5 h-3.5" />
+                          )}
                           <span>Connect</span>
                         </button>
                       )}
@@ -1055,6 +1239,9 @@ const WorkforceModule = ({ onOpenChat }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {contractors.map((c) => {
                 const phoneNum = c.phone || c.user?.phone || '+91 94471 00000';
+                const targetUserId = resolveTargetUserId(c);
+                const connState = getConnectionStatus(c);
+
                 return (
                   <div key={c._id} className="p-5 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-2xl border border-[#D7E6D5] dark:border-slate-800 space-y-3">
                     <div className="flex items-start justify-between">
@@ -1088,26 +1275,61 @@ const WorkforceModule = ({ onOpenChat }) => {
                       </div>
                     </div>
 
-                    <div className="pt-2 flex items-center gap-2 border-t border-slate-200 dark:border-slate-700">
+                    <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-slate-200 dark:border-slate-700">
                       <a
                         href={`tel:${phoneNum}`}
-                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition"
+                        className="flex-1 min-w-[110px] py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm"
                       >
                         📞 Call {phoneNum}
                       </a>
                       <button
-                        onClick={() => onOpenChat && onOpenChat(c.user?._id || c.user?.id || c.user)}
-                        className="flex-1 py-2 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition"
+                        onClick={() => {
+                          const uId = resolveTargetUserId(c);
+                          if (uId) onOpenChat && onOpenChat(c);
+                          else showToast('⚠️ Contact details unavailable');
+                        }}
+                        className="flex-1 min-w-[100px] py-2 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>Message</span>
                       </button>
-                      <button
-                        onClick={() => handleSendConnection(c.user?._id || c.user?.id || c.user)}
-                        className="py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition"
-                      >
-                        Connect
-                      </button>
+
+                      {connState.status === 'self' ? (
+                        <span className="py-2 px-3 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold rounded-xl flex items-center gap-1">
+                          👤 Your Profile
+                        </span>
+                      ) : connState.status === 'connected' ? (
+                        <span className="py-2 px-3 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-bold rounded-xl flex items-center gap-1">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Connected</span>
+                        </span>
+                      ) : connState.status === 'outgoing_pending' ? (
+                        <span className="py-2 px-3 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900 text-xs font-bold rounded-xl flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Requested</span>
+                        </span>
+                      ) : connState.status === 'incoming_pending' ? (
+                        <button
+                          onClick={() => handleRespondRequest(connState.data._id, 'accepted')}
+                          className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition shadow-sm"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Accept Request</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled={connectingId === targetUserId}
+                          onClick={() => handleSendConnection(c)}
+                          className="py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition shadow-sm disabled:opacity-50"
+                        >
+                          {connectingId === targetUserId ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <UserPlus className="w-3.5 h-3.5" />
+                          )}
+                          <span>Connect</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1361,6 +1583,126 @@ const WorkforceModule = ({ onOpenChat }) => {
         isOpen={receiptModalOpen}
         onClose={() => setReceiptModalOpen(false)}
       />
+
+      {/* INVITE & ASSIGN SUPERVISOR MODAL */}
+      {inviteSupervisorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 border border-[#D7E6D5] dark:border-slate-800">
+            <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#EBF5EC] dark:bg-emerald-950/60 rounded-xl text-[#1F5E3B]">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#17331F] dark:text-white">✉️ Invite & Assign Supervisor</h3>
+                  <p className="text-[10px] text-slate-500">Send credentials & email invite to supervisor</p>
+                </div>
+              </div>
+              <button onClick={() => setInviteSupervisorModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInviteSupervisor} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Supervisor Full Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Mathew Joseph"
+                  value={inviteForm.name}
+                  onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#1F5E3B]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Email Address (Sends Credentials)</label>
+                <input
+                  type="email"
+                  placeholder="e.g. supervisor@gmail.com"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#1F5E3B]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. +91 98470 12345"
+                  value={inviteForm.phone}
+                  onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-[#1F5E3B]"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setInviteForm({ ...inviteForm, password: `sup${Math.floor(10000 + Math.random() * 90000)}` })}
+                    className="text-[10px] text-[#1F5E3B] font-bold hover:underline"
+                  >
+                    🎲 Auto Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Enter or generate password"
+                  value={inviteForm.password}
+                  onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Assigned Plantation</label>
+                <select
+                  value={inviteForm.plantationId}
+                  onChange={(e) => setInviteForm({ ...inviteForm, plantationId: e.target.value })}
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                >
+                  <option value="">Select Plantation...</option>
+                  {(myPlantations || []).map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} ({p.village}, {p.district})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setInviteSupervisorModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 font-bold rounded-xl text-slate-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="flex-1 py-2.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white font-bold rounded-xl flex items-center justify-center gap-1 shadow-md disabled:opacity-50"
+                >
+                  {inviting ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 text-amber-300" />
+                      <span>Send Invite & Assign</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* CREATE TASK MODAL */}
       {createTaskModalOpen && (

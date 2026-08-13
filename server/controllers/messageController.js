@@ -1,6 +1,9 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const Contractor = require('../models/Contractor');
+const Worker = require('../models/Worker');
+const { ensureWorkerUserAccount, ensureContractorUserAccount } = require('./workforceController');
 
 // @desc    Get Chat Conversations list for logged-in user
 // @route   GET /api/messages/conversations
@@ -68,9 +71,23 @@ exports.getConversations = async (req, res) => {
 exports.getChatMessages = async (req, res) => {
   try {
     const currentUserId = req.user._id || req.user.id;
-    const targetUserId = req.params.userId;
+    let targetUserId = req.params.userId;
 
-    const targetUser = await User.findById(targetUserId).select('name username avatar profilePhoto role location privacy');
+    let targetUser = await User.findById(targetUserId).select('name username avatar profilePhoto role location privacy');
+    if (!targetUser) {
+      const contractor = await Contractor.findById(targetUserId);
+      if (contractor) {
+        targetUser = await ensureContractorUserAccount(contractor);
+        targetUserId = targetUser._id.toString();
+      } else {
+        const worker = await Worker.findById(targetUserId);
+        if (worker) {
+          targetUser = await ensureWorkerUserAccount(worker);
+          targetUserId = targetUser._id.toString();
+        }
+      }
+    }
+
     if (!targetUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -108,8 +125,8 @@ exports.getChatMessages = async (req, res) => {
       partner: {
         id: targetUser._id,
         _id: targetUser._id,
-        name: targetUser.name,
-        username: targetUser.username,
+        name: targetUser.name || 'Planter User',
+        username: targetUser.username || 'planter',
         avatar: targetUser.avatar || targetUser.profilePhoto || '',
         role: targetUser.role || 'Farmer',
         location: targetUser.location || 'Idukki, Kerala',
@@ -127,17 +144,27 @@ exports.getChatMessages = async (req, res) => {
 exports.sendMessage = async (req, res) => {
   try {
     const currentUserId = req.user._id || req.user.id;
-    const targetUserId = req.params.userId;
+    let targetUserId = req.params.userId;
     const { text, attachments, audioUrl } = req.body;
 
     if (!text && (!attachments || attachments.length === 0) && !audioUrl) {
       return res.status(400).json({ success: false, message: 'Cannot send empty message' });
     }
 
-    const [recipient, sender] = await Promise.all([
-      User.findById(targetUserId),
-      User.findById(currentUserId),
-    ]);
+    let recipient = await User.findById(targetUserId);
+    if (!recipient) {
+      const contractor = await Contractor.findById(targetUserId);
+      if (contractor) {
+        recipient = await ensureContractorUserAccount(contractor);
+        targetUserId = recipient._id.toString();
+      } else {
+        const worker = await Worker.findById(targetUserId);
+        if (worker) {
+          recipient = await ensureWorkerUserAccount(worker);
+          targetUserId = recipient._id.toString();
+        }
+      }
+    }
 
     if (!recipient) {
       return res.status(404).json({ success: false, message: 'Recipient user not found' });
@@ -157,13 +184,15 @@ exports.sendMessage = async (req, res) => {
       read: false,
     });
 
+    const senderName = (req.user && (req.user.name || req.user.fullName || req.user.username)) || 'A Planter';
+
     // Generate Notification
     await Notification.create({
       user: targetUserId,
       sender: currentUserId,
       type: 'message',
       title: '💬 New Message',
-      message: `${sender.name} sent you a message: "${(text || 'Attachment').slice(0, 45)}"`,
+      message: `${senderName} sent you a message: "${(text || 'Attachment').slice(0, 45)}"`,
     }).catch(() => {});
 
     res.status(201).json({

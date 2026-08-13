@@ -67,6 +67,7 @@ export const AuthProvider = ({ children }) => {
           const res = await apiService.getProfile();
           if (res && res.success && res.user) {
             const fetchedUser = {
+              _id: res.user._id || res.user.id,
               id: res.user.id || res.user._id,
               name: res.user.name || res.user.fullName,
               fullName: res.user.fullName || res.user.name,

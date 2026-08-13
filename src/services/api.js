@@ -1141,6 +1141,15 @@ export const apiService = {
     }
   },
 
+  inviteSupervisor: async (plantationId, data) => {
+    try {
+      const res = await api.post(`/workforce/plantations/${plantationId}/invite-supervisor`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
   // ===== 14. REAL GOOGLE GEMINI AI APIs =====
   askAiChat: async (prompt, lang = 'en', context = '') => {
     try {

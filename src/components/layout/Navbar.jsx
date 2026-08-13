@@ -52,10 +52,16 @@ const Navbar = ({ onToggleMobileSidebar }) => {
   ];
 
   const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+  const isSupervisorUser = (user?.role || '').toLowerCase() === 'supervisor';
 
   const loggedInNavLinks = isAdminUser
     ? [
         { name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield },
+        { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+      ]
+    : isSupervisorUser
+    ? [
+        { name: 'Supervisor Dashboard', href: '/dashboard?tab=workforce', icon: Shield },
         { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
       ]
     : [

@@ -33,10 +33,12 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
-  const defaultTab = isAdminUser ? 'admin' : 'dashboard';
+  const isSupervisorUser = (user?.role || '').toLowerCase() === 'supervisor';
+  const defaultTab = isAdminUser ? 'admin' : isSupervisorUser ? 'workforce' : 'dashboard';
 
   // Active Tab: 'dashboard' | 'plantations' | 'ai' | 'community' | 'plots' | 'admin' | 'profile' | 'settings'
-  const activeTab = searchParams.get('tab') || defaultTab;
+  const rawTab = searchParams.get('tab') || defaultTab;
+  const activeTab = isSupervisorUser ? (rawTab === 'profile' ? 'profile' : 'workforce') : rawTab;
 
   const setActiveTab = (tabName) => {
     setSearchParams({ tab: tabName });

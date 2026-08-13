@@ -14,6 +14,7 @@ import {
   Award,
 } from 'lucide-react';
 import apiService from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import AddWorkerModal from './AddWorkerModal';
 import AttendanceTracker from './AttendanceTracker';
 import StarRatingModal from './StarRatingModal';
@@ -23,7 +24,9 @@ import SmsNotificationModal from './SmsNotificationModal';
 import OwnerMonitoringView from './OwnerMonitoringView';
 
 const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast }) => {
-  const [activeView, setActiveView] = useState('dashboard'); // dashboard | attendance | wages | owner | sms
+  const { user } = useAuth();
+  const isSupervisor = (user?.role || '').toLowerCase() === 'supervisor';
+  const [activeView, setActiveView] = useState(isSupervisor ? 'attendance' : 'owner'); // attendance | owner | dashboard | wages | sms
   const [workers, setWorkers] = useState([]);
   const [plantationInfo, setPlantationInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -156,12 +159,19 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
 
         {/* View Switcher Tabs */}
         <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl overflow-x-auto">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: Users },
-            { id: 'attendance', label: "Today's Attendance", icon: UserCheck },
-            { id: 'wages', label: 'Wages & Payments', icon: IndianRupee },
-            { id: 'owner', label: 'Owner View', icon: ShieldCheck },
-          ].map((tab) => {
+          {(isSupervisor
+            ? [
+                { id: 'attendance', label: "GPS Attendance Board", icon: UserCheck },
+                { id: 'dashboard', label: 'Workers Roster', icon: Users },
+                { id: 'wages', label: 'Daily Wage Settlement', icon: IndianRupee },
+              ]
+            : [
+                { id: 'owner', label: 'Owner Attendance Monitoring', icon: ShieldCheck },
+                { id: 'attendance', label: "Supervisor Attendance Tracker", icon: UserCheck },
+                { id: 'dashboard', label: 'Workers Roster', icon: Users },
+                { id: 'wages', label: 'Wages & Payments', icon: IndianRupee },
+              ]
+          ).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeView === tab.id;
             return (

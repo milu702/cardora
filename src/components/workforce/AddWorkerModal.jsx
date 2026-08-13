@@ -37,8 +37,26 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
     e.preventDefault();
     setError('');
 
-    if (!formData.fullName.trim()) {
-      setError('Please enter worker full name');
+    const cleanName = (formData.fullName || '').trim();
+    if (!cleanName || cleanName.length < 2) {
+      setError('⚠️ Please enter a valid worker full name (at least 2 characters).');
+      return;
+    }
+
+    const cleanPhone = (formData.phone || '').trim().replace(/[\s-]/g, '');
+    if (cleanPhone && !/^[+0-9]{10,14}$/.test(cleanPhone)) {
+      setError('⚠️ Please enter a valid 10-digit mobile number (e.g. +91 98470 12345).');
+      return;
+    }
+
+    const wage = Number(formData.dailyWage);
+    if (isNaN(wage) || wage < 100 || wage > 50000) {
+      setError('⚠️ Daily wage must be a valid amount between ₹100 and ₹50,000.');
+      return;
+    }
+
+    if (!formData.workType || !formData.workType.trim()) {
+      setError('⚠️ Please select or specify a work type / specialization.');
       return;
     }
 
@@ -46,12 +64,14 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
     try {
       const payload = {
         ...formData,
+        fullName: cleanName,
+        phone: cleanPhone,
         plantationId,
-        dailyWage: Number(formData.dailyWage) || 700,
+        dailyWage: wage,
         emergencyContact: {
-          name: formData.emergencyName,
-          phone: formData.emergencyPhone,
-          relation: formData.emergencyRelation,
+          name: (formData.emergencyName || '').trim(),
+          phone: (formData.emergencyPhone || '').trim(),
+          relation: formData.emergencyRelation || 'Spouse',
         },
       };
 
