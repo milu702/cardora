@@ -16,13 +16,14 @@ import {
   Search,
   Shield,
   Moon,
-  Sun
+  Sun,
+  CloudSun
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import Button from '../ui/Button';
 
-const Navbar = () => {
+const Navbar = ({ onToggleMobileSidebar }) => {
   const { isAuthenticated, user, logout, lang, toggleLang, darkMode, toggleDarkMode, notifications = [], clearNotifications, markNotificationsRead } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -60,9 +61,11 @@ const Navbar = () => {
     : [
         { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
         { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
+        { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },
+        { name: 'Weather Intelligence', href: '/dashboard?tab=weather', icon: CloudSun },
         { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
-        { name: 'Community', href: '/dashboard?tab=community', icon: Users },
         { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
+        { name: 'Community', href: '/dashboard?tab=community', icon: Users },
         { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
       ];
 
@@ -72,57 +75,58 @@ const Navbar = () => {
     navigate('/auth?mode=login');
   };
 
+  const handleMobileToggle = () => {
+    if (onToggleMobileSidebar) {
+      onToggleMobileSidebar();
+    } else {
+      setIsMobileMenuOpen(!isMobileMenuOpen);
+    }
+  };
+
   return (
     <motion.nav
       initial={{ y: -80, scale: 0.98 }}
       animate={{ y: 0, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'glass-nav-scrolled py-3' : 'glass-nav py-4'
-      }`}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-slate-800 shadow-sm transition-colors"
     >
-      <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
+      <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
         
-        {/* Brand Logo */}
+        {/* Left Section: Mobile Menu Toggle & Brand Logo */}
         <div className="flex items-center gap-3">
+          {isAuthenticated && (
+            <button
+              onClick={handleMobileToggle}
+              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800 transition-colors focus:outline-none"
+              title="Toggle Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="relative">
-              <div className="absolute inset-0 bg-[#1F5E3B]/30 rounded-xl blur-lg group-hover:scale-110 transition-transform duration-300" />
-              <div className="relative bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E] rounded-xl p-2.5 text-white shadow-md">
-                <Leaf className="w-5 h-5 stroke-[2.5]" />
+              <div className="absolute inset-0 bg-[#1F5E3B]/20 rounded-xl blur-sm group-hover:scale-105 transition-transform" />
+              <div className="relative bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E] rounded-xl p-2 text-white shadow-xs">
+                <Leaf className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xl md:text-2xl font-black tracking-wider text-[#17331F] font-poppins">
+              <span className="text-lg md:text-xl font-black tracking-wider text-[#17331F] dark:text-white font-poppins">
                 CARDORA
               </span>
-              <span className="text-[9px] uppercase font-bold tracking-widest text-[#5C8D4E] -mt-1">
-                Agriculture Platform
+              <span className="text-[8px] uppercase font-bold tracking-widest text-[#5C8D4E] dark:text-emerald-400 -mt-1 hidden sm:inline-block">
+                Smart Agriculture
               </span>
             </div>
           </Link>
         </div>
 
-        {/* Desktop Navigation Links */}
-        {!isAuthenticated && (
-          <div className="hidden lg:flex items-center gap-5">
-            {loggedOutNavLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="animated-underline text-sm font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors py-1"
-              >
-                {link.name}
-              </a>
-            ))}
-          </div>
-        )}
-
-        {/* Global Planter Search Bar */}
-        {isAuthenticated && (
-          <div className="relative hidden md:block w-48 lg:w-56">
-            <div className="flex items-center rounded-full bg-[#F8FAF7] border border-[#D7E6D5] focus-within:border-[#1F5E3B] px-3 py-1.5 shadow-inner transition-all">
-              <Search className="w-3.5 h-3.5 text-[#5C8D4E] mr-1.5 flex-shrink-0" />
+        {/* Center Section: Search Bar */}
+        {isAuthenticated ? (
+          <div className="flex-1 max-w-md mx-2 sm:mx-4 hidden sm:block">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-[#5C8D4E] dark:text-emerald-400 absolute left-3.5 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
@@ -132,54 +136,55 @@ const Navbar = () => {
                     navigate(`/dashboard?tab=community&search=${encodeURIComponent(searchQuery.trim())}`);
                   }
                 }}
-                placeholder="Search planter name..."
-                className="w-full text-xs bg-transparent text-[#17331F] font-bold focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
+                placeholder={lang === 'ml' ? "ഡാഷ്‌ബോർഡ് അല്ലെങ്കിൽ കർഷകരെ തിരയുക..." : "Search plantations, updates, workers..."}
+                className="w-full pl-10 pr-4 py-1.5 text-xs rounded-full bg-[#F4F8F3] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F5E3B] focus:ring-1 focus:ring-[#1F5E3B] transition-all"
               />
-              <button
-                onClick={() => {
-                  if (searchQuery.trim()) {
-                    navigate(`/dashboard?tab=community&search=${encodeURIComponent(searchQuery.trim())}`);
-                  }
-                }}
-                className="p-1 rounded-full bg-[#1F5E3B] text-white hover:bg-[#17331F] transition-colors ml-1"
-                title="Search Planters"
-              >
-                <Search className="w-3 h-3" />
-              </button>
             </div>
+          </div>
+        ) : (
+          <div className="hidden lg:flex items-center gap-5">
+            {loggedOutNavLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-xs font-bold text-[#17331F] dark:text-slate-200 hover:text-[#1F5E3B] dark:hover:text-emerald-400 transition-colors py-1"
+              >
+                {link.name}
+              </a>
+            ))}
           </div>
         )}
 
-        {/* Action Controls & User Options */}
-        <div className="hidden lg:flex items-center gap-3">
+        {/* Right Controls Section */}
+        <div className="flex items-center gap-2 sm:gap-3">
           
-          {/* Language Toggle */}
+          {/* Language Selector Button */}
           <button
             onClick={toggleLang}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#DDEFD9] dark:bg-slate-800 hover:bg-[#D7E6D5] dark:hover:bg-slate-700 text-[#17331F] dark:text-slate-100 text-xs font-bold transition-all border border-[#5C8D4E]/30 dark:border-slate-700"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#EAF3E8] dark:bg-slate-800 hover:bg-[#DDEFD9] dark:hover:bg-slate-700 text-[#17331F] dark:text-emerald-300 text-xs font-black transition-colors border border-[#5C8D4E]/30 dark:border-slate-700"
+            title="Switch Language / ഭാഷ മാറ്റുക"
           >
             <Globe className="w-3.5 h-3.5 text-[#1F5E3B] dark:text-emerald-400" />
             <span>{lang === 'en' ? 'EN' : 'മലയാളം'}</span>
           </button>
 
-          {/* Theme Toggle Button */}
+          {/* Dark/Light Theme Toggle */}
           <button
             onClick={toggleDarkMode}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+            className={`p-1.5 rounded-lg text-xs font-bold transition-colors border ${
               darkMode
-                ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 hover:bg-amber-900/60'
-                : 'bg-[#DDEFD9] border-[#5C8D4E]/30 text-[#17331F] hover:bg-[#D7E6D5]'
+                ? 'bg-slate-800 border-slate-700 text-amber-300 hover:bg-slate-700'
+                : 'bg-[#EAF3E8] border-[#5C8D4E]/30 text-[#17331F] hover:bg-[#DDEFD9]'
             }`}
-            title="Toggle Dark / Light Theme"
+            title="Toggle Dark / Light Mode"
           >
-            {darkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-[#1F5E3B]" />}
-            <span>{darkMode ? 'Light' : 'Dark'}</span>
+            {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[#1F5E3B]" />}
           </button>
 
           {!isAuthenticated ? (
-            <>
+            <div className="flex items-center gap-2">
               <Link to="/auth?mode=login">
-                <button className="px-4 py-2 text-xs md:text-sm font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors">
+                <button className="px-3 py-1.5 text-xs font-bold text-[#17331F] dark:text-slate-200 hover:text-[#1F5E3B]">
                   Login
                 </button>
               </Link>
@@ -188,33 +193,33 @@ const Navbar = () => {
                   Get Started
                 </Button>
               </Link>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center gap-3 pl-2 border-l border-[#D7E6D5]">
+            <div className="flex items-center gap-2 pl-2 border-l border-[#D7E6D5] dark:border-slate-800">
               
-              {/* Notifications Popover */}
+              {/* Notification Bell */}
               <div className="relative">
                 <button
                   onClick={() => {
                     setShowNotificationsDropdown(!showNotificationsDropdown);
                     if (!showNotificationsDropdown && markNotificationsRead) markNotificationsRead();
                   }}
-                  className="relative p-2 rounded-full bg-white border border-[#D7E6D5] hover:border-[#1F5E3B] text-[#17331F] shadow-sm transition-all"
+                  className="relative p-1.5 rounded-lg bg-[#F4F8F3] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 hover:border-[#1F5E3B] text-slate-700 dark:text-slate-200 transition-colors"
                   title="Notifications"
                 >
                   <Bell className="w-4 h-4" />
                   {notifications.filter((n) => !n.read).length > 0 && (
-                    <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white animate-pulse" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-600 border-2 border-white dark:border-slate-900 animate-pulse" />
                   )}
                 </button>
 
                 {showNotificationsDropdown && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-[20px] border border-[#D7E6D5] shadow-2xl p-4 z-50">
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#D7E6D5]">
-                      <h4 className="text-xs font-black text-[#17331F]">Notifications</h4>
+                  <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-[#D7E6D5] dark:border-slate-800 shadow-2xl p-4 z-50">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white">Notifications</h4>
                       <div className="flex items-center gap-2">
                         {notifications.length > 0 && (
-                          <span className="text-[10px] font-bold text-[#1F5E3B] bg-[#DDEFD9] px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-bold text-[#1F5E3B] bg-[#EAF3E8] dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-full">
                             {notifications.length} New
                           </span>
                         )}
@@ -223,20 +228,20 @@ const Navbar = () => {
                             onClick={() => clearNotifications && clearNotifications()}
                             className="text-[10px] font-bold text-red-600 hover:underline"
                           >
-                            Clear All
+                            Clear
                           </button>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-2 text-xs max-h-64 overflow-y-auto">
+                    <div className="space-y-2 text-xs max-h-60 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <p className="text-center text-xs font-bold text-[#4A5568] py-4">No notifications.</p>
+                        <p className="text-center text-xs font-bold text-slate-400 py-4">No new notifications.</p>
                       ) : (
                         notifications.map((n, idx) => (
-                          <div key={n._id || n.id || idx} className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                            <p className="font-bold text-[#17331F]">{n.title}</p>
-                            <p className="text-[11px] text-[#4A5568] mt-0.5">{n.body || n.message}</p>
+                          <div key={n._id || n.id || idx} className="p-2.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                            <p className="font-bold text-slate-900 dark:text-white">{n.title}</p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">{n.body || n.message}</p>
                             <span className="text-[9px] text-[#5C8D4E] font-bold mt-1 block">
                               {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (n.time || 'Just now')}
                             </span>
@@ -248,14 +253,14 @@ const Navbar = () => {
                 )}
               </div>
 
-              {/* User Avatar Menu Link */}
-              <Link to="/dashboard?tab=profile" className="flex items-center gap-2">
+              {/* User Avatar Badge & Link */}
+              <Link to="/dashboard?tab=profile" className="flex items-center gap-2 p-1 rounded-xl hover:bg-[#F4F8F3] dark:hover:bg-slate-800 transition-colors">
                 <img
                   src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
                   alt={user?.fullName || 'User avatar'}
-                  className="w-8 h-8 rounded-full object-cover border-2 border-[#1F5E3B] shadow-sm"
+                  className="w-7 h-7 rounded-full object-cover border border-[#1F5E3B]"
                 />
-                <span className="text-xs font-black text-[#17331F]">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white hidden xl:inline-block max-w-[100px] truncate">
                   {user?.fullName || user?.name || user?.username || 'Planter'}
                 </span>
               </Link>
@@ -263,7 +268,7 @@ const Navbar = () => {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-full hover:bg-red-50 text-red-600 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -272,14 +277,6 @@ const Navbar = () => {
           )}
 
         </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden p-2 rounded-xl text-[#17331F] hover:bg-[#DDEFD9] transition-colors"
-        >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
 
       </div>
 

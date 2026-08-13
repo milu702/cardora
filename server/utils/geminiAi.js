@@ -17,7 +17,7 @@ if (apiKey) {
 /**
  * Ask Google Gemini AI model for agronomic advice, market insight, or land verification.
  */
-async function askGemini(prompt, systemInstruction = '', model = 'gemini-2.0-flash') {
+async function askGemini(prompt, systemInstruction = '', model = 'gemini-3.6-flash') {
   const currentKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   
   if (!aiClient && currentKey && currentKey.trim()) {
@@ -34,8 +34,15 @@ async function askGemini(prompt, systemInstruction = '', model = 'gemini-2.0-fla
     return fallbackAgronomist(prompt);
   }
 
-  // Model cascade list for maximum compatibility across Google Gen AI SDK versions
-  const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  // Model cascade list prioritizing active, high-quota Gemini models
+  const candidateModels = [
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-2.0-flash'
+  ];
+  // Filter duplicates while preserving order
+  const modelsToTry = [...new Set(candidateModels.filter(Boolean))];
 
   for (const m of modelsToTry) {
     try {
@@ -43,7 +50,7 @@ async function askGemini(prompt, systemInstruction = '', model = 'gemini-2.0-fla
         model: m,
         contents: prompt,
         config: {
-          systemInstruction: systemInstruction || 'You are CARDORA AI, an intelligent, helpful, and versatile AI Assistant powered by advanced LLM intelligence. You excel at cardamom farming, land valuation, and agricultural science in Kerala, AND you answer ANY question about history, science, coding, technology, general knowledge, math, stories, or life in the world with accuracy and clarity like ChatGPT. Respond in clear, engaging language in English or Malayalam depending on the user.',
+          systemInstruction: systemInstruction || 'You are CARDORA AI, an intelligent, helpful, and versatile AI Assistant powered by advanced LLM intelligence. You excel at cardamom farming, land valuation, and agricultural science in Kerala. Respond in clear, engaging language in English or Malayalam depending on the user.',
           temperature: 0.7,
         },
       });
@@ -64,44 +71,57 @@ async function askGemini(prompt, systemInstruction = '', model = 'gemini-2.0-fla
  * Analyze an uploaded document image or PDF buffer using Gemini Vision
  */
 async function analyzeDocumentWithGemini(fileBuffer, mimeType, prompt = '') {
+  const currentKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!aiClient && currentKey && currentKey.trim()) {
+    try {
+      aiClient = new GoogleGenAI({ apiKey: currentKey.trim() });
+    } catch (e) {}
+  }
+
   if (!aiClient) {
     return {
-      success: true,
-      score: 96.8,
-      docType: 'Govt Land Title (Pattayam) / Survey Sketch',
-      verified: true,
-      analysis: 'Cardora AI verified Kerala Revenue Land Title. Title deed & survey boundaries validated.',
-    };
-  }
-
-  try {
-    const base64Data = fileBuffer.toString('base64');
-    const response = await aiClient.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: [
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType || 'image/jpeg',
-          },
-        },
-        prompt || 'Analyze this document. Is it a valid Land Ownership Title (Pattayam), Revenue Deed, or Land Survey Sketch in Kerala? Extract survey numbers, owner name, village, and return JSON with keys: isLandDocument (boolean), docType (string), confidenceScore (number 0-100), extractedDetails (object).',
-      ],
-    });
-
-    return {
-      success: true,
-      rawText: response.text,
-      verified: true,
-    };
-  } catch (error) {
-    console.error('Gemini Vision OCR Error:', error.message);
-    return {
       success: false,
-      error: error.message,
-      verified: false,
+      rawText: '',
     };
   }
+
+  const visionModels = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  const base64Data = fileBuffer.toString('base64');
+  const userPrompt = prompt || 'Analyze this document. Is it a valid Land Ownership Title (Pattayam), Revenue Deed, or Land Survey Sketch in Kerala? Extract survey numbers, owner name, village, and return JSON with keys: isLandDocument (boolean), docType (string), confidenceScore (number 0-100), extractedDetails (object).';
+
+  for (const m of visionModels) {
+    try {
+      const response = await aiClient.models.generateContent({
+        model: m,
+        contents: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType || 'image/jpeg',
+            },
+          },
+          userPrompt,
+        ],
+      });
+
+      if (response && response.text) {
+        console.log(`✅ Gemini Vision Succeeded using model: ${m}`);
+        return {
+          success: true,
+          rawText: response.text,
+          verified: true,
+        };
+      }
+    } catch (error) {
+      console.warn(`⚠️ Gemini Vision Model (${m}) Notice:`, error.message || error);
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Gemini Vision analysis could not be completed with active models.',
+    verified: false,
+  };
 }
 
 /**

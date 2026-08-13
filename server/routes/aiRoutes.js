@@ -4,7 +4,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
-const { chatWithAi, scanDocument, diagnosePlant } = require('../controllers/aiController');
+const { chatWithAi, scanDocument, diagnosePlant, diagnosePlantImage } = require('../controllers/aiController');
 
 // @route   POST /api/ai/chat
 router.post('/chat', chatWithAi);
@@ -14,5 +14,8 @@ router.post('/scan-document', upload.single('document'), scanDocument);
 
 // @route   POST /api/ai/diagnose-plant
 router.post('/diagnose-plant', diagnosePlant);
+
+// @route   POST /api/ai/diagnose-image
+router.post('/diagnose-image', upload.single('image'), diagnosePlantImage);
 
 module.exports = router;

@@ -5,8 +5,18 @@ const workerSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
-      unique: true,
+      required: false,
+      default: null,
+    },
+    plantationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plantation',
+      default: null,
+    },
+    supervisorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
     },
     workerId: {
       type: String,
@@ -27,9 +37,25 @@ const workerSchema = new mongoose.Schema(
       type: Number,
       default: 28,
     },
+    address: {
+      type: String,
+      default: '',
+    },
+    workType: {
+      type: String,
+      default: 'Capsule Harvesting',
+    },
+    joiningDate: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ['Active', 'Inactive'],
+      default: 'Active',
+    },
     district: {
       type: String,
-      required: true,
       default: 'Idukki',
     },
     village: {
@@ -58,7 +84,7 @@ const workerSchema = new mongoose.Schema(
     },
     dailyWage: {
       type: Number,
-      default: 850,
+      default: 700,
     },
     availability: {
       type: String,
@@ -76,19 +102,19 @@ const workerSchema = new mongoose.Schema(
     },
     rating: {
       type: Number,
-      default: 4.8,
+      default: 4.5,
     },
     totalRatingsCount: {
       type: Number,
-      default: 12,
+      default: 0,
     },
     completedJobs: {
       type: Number,
-      default: 34,
+      default: 0,
     },
     currentEmployer: {
       type: String,
-      default: 'Open for Hire',
+      default: 'Cardora Plantation',
     },
     isVerified: {
       type: Boolean,
@@ -104,13 +130,13 @@ const workerSchema = new mongoose.Schema(
       default: ['Certified Plantation Worker - Spices Board', 'Safety & Pesticide Handling'],
     },
     emergencyContact: {
-      name: { type: String, default: 'Family Contact' },
-      phone: { type: String, default: '+91 9876543210' },
-      relation: { type: String, default: 'Spouse' },
+      name: { type: String, default: '' },
+      phone: { type: String, default: '' },
+      relation: { type: String, default: '' },
     },
     bio: {
       type: String,
-      default: 'Experienced cardamom plantation specialist skilled in selective capsule harvesting and shade pruning.',
+      default: 'Plantation worker skilled in cardamom harvesting and field maintenance.',
     },
     photo: {
       type: String,

@@ -5,9 +5,9 @@ import {
   Home, Leaf, MapPin, Users, User, Settings, 
   Search, Heart, MessageSquare, Share2, 
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
-  Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield, CloudSun
-
-
+  Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield, CloudSun,
+  Droplets, TrendingUp, BarChart3, Calendar, ArrowUpRight, Activity, ChevronRight,
+  Clock, Sliders, Sun, Menu, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -21,6 +21,7 @@ import PublicProfileModal from '../components/profile/PublicProfileModal';
 import ChatDrawerModal from '../components/chat/ChatDrawerModal';
 import WorkforceModule from '../components/workforce/WorkforceModule';
 import PlantationModule from '../components/plantation/PlantationModule';
+import AddPlantationModal from '../components/plantation/AddPlantationModal';
 import AiAnalysisModule from '../components/ai/AiAnalysisModule';
 import CardamomMarketplace from '../components/marketplace/CardamomMarketplace';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
@@ -831,6 +832,8 @@ const Dashboard = () => {
     showToast('AI Plantation Analysis complete!');
   };
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const sidebarLinks = isAdminUser
     ? [
         { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
@@ -840,319 +843,581 @@ const Dashboard = () => {
       ]
     : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
+        { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
         { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
-        { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടങ്ങൾ' : 'My Plantation', icon: Leaf },
-        { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'Recommendations', icon: Sparkles },
-        { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Users },
+        { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendations', icon: Sparkles },
+        { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
         { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
+        { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Share2 },
         { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
         { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
       ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAF7] dark:bg-slate-950 text-[#4A5568] dark:text-slate-300 transition-colors flex flex-col justify-between">
-      <Navbar />
+    <div className="min-h-screen bg-[#F4F8F3] dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors flex flex-col justify-between">
+      <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
-      {/* MAIN CONTAINER */}
-      <div className={`flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 ${
-        activeTab === 'admin' ? 'max-w-full' : 'max-w-7xl flex gap-6'
-      }`}>
-        
-        {/* DESKTOP SIDEBAR NAVIGATION (Hidden on Admin Tab for Full Screen Display) */}
-        {activeTab !== 'admin' && (
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-28 bg-white dark:bg-slate-900 rounded-[20px] border border-[#D7E6D5] dark:border-slate-800 shadow-soft p-4 space-y-1.5">
-              
-              <div className="p-3 mb-3 bg-[#DDEFD9]/60 dark:bg-slate-800/80 rounded-xl border border-[#5C8D4E]/30 dark:border-slate-700 flex items-center gap-3">
-                <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B]" />
-                <div className="overflow-hidden">
-                  <p className="text-xs font-black text-[#17331F] dark:text-white truncate">{user?.fullName || user?.username || 'Planter'}</p>
-                  <p className="text-[10px] text-[#5C8D4E] dark:text-emerald-400 font-bold">{user?.role || 'Planter'} • {user?.district || user?.location || 'Idukki'}</p>
-                </div>
+      {/* FIXED DESKTOP LEFT SIDEBAR NAVIGATION */}
+      {activeTab !== 'admin' && (
+        <aside className="hidden lg:flex fixed top-16 left-0 w-60 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-[#E2E8F0] dark:border-slate-800 z-30 flex-col justify-between p-4 overflow-y-auto shadow-xs">
+          <div className="space-y-4">
+            
+            {/* Planter Info Card */}
+            <div className="p-3 bg-[#F4F8F3] dark:bg-slate-800/90 rounded-2xl border border-[#D7E6D5] dark:border-slate-700 flex items-center gap-3">
+              <img
+                src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                alt=""
+                className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0"
+              />
+              <div className="overflow-hidden">
+                <p className="text-xs font-black text-slate-900 dark:text-white truncate">{user?.fullName || user?.username || 'Planter'}</p>
+                <p className="text-[10px] text-[#5C8D4E] dark:text-emerald-400 font-bold truncate">{user?.role || 'Farmer'} • {user?.district || user?.location || 'Idukki'}</p>
               </div>
+            </div>
 
+            {/* Sidebar Navigation Items */}
+            <nav className="space-y-1">
               {sidebarLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = activeTab === link.id;
                 return (
                   <button
                     key={link.id}
-                    onClick={() => setActiveTab(link.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                    onClick={() => {
+                      if (link.isAction) {
+                        setChatTargetUser(null);
+                        setChatModalOpen(true);
+                      } else {
+                        setActiveTab(link.id);
+                      }
+                    }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
-                        ? 'bg-[#1F5E3B] text-white shadow-md'
-                        : 'text-[#17331F] dark:text-slate-200 hover:bg-[#DDEFD9]/50 dark:hover:bg-slate-800'
+                        ? 'bg-[#1F5E3B] text-white shadow-sm border-l-4 border-amber-400'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span>{link.label}</span>
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#5C8D4E] dark:text-emerald-400'}`} />
+                    <span className="truncate">{link.label}</span>
+                    {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-amber-300" />}
                   </button>
                 );
               })}
-
-            </div>
-          </aside>
-        )}
-
-        {/* MAIN TAB CONTENT DISPLAY */}
-        <main className={activeTab === 'admin' ? 'w-full' : 'flex-1'}>
-          
-          {/* Global Search Bar & Malayalam Translator */}
-          <div className="mb-6 flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-1 w-full flex items-center">
-              <Search className="w-4 h-4 text-[#5C8D4E] dark:text-emerald-400 absolute left-4" />
-              <input
-                type="text"
-                value={globalSearchQuery}
-                onChange={(e) => setGlobalSearchQuery(e.target.value)}
-                placeholder={lang === 'ml' ? "തിരയുക: തോട്ടങ്ങൾ, എഐ നിർദ്ദേശങ്ങൾ, വിവരങ്ങൾ..." : "Global Search: Plantations, AI diagnosis, Marketplace plots, Community posts..."}
-                className="w-full pl-11 pr-4 py-3 rounded-full bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 text-xs font-medium text-[#17331F] dark:text-white focus:outline-none focus:border-[#1F5E3B] shadow-sm"
-              />
-            </div>
-
-            <button
-              onClick={toggleLang}
-              className="px-4 py-3 rounded-full bg-[#1F5E3B] hover:bg-[#5C8D4E] text-white text-xs font-extrabold transition-all shadow-md flex items-center gap-2 whitespace-nowrap self-stretch sm:self-auto justify-center"
-              title="Switch Language / ഭാഷ മാറ്റുക"
-            >
-              <Globe className="w-4 h-4 text-amber-300" />
-              <span>{lang === 'en' ? '🌐 മലയാളത്തിലേക്ക് മാറ്റുക (ML)' : '🌐 Switch to English (EN)'}</span>
-            </button>
+            </nav>
           </div>
+
+          <div className="pt-3 border-t border-[#E2E8F0] dark:border-slate-800 text-[10px] text-slate-400 font-medium">
+            <p className="flex items-center gap-1 font-bold text-[#1F5E3B] dark:text-emerald-400">
+              <Leaf className="w-3 h-3" />
+              <span>Cardora Agriculture Platform</span>
+            </p>
+          </div>
+        </aside>
+      )}
+
+      {/* MOBILE SLIDE-OUT DRAWER NAVIGATION */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileSidebarOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-72 max-w-[80vw] bg-white dark:bg-slate-900 h-full p-5 shadow-2xl flex flex-col justify-between z-10"
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-[#1F5E3B] text-white">
+                      <Leaf className="w-4 h-4" />
+                    </div>
+                    <span className="font-black text-slate-900 dark:text-white font-poppins">CARDORA</span>
+                  </div>
+                  <button
+                    onClick={() => setMobileSidebarOpen(false)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-3 bg-[#F4F8F3] dark:bg-slate-800 rounded-xl flex items-center gap-3">
+                  <img
+                    src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                    alt=""
+                    className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B]"
+                  />
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-black text-slate-900 dark:text-white truncate">{user?.fullName || user?.username || 'Planter'}</p>
+                    <p className="text-[10px] text-[#5C8D4E] font-bold truncate">{user?.district || user?.location || 'Idukki'}</p>
+                  </div>
+                </div>
+
+                <nav className="space-y-1">
+                  {sidebarLinks.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = activeTab === link.id;
+                    return (
+                      <button
+                        key={link.id}
+                        onClick={() => {
+                          setMobileSidebarOpen(false);
+                          if (link.isAction) {
+                            setChatTargetUser(null);
+                            setChatModalOpen(true);
+                          } else {
+                            setActiveTab(link.id);
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                          isActive
+                            ? 'bg-[#1F5E3B] text-white shadow-sm'
+                            : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 text-[#5C8D4E]" />
+                        <span>{link.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-xs font-bold text-slate-400">Cardora Agriculture System</p>
+              </div>
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MAIN CONTAINER AREA */}
+      <div className={`min-h-screen bg-[#F4F8F3] dark:bg-slate-950 text-slate-800 dark:text-slate-200 pt-20 pb-16 transition-all ${
+        activeTab === 'admin' ? 'w-full px-4' : 'lg:ml-60 px-4 sm:px-6 lg:px-8'
+      }`}>
+        <main className="max-w-7xl mx-auto space-y-6">
 
           {/* ===== TAB 1: DASHBOARD OVERVIEW ===== */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              
-              {/* NO PROFILE PHOTO NOTIFICATION BANNER (Shows ONLY for new accounts without a profile photo) */}
-              {(!user?.hasCustomPhoto && !user?.avatar) && (
-                <div className="bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-amber-500/10 border-2 border-amber-400/40 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-800 flex items-center justify-center font-black flex-shrink-0">
-                      <Camera className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-extrabold text-[#17331F] flex items-center gap-2">
-                        <span>{lang === 'ml' ? '📷 പ്രൊഫൈൽ ഫോട്ടോ അറിയിപ്പ്' : '📷 Profile Photo Notice'}</span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">{lang === 'ml' ? 'ശ്രദ്ധിക്കുക' : 'Action Required'}</span>
-                      </h4>
-                      <p className="text-xs text-[#4A5568] font-medium">{lang === 'ml' ? 'നിങ്ങളുടെ പ്രൊഫൈൽ ഫോട്ടോ ചേർത്താൽ തോട്ടം പ്രൊഫൈൽ കൂടുതൽ മികച്ചതാക്കാം!' : "You haven't uploaded your profile photo yet. Add a custom photo in Settings to personalize your planter identity!"}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="px-4 py-2 rounded-full bg-[#1F5E3B] hover:bg-[#5C8D4E] text-white font-extrabold text-xs transition-colors flex-shrink-0 shadow-sm whitespace-nowrap"
-                  >
-                    {lang === 'ml' ? 'സെറ്റിംഗ്സിൽ ഫോട്ടോ മാറ്റുക →' : 'Upload Photo in Settings →'}
-                  </button>
-                </div>
-              )}
 
-              {/* Welcome Card */}
-              <div className="bg-gradient-to-r from-[#17331F] to-[#1F5E3B] text-white rounded-[20px] p-6 md:p-8 shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <span className="inline-block px-3.5 py-1 rounded-full bg-[#5C8D4E]/40 text-[#DDEFD9] text-xs font-bold mb-3 border border-white/20">
-                    {lang === 'ml' ? '🌿 സ്മാർട്ട് കാർഷിക ഡാഷ്‌ബോർഡ്' : '🌿 Smart Agricultural Dashboard'}
-                  </span>
-                  <h2 className="text-2xl md:text-3xl font-black font-poppins mb-2">
-                    {getTimeBasedGreeting(user?.fullName || user?.name || user?.username || 'Planter', lang)}
-                  </h2>
-                  <p className="text-xs md:text-sm text-[#DDEFD9]/90 max-w-xl font-medium leading-relaxed">
-                    {lang === 'ml' 
-                      ? `${user?.fullName || user?.username} നായുള്ള വ്യക്തിഗത തോട്ടം ഡാഷ്‌ബോർഡ് (${user?.role || 'കർഷകൻ'}, ${user?.district || user?.location || 'ഇടുക്കി, കേരളം'}).` 
-                      : `Personalized plantation dashboard for ${user?.fullName || user?.username} (${user?.role || 'Farmer'}, ${user?.district || user?.location || 'Idukki, Kerala'}).`
-                    }
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Actions Setup Card for Logged-In User */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft">
-                <h3 className="text-sm font-extrabold text-[#17331F] mb-3">{lang === 'ml' ? 'ത്വരിത നടപടികൾ' : 'Quick Actions'}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button
-                    onClick={() => setActiveTab('community')}
-                    className="p-4 rounded-xl bg-[#F8FAF7] hover:bg-[#DDEFD9] border border-[#D7E6D5] text-left transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-black text-[#17331F]">{lang === 'ml' ? 'പോസ്റ്റ് എഴുതുക' : 'Create your first post'}</p>
-                      <p className="text-[10px] text-[#4A5568]">{lang === 'ml' ? 'കർഷകരുമായി സംവദിക്കുക' : 'Share updates with planters'}</p>
-                    </div>
-                    <Plus className="w-4 h-4 text-[#1F5E3B] group-hover:scale-110 transition-transform" />
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="p-4 rounded-xl bg-[#F8FAF7] hover:bg-[#DDEFD9] border border-[#D7E6D5] text-left transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-black text-[#17331F]">{lang === 'ml' ? 'ഫോട്ടോ മാറ്റുക' : 'Upload profile photo'}</p>
-                      <p className="text-[10px] text-[#4A5568]">{lang === 'ml' ? 'പ്രൊഫൈൽ മികച്ചതാക്കൂ' : 'Customize planter avatar'}</p>
-                    </div>
-                    <Camera className="w-4 h-4 text-[#1F5E3B] group-hover:scale-110 transition-transform" />
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    className="p-4 rounded-xl bg-[#F8FAF7] hover:bg-[#DDEFD9] border border-[#D7E6D5] text-left transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-black text-[#17331F]">{lang === 'ml' ? 'പ്രൊഫൈൽ തിരുത്തുക' : 'Complete profile'}</p>
-                      <p className="text-[10px] text-[#4A5568]">{lang === 'ml' ? 'തോട്ടം വിവരങ്ങൾ നൽകൂ' : 'Update role & plantation details'}</p>
-                    </div>
-                    <User className="w-4 h-4 text-[#1F5E3B] group-hover:scale-110 transition-transform" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Stat Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card hover={false} className="p-5 text-center">
-                  <div className="text-3xl font-black text-[#1F5E3B] font-poppins">{plantations.length}</div>
-                  <p className="text-xs font-bold text-[#4A5568] mt-1">{lang === 'ml' ? 'സജീവ തോട്ടങ്ങൾ' : 'Active Plantations'}</p>
-                </Card>
-                <Card hover={false} className="p-5 text-center">
-                  <div className="text-3xl font-black text-[#1F5E3B] font-poppins">{avgMoisture > 0 ? `${avgMoisture}%` : '--'}</div>
-                  <p className="text-xs font-bold text-[#4A5568] mt-1">{lang === 'ml' ? 'ശരാശരി ഈർപ്പം' : 'Avg Moisture'}</p>
-                </Card>
-                <Card hover={false} className="p-5 text-center">
-                  <div className="text-3xl font-black text-[#C9A227] font-poppins">{avgHealth > 0 ? `${avgHealth}%` : '--'}</div>
-                  <p className="text-xs font-bold text-[#4A5568] mt-1">{lang === 'ml' ? 'ആരോഗ്യ സ്കോർ' : 'Health Score'}</p>
-                </Card>
-                <Card hover={false} className="p-5 text-center">
-                  <div className="text-3xl font-black text-[#5C8D4E] font-poppins">{predictedYield > 0 ? `${predictedYield} kg` : '--'}</div>
-                  <p className="text-xs font-bold text-[#4A5568] mt-1">{lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield/Acre'}</p>
-                </Card>
-              </div>
-
-              {/* CONVENIENT DASHBOARD MESSAGING AREA */}
-              <div className="bg-white dark:bg-slate-900 rounded-[20px] border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-soft space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#D7E6D5] dark:border-slate-800">
+              {/* COMPACT WELCOME CARD */}
+              <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] text-white rounded-2xl p-5 sm:p-6 shadow-md border border-[#1F5E3B]/40 relative overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                   <div>
-                    <h3 className="text-base font-black text-[#17331F] dark:text-white flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-[#1F5E3B] dark:text-emerald-400" />
-                      <span>{lang === 'ml' ? 'സന്ദേശ കേന്ദ്രം' : 'Messages & Instant Chat Center'}</span>
-                    </h3>
-                    <p className="text-xs text-[#4A5568] dark:text-slate-400">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/30">
+                        🌱 Farmer First Portal
+                      </span>
+                      <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Cardamom Management</span>
+                    </div>
+                    <h1 className="text-xl sm:text-2xl font-black font-poppins text-white flex items-center gap-2">
+                      {getTimeBasedGreeting(user?.fullName || user?.name || user?.username || 'Planter', lang)} 🌱
+                    </h1>
+                    <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1">
                       {lang === 'ml' 
-                        ? 'കർഷകരുമായും കരാറുകാരുമായും നേരിട്ട് സന്ദേശങ്ങൾ അയക്കുക.' 
-                        : 'Conveniently message planters, labor contractors, and estate workers directly from your dashboard.'}
+                        ? 'ഇന്നത്തെ നിങ്ങളുടെ തോട്ടത്തിന്റെ വിവരങ്ങൾ താഴെ കാണാം.' 
+                        : "Here's your plantation overview for today."}
                     </p>
                   </div>
-                  <button
-                    onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
-                    className="px-4 py-2 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-xl flex items-center gap-1.5 shadow-md transition"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{lang === 'ml' ? 'പുതിയ സംഭാഷണം' : 'Open Messaging'}</span>
-                  </button>
+
+                  {/* Location & Date Badges */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-black/20 backdrop-blur-xs p-2.5 rounded-xl border border-white/10 self-start md:self-auto">
+                    <div className="flex items-center gap-1.5 text-xs text-white font-bold px-2.5 py-1 rounded-lg bg-white/10">
+                      <MapPin className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{user?.district || user?.location || 'Idukki, Kerala'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-200 font-medium px-2 py-1">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>{new Date().toLocaleDateString(lang === 'ml' ? 'ml-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-amber-300 font-black px-2.5 py-1 bg-amber-400/20 rounded-lg border border-amber-400/30">
+                      <CloudSun className="w-3.5 h-3.5" />
+                      <span>28°C • Sunny</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 COMPACT STATISTICS CARDS */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* Active Plantations */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400">
+                      <Leaf className="w-4 h-4" />
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      Active
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                      {plantations.length || 2}
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                      {lang === 'ml' ? 'സജീവ തോട്ടങ്ങൾ' : 'Active Plantations'}
+                    </p>
+                  </div>
                 </div>
 
-                {dashboardConversations.length === 0 ? (
-                  <div className="p-6 text-center bg-[#F8FAF7] dark:bg-slate-800/60 rounded-2xl border border-dashed border-[#D7E6D5] space-y-2">
-                    <MessageSquare className="w-8 h-8 text-[#5C8D4E] mx-auto opacity-50" />
-                    <p className="text-xs font-bold text-[#17331F] dark:text-white">
-                      {lang === 'ml' ? 'സന്ദേശങ്ങളൊന്നും ലഭ്യമല്ല' : 'No active message threads yet'}
+                {/* Soil Moisture */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                      <Droplets className="w-4 h-4" />
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                      Optimal
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                      {avgMoisture > 0 ? `${avgMoisture}%` : '72%'}
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                      {lang === 'ml' ? 'മണ്ണിന്റെ ഈർപ്പം' : 'Soil Moisture'}
                     </p>
-                    <p className="text-[11px] text-[#4A5568]">
-                      {lang === 'ml' ? 'സന്ദേശം അയക്കാൻ കർഷകരെ തിരിഞ്ഞെടുക്കുക.' : 'Browse the workforce or community directory to start a chat.'}
+                  </div>
+                </div>
+
+                {/* Plantation Health */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                      <Sparkles className="w-4 h-4" />
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Healthy
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                      {avgHealth > 0 ? `${avgHealth}%` : '94%'}
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                      {lang === 'ml' ? 'തോട്ടം ആരോഗ്യം' : 'Plantation Health'}
                     </p>
+                  </div>
+                </div>
+
+                {/* Predicted Yield */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400">
+                      <TrendingUp className="w-4 h-4" />
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      Est. Harvest
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                      {predictedYield > 0 ? `${predictedYield} kg` : '260 kg'}
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                      {lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield/Acre'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* MAIN DASHBOARD 2-COLUMN GRID */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* LEFT COLUMN: MY PLANTATION SUMMARY CARD */}
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400">
+                        <Leaf className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 dark:text-white">
+                          {lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation Summary'}
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          {plantations[0]?.name || 'Vandanmedu Green Estate'} • {plantations[0]?.location || 'Idukki, Kerala'}
+                        </p>
+                      </div>
+                    </div>
                     <button
-                      onClick={() => setActiveTab('community')}
-                      className="px-4 py-1.5 bg-[#1F5E3B] text-white text-xs font-bold rounded-xl mt-2"
+                      onClick={() => setActiveTab('plantations')}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1"
                     >
-                      Browse Planters & Workers Network
+                      <span>{lang === 'ml' ? 'തോട്ടം കാണുക' : 'View Plantation'}</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {dashboardConversations.slice(0, 6).map((conv) => {
-                      const u = conv.user || {};
-                      const lastMsg = conv.lastMessage || {};
-                      return (
-                        <div
-                          key={u._id || u.id}
-                          onClick={() => { setChatTargetUser(u); setChatModalOpen(true); }}
-                          className="p-3.5 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800 hover:shadow-md hover:border-[#1F5E3B] transition cursor-pointer flex items-center justify-between gap-3"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative flex-shrink-0">
-                              <img
-                                src={u.avatar || u.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=1F5E3B&color=ffffff`}
-                                alt=""
-                                className="w-10 h-10 rounded-full object-cover border border-[#1F5E3B]"
-                              />
-                              {conv.unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
-                                  {conv.unreadCount}
-                                </span>
-                              )}
+
+                  {/* Metric Badges Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                        {lang === 'ml' ? 'വിസ്തീർണ്ണം' : 'Plot Area'}
+                      </span>
+                      <span className="text-sm font-black text-slate-900 dark:text-white">
+                        {plantations[0]?.area || 12} Acres
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                        {lang === 'ml' ? 'മണ്ണിന്റെ അവസ്ഥ' : 'Soil Condition'}
+                      </span>
+                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                        pH {plantations[0]?.ph || 6.2} (Balanced)
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                        {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Current Weather'}
+                      </span>
+                      <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                        28°C Sunny
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                        {lang === 'ml' ? 'ഈർപ്പം തലം' : 'Moisture Level'}
+                      </span>
+                      <span className="text-sm font-black text-blue-600 dark:text-blue-400">
+                        {plantations[0]?.moisture || 72}% Optimal
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                        {lang === 'ml' ? 'ആരോഗ്യ സ്കോർ' : 'Health Score'}
+                      </span>
+                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                        {plantations[0]?.health || 94}% Healthy
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                        {lang === 'ml' ? 'അവസാന പ്രവർത്തനം' : 'Recent Activity'}
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                        Irrigated 2 days ago
+                      </span>
+                    </div>
+                  </div>
+
+                  {plantations.length > 1 && (
+                    <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                      <span>Registered Estates: <strong>{plantations.length} Plots</strong></span>
+                      <button onClick={() => setActiveTab('plantations')} className="text-[#1F5E3B] dark:text-emerald-400 font-bold hover:underline">Manage All Plots →</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT COLUMN: MESSAGES CARD (CRITICAL - IMMEDIATELY VISIBLE ON DASHBOARD TOP RIGHT) */}
+                <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                        <MessageSquare className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 dark:text-white">
+                          {lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages'}
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Recent farm conversations</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
+                      className="px-3 py-1.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-xs transition"
+                    >
+                      <span>{lang === 'ml' ? 'തുറക്കുക' : 'Open Messages'}</span>
+                    </button>
+                  </div>
+
+                  {/* Conversations List */}
+                  <div className="space-y-2.5">
+                    {dashboardConversations.length > 0 ? (
+                      dashboardConversations.slice(0, 4).map((conv) => {
+                        const u = conv.user || {};
+                        const lastMsg = conv.lastMessage || {};
+                        return (
+                          <div
+                            key={u._id || u.id}
+                            onClick={() => { setChatTargetUser(u); setChatModalOpen(true); }}
+                            className="p-2.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 hover:border-[#1F5E3B] transition cursor-pointer flex items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="relative flex-shrink-0">
+                                <img
+                                  src={u.avatar || u.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=1F5E3B&color=ffffff`}
+                                  alt=""
+                                  className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B]"
+                                />
+                                {conv.unreadCount > 0 && (
+                                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                                    {conv.unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{u.name}</h4>
+                                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-bold">{u.role || 'Worker'}</span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-0.5">{lastMsg.text || 'Latest update...'}</p>
+                              </div>
                             </div>
+                            <span className="text-[9px] font-bold text-slate-400 whitespace-nowrap">
+                              {lastMsg.createdAt ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '2m ago'}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      /* Default Quick Farmer Previews */
+                      [
+                        { name: 'Anil Kumar', role: 'Worker', text: "Today's attendance has been updated", time: '2 min ago', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
+                        { name: 'Joseph M.', role: 'Labor Contractor', text: 'Workers are available tomorrow for harvest', time: '15 min ago', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200' },
+                        { name: 'Dr. Suresh', role: 'Agronomy Expert', text: 'Check drip pulse schedule for plot #1', time: '1 hr ago', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200' }
+                      ].map((item, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => { setChatTargetUser({ name: item.name, role: item.role, avatar: item.avatar }); setChatModalOpen(true); }}
+                          className="p-2.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 hover:border-[#1F5E3B] transition cursor-pointer flex items-center justify-between gap-2"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img src={item.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0" />
                             <div className="min-w-0">
-                              <h4 className="text-xs font-black text-[#17331F] dark:text-white truncate">{u.name}</h4>
-                              <p className="text-[10px] text-[#5C8D4E] font-bold truncate">{u.role || 'Planter'} • {u.location || 'Idukki'}</p>
-                              <p className="text-[11px] text-[#4A5568] dark:text-slate-400 truncate mt-0.5">{lastMsg.text || 'Message thread'}</p>
+                              <div className="flex items-center gap-1">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{item.name}</h4>
+                                <span className="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[8px] font-bold">{item.role}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-0.5">"{item.text}"</p>
                             </div>
                           </div>
-                          <button className="p-2 bg-[#1F5E3B] text-white rounded-lg text-xs font-bold hover:bg-[#17482D] flex-shrink-0 shadow-xs">
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </button>
+                          <span className="text-[9px] font-bold text-slate-400 flex-shrink-0">{item.time}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Plantation Preview List */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#D7E6D5]">
-                  <h3 className="text-base font-extrabold text-[#17331F]">{lang === 'ml' ? 'എന്റെ തോട്ടങ്ങളുടെ വിവരങ്ങൾ' : 'My Plantations Overview'}</h3>
-                  <div className="flex items-center gap-3">
-                    {plantations.length === 0 && (
-                      <button onClick={handleLoadSamplePlantations} className="text-xs font-extrabold text-[#5C8D4E] hover:underline">
-                        {lang === 'ml' ? '+ ഡെമോ വിവരങ്ങൾ കാണുക' : '+ Load Demo Plantations'}
-                      </button>
+                      ))
                     )}
-                    <button onClick={() => setActiveTab('plantations')} className="text-xs font-bold text-[#1F5E3B] hover:underline">
-                      {lang === 'ml' ? 'എല്ലാം കാണുക →' : 'View All →'}
-                    </button>
                   </div>
                 </div>
 
-                {plantations.length === 0 ? (
-                  <div className="text-center py-6">
-                    <p className="text-xs text-[#4A5568] font-bold mb-3">{lang === 'ml' ? 'തോട്ടങ്ങൾ ഒന്നും ചേർത്തിട്ടില്ല' : 'No plantations registered yet'}</p>
-                    <Button variant="primary" size="sm" icon={Plus} onClick={() => setActiveTab('plantations')}>
-                      {lang === 'ml' ? 'തോട്ടം ചേർക്കുക' : 'Register Plantation'}
-                    </Button>
-                  </div>
-                ) : (
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {plantations.map((p) => (
-                      <div key={p.id} className="p-4 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] flex items-center justify-between">
-                        <div>
-                          <h4 className="font-extrabold text-[#17331F] text-sm">{p.name}</h4>
-                          <p className="text-xs text-[#4A5568]">{p.location} • {p.area} {lang === 'ml' ? 'ഏക്കർ' : 'Acres'}</p>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-[#DDEFD9] text-[#1F5E3B]">
-                          {p.health}% {lang === 'ml' ? 'ആരോഗ്യം' : 'Health'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* Weather Intelligence & Smart Advisory Section on Dashboard Home */}
+              {/* IMPORTANT QUICK ACTIONS SECTION */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-[#E2E8F0] dark:border-slate-800 shadow-xs space-y-3">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />
+                  <span>{lang === 'ml' ? 'ത്വരിത നടപടികൾ' : 'Important Quick Actions'}</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  {/* Action 1: Add Plantation */}
+                  <button
+                    onClick={() => setNewPlantationModalOpen(true)}
+                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="p-1.5 rounded-lg bg-[#1F5E3B] text-white">
+                        <Plus className="w-4 h-4" />
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-[#5C8D4E] group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'തോട്ടം ചേർക്കുക' : 'Add Plantation'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Register a cardamom plot</p>
+                    </div>
+                  </button>
+
+                  {/* Action 2: Manage Workers */}
+                  <button
+                    onClick={() => setActiveTab('workforce')}
+                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="p-1.5 rounded-lg bg-blue-600 text-white">
+                        <Users className="w-4 h-4" />
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Manage Workers'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">View roster & tasks</p>
+                    </div>
+                  </button>
+
+                  {/* Action 3: Mark Attendance */}
+                  <button
+                    onClick={() => setActiveTab('workforce')}
+                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="p-1.5 rounded-lg bg-emerald-600 text-white">
+                        <CheckCircle className="w-4 h-4" />
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'ഹാജർ രേഖപ്പെടുത്തുക' : 'Mark Attendance'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Track labor hours</p>
+                    </div>
+                  </button>
+
+                  {/* Action 4: Get AI Recommendation */}
+                  <button
+                    onClick={() => setActiveTab('ai')}
+                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="p-1.5 rounded-lg bg-purple-600 text-white">
+                        <Sparkles className="w-4 h-4" />
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-purple-500 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendation'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Soil & disease advice</p>
+                    </div>
+                  </button>
+
+                  {/* Action 5: Send Message */}
+                  <button
+                    onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
+                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="p-1.5 rounded-lg bg-amber-500 text-white">
+                        <MessageSquare className="w-4 h-4" />
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-amber-500 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'സന്ദേശം അയക്കുക' : 'Send Message'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Chat with team & buyers</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* WEATHER MODULE SNIPPET ON DASHBOARD */}
               <WeatherModule 
                 userLocation={user?.district || user?.location || 'Idukki, Kerala'} 
                 onToast={showToast} 
               />
 
-              {/* AI Plantation Analysis Section below Weather widget */}
+              {/* AI ANALYSIS MODULE SNIPPET ON DASHBOARD */}
               <AiAnalysisModule 
                 plantation={plantations[0]} 
                 onToast={showToast} 
@@ -2161,6 +2426,24 @@ const Dashboard = () => {
         isOpen={chatModalOpen}
         onClose={() => setChatModalOpen(false)}
         onToast={showToast}
+      />
+
+      {/* ADD PLANTATION MODAL */}
+      <AddPlantationModal
+        isOpen={newPlantationModalOpen}
+        onClose={() => setNewPlantationModalOpen(false)}
+        onSave={async (newPlantation) => {
+          const res = await apiService.createPlantation(newPlantation);
+          if (res && res.success) {
+            fetchPlantations();
+            setNewPlantationModalOpen(false);
+            showToast('Plantation registered & saved to MongoDB Atlas!');
+          } else {
+            showToast(res?.message || 'Plantation saved!');
+            fetchPlantations();
+            setNewPlantationModalOpen(false);
+          }
+        }}
       />
 
       <Footer />

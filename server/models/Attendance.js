@@ -4,53 +4,67 @@ const attendanceSchema = new mongoose.Schema(
   {
     worker: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Worker',
       required: true,
     },
-    task: {
+    workerId: {
+      type: String,
+      default: '',
+    },
+    supervisor: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Task',
+      ref: 'User',
       default: null,
     },
     plantation: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Plantation',
-      default: null,
+      required: true,
     },
     plantationName: {
       type: String,
-      default: 'Vandanmedu Green Estate',
+      default: 'Cardora Estate',
     },
     date: {
       type: String,
       required: true,
     },
+    status: {
+      type: String,
+      enum: ['Present', 'Half Day', 'Absent', 'Leave'],
+      default: 'Present',
+    },
+    overtimeHours: {
+      type: Number,
+      default: 0,
+    },
+    overtimeAmount: {
+      type: Number,
+      default: 0,
+    },
+    workType: {
+      type: String,
+      default: 'General Harvesting',
+    },
+    remarks: {
+      type: String,
+      default: '',
+    },
+    markedBy: {
+      type: String,
+      default: 'Supervisor',
+    },
     checkInTime: {
       type: Date,
-      required: true,
+      default: Date.now,
     },
     checkOutTime: {
       type: Date,
       default: null,
     },
-    checkInLocation: {
-      lat: { type: Number, required: true },
-      lng: { type: Number, required: true },
-      address: { type: String, default: 'Vandanmedu Plot 4, Idukki' },
-    },
-    checkOutLocation: {
-      lat: { type: Number },
-      lng: { type: Number },
-      address: { type: String },
-    },
     workingHours: {
       type: Number,
       default: 8,
-    },
-    status: {
-      type: String,
-      enum: ['Present', 'Late', 'Absent'],
-      default: 'Present',
     },
   },
   {

@@ -10,7 +10,7 @@ import {
   FaYoutube 
 } from 'react-icons/fa';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { validateEmailDomain } from '../../utils/validation';
 
 const Footer = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -23,8 +23,9 @@ const Footer = () => {
       setNewsletterError('Please enter your email address.');
       return;
     }
-    if (!EMAIL_REGEX.test(newsletterEmail.trim())) {
-      setNewsletterError('Please enter a valid email address.');
+    const domainCheck = validateEmailDomain(newsletterEmail.trim());
+    if (!domainCheck.valid) {
+      setNewsletterError(domainCheck.message);
       return;
     }
     setNewsletterError('');

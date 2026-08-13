@@ -26,6 +26,17 @@ const plantationSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    supervisorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    assignedSupervisors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     name: {
       type: String,
       required: [true, 'Please add a plantation name'],

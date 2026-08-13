@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import WorkerProfileModal from './WorkerProfileModal';
 import PaymentReceiptModal from './PaymentReceiptModal';
+import SupervisorDashboard from './SupervisorDashboard';
 
 const WorkforceModule = ({ onOpenChat }) => {
   const { user, showToast } = useAuth();
@@ -16,8 +17,8 @@ const WorkforceModule = ({ onOpenChat }) => {
   const isAdmin = userRole === 'admin';
   const isWorker = userRole === 'worker';
 
-  // Active Tab: 'dashboard' | 'search' | 'connections' | 'contractors' | 'tasks' | 'attendance' | 'payments' | 'admin'
-  const [activeTab, setActiveTab] = useState(isAdmin ? 'admin' : 'dashboard');
+  // Active Tab: 'supervisor' | 'dashboard' | 'search' | 'connections' | 'contractors' | 'tasks' | 'attendance' | 'payments' | 'admin'
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'admin' : 'supervisor');
 
   // Loading States
   const [loading, setLoading] = useState(false);
@@ -534,6 +535,7 @@ const WorkforceModule = ({ onOpenChat }) => {
       {/* TOP NAVIGATION TABS */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
+          { id: 'supervisor', label: 'Supervisor Hub', icon: ShieldCheck },
           { id: 'dashboard', label: 'Overview', icon: Users },
           { id: 'search', label: 'Search Workers', icon: Search, badge: workers.length },
           { id: 'connections', label: 'Connections', icon: UserPlus, badge: connections.length },
@@ -568,6 +570,11 @@ const WorkforceModule = ({ onOpenChat }) => {
           );
         })}
       </div>
+
+      {/* ===== SUPERVISOR HUB MODULE ===== */}
+      {activeTab === 'supervisor' && (
+        <SupervisorDashboard showToast={showToast} />
+      )}
 
       {/* ===== TAB 1: OVERVIEW DASHBOARD ===== */}
       {activeTab === 'dashboard' && (

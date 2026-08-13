@@ -10,6 +10,70 @@ const SystemAlert = require('../models/SystemAlert');
 const ActivityLog = require('../models/ActivityLog');
 const sendEmail = require('../utils/sendEmail');
 
+// Helper auto-seed functions for MongoDB initial state
+const seedInitialActivities = async () => {
+  try {
+    const count = await ActivityLog.countDocuments();
+    if (count === 0) {
+      await ActivityLog.insertMany([
+        { type: 'user_registered', description: 'New farmer registered: Suresh Menon from Kattappana', actorName: 'Suresh Menon', actorRole: 'Farmer' },
+        { type: 'ai_scan', description: 'AI Soil & Disease Pathology scan completed for Western Ghats Malabar Plot', actorName: 'Cardora AI', actorRole: 'System' },
+        { type: 'marketplace', description: 'New 12 Acre Prime Cardamom Estate listed for lease', actorName: 'Devika Raj', actorRole: 'Farmer' },
+        { type: 'alert', description: 'Critical Alert: Low soil moisture recorded in Nedumkandam', actorName: 'IoT Sensor 04', actorRole: 'System' },
+      ]);
+    }
+  } catch (err) {
+    console.error('Error seeding initial activities:', err.message);
+  }
+};
+
+const seedInitialSensors = async () => {
+  try {
+    const count = await IoTSensor.countDocuments();
+    if (count === 0) {
+      await IoTSensor.insertMany([
+        { sensorId: 'SENSOR-IDK-01', plantationName: 'Western Ghats Malabar Plot', ownerName: 'Suresh Menon', district: 'Kattappana, Idukki', moisture: 74, temperature: 22, humidity: 80, status: 'active' },
+        { sensorId: 'SENSOR-IDK-02', plantationName: 'High Altitude Green Valley', ownerName: 'Devika Raj', district: 'Vandiperiyar, Idukki', moisture: 68, temperature: 21, humidity: 84, status: 'active' },
+        { sensorId: 'SENSOR-IDK-03', plantationName: 'Santhanpara Shade Garden', ownerName: 'Anand Kumar', district: 'Santhanpara, Idukki', moisture: 82, temperature: 20, humidity: 76, status: 'active' },
+        { sensorId: 'SENSOR-IDK-04', plantationName: 'Nedumkandam Organic Farm', ownerName: 'Mathew Joseph', district: 'Nedumkandam, Idukki', moisture: 70, temperature: 23, humidity: 79, status: 'active' },
+        { sensorId: 'SENSOR-IDK-05', plantationName: 'Munnar Mist Plantation', ownerName: 'Priya Nair', district: 'Munnar, Idukki', moisture: 78, temperature: 18, humidity: 88, status: 'active' },
+      ]);
+    }
+  } catch (err) {
+    console.error('Error seeding initial sensors:', err.message);
+  }
+};
+
+const seedInitialAlerts = async () => {
+  try {
+    const count = await SystemAlert.countDocuments();
+    if (count === 0) {
+      await SystemAlert.insertMany([
+        { priority: 'critical', title: 'Low Soil Moisture Warning (<45%)', plantationName: 'Nedumkandam Organic Farm', farmerName: 'Mathew Joseph', recommendation: 'Initiate 2-hour pulse drip irrigation immediately.', isResolved: false },
+        { priority: 'critical', title: 'Heavy Monsoon Capsule Rot (Azhukal) Risk', plantationName: 'Munnar Mist Plantation', farmerName: 'Priya Nair', recommendation: 'Apply Bio-Fungicide canopy spray.', isResolved: false },
+        { priority: 'high', title: 'Leaf Spot Incident Recorded', plantationName: 'High Altitude Green Valley', farmerName: 'Devika Raj', recommendation: 'Prune affected stems and apply Organic Lime.', isResolved: false },
+      ]);
+    }
+  } catch (err) {
+    console.error('Error seeding initial alerts:', err.message);
+  }
+};
+
+const seedInitialExperts = async () => {
+  try {
+    const count = await Expert.countDocuments();
+    if (count === 0) {
+      await Expert.insertMany([
+        { name: 'Dr. Ramesh Nambiar', email: 'ramesh.nambiar@spicesboard.in', phone: '+91 94470 11223', specialization: 'Cardamom Agronomy & Capsule Pathology', experienceYears: 18, rating: 4.9, assignedFarmersCount: 42, availabilityStatus: 'available' },
+        { name: 'Prof. Anitha Varma', email: 'anitha.varma@kau.in', phone: '+91 98461 33445', specialization: 'Soil Chemistry & High Altitude Canopy Management', experienceYears: 14, rating: 4.8, assignedFarmersCount: 35, availabilityStatus: 'available' },
+        { name: 'Er. George Kuriakose', email: 'george.k@cardoramail.com', phone: '+91 94955 77889', specialization: 'Precision IoT Irrigation & Micro-Climate Control', experienceYears: 10, rating: 4.7, assignedFarmersCount: 28, availabilityStatus: 'available' },
+      ]);
+    }
+  } catch (err) {
+    console.error('Error seeding initial experts:', err.message);
+  }
+};
+
 // @desc    Get 8 Core Executive KPI cards dynamically aggregated from MongoDB collections
 // @route   GET /api/admin/executive-kpis
 // @access  Private/Admin

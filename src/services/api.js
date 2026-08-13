@@ -994,6 +994,153 @@ export const apiService = {
     }
   },
 
+  // Supervisor–Worker Management Module APIs
+  createSupervisorWorker: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/workers', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSupervisorPlantationWorkers: async (plantationId, params = {}) => {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/supervisor/workers/plantation/${plantationId}?${query}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  updateSupervisorWorker: async (id, data) => {
+    try {
+      const res = await api.put(`/workforce/supervisor/workers/${id}`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  deleteSupervisorWorker: async (id) => {
+    try {
+      const res = await api.delete(`/workforce/supervisor/workers/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  markBulkSupervisorAttendance: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/attendance/bulk', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSupervisorAttendanceByDate: async (plantationId, date) => {
+    try {
+      const res = await api.get(`/workforce/supervisor/attendance/${plantationId}/${date}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  submitSupervisorWorkerRating: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/ratings', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSupervisorWorkerRatings: async (workerId) => {
+    try {
+      const res = await api.get(`/workforce/supervisor/ratings/worker/${workerId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSupervisorWorkerWageDetails: async (workerId, params = {}) => {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/supervisor/wages/worker/${workerId}?${query}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  recordSupervisorWorkerPayment: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/payments', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  sendSupervisorWorkerSms: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/sms/send', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSupervisorWorkerSmsLogs: async (workerId) => {
+    try {
+      const res = await api.get(`/workforce/supervisor/sms/history/${workerId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSmsSettings: async () => {
+    try {
+      const res = await api.get('/workforce/supervisor/sms/settings');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  updateSmsSettings: async (settings) => {
+    try {
+      const res = await api.put('/workforce/supervisor/sms/settings', settings);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getOwnerMonitoringSummary: async (plantationId) => {
+    try {
+      const res = await api.get(`/workforce/owner-summary/${plantationId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  assignSupervisorToPlantation: async (plantationId, data) => {
+    try {
+      const res = await api.post(`/workforce/plantations/${plantationId}/assign-supervisor`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
   // ===== 14. REAL GOOGLE GEMINI AI APIs =====
   askAiChat: async (prompt, lang = 'en', context = '') => {
     try {
@@ -1021,6 +1168,24 @@ export const apiService = {
       return { success: false, message: error.response?.data?.message || error.message };
     }
   },
+
+  diagnosePlantImageAi: async (formDataOrObject) => {
+    try {
+      let res;
+      if (formDataOrObject instanceof FormData) {
+        res = await api.post('/ai/diagnose-image', formDataOrObject, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        res = await api.post('/ai/diagnose-image', formDataOrObject);
+      }
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
 };
+
+export default apiService;
 
 

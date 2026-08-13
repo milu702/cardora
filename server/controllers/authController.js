@@ -1,6 +1,63 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
+const EMAIL_DOMAIN_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+const validateEmailDomainServer = (email) => {
+  if (!email || typeof email !== 'string') {
+    return 'Email address is required.';
+  }
+  const trimmed = email.trim();
+  if (!trimmed.includes('@')) {
+    return 'Email address must contain an "@" symbol.';
+  }
+  const parts = trimmed.split('@');
+  if (parts.length !== 2) {
+    return 'Email address format is invalid.';
+  }
+  const [local, domain] = parts;
+  if (!local) {
+    return 'Email username prefix is missing.';
+  }
+  if (!domain || !domain.includes('.')) {
+    return 'Email domain must contain a valid domain extension (e.g., @domain.com).';
+  }
+  if (domain.includes('..')) {
+    return 'Email domain cannot contain consecutive dots.';
+  }
+  const domainParts = domain.split('.');
+  const tld = domainParts[domainParts.length - 1];
+  if (!tld || tld.length < 2) {
+    return 'Email top-level domain must be at least 2 characters.';
+  }
+  if (!EMAIL_DOMAIN_REGEX.test(trimmed)) {
+    return 'Please enter a valid email address with a valid domain (e.g. user@domain.com).';
+  }
+  return null;
+};
+
+const validateStrongPasswordServer = (password) => {
+  if (!password || typeof password !== 'string') {
+    return 'Password is required.';
+  }
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long.';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter (A-Z).';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter (a-z).';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number (0-9).';
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password)) {
+    return 'Password must contain at least one special character (!@#$%^&*).';
+  }
+  return null;
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/signup
 // @access  Public
@@ -17,6 +74,18 @@ exports.signup = async (req, res) => {
         success: false,
         message: 'Please provide full name, username, email, and password.',
       });
+    }
+
+    // Validate email domain structure
+    const emailErr = validateEmailDomainServer(userEmail);
+    if (emailErr) {
+      return res.status(400).json({ success: false, message: emailErr });
+    }
+
+    // Validate password strength criteria
+    const passErr = validateStrongPasswordServer(password);
+    if (passErr) {
+      return res.status(400).json({ success: false, message: passErr });
     }
 
     const emailExists = await User.findOne({ email: userEmail });
@@ -341,6 +410,13 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const targetEmail = email.trim().toLowerCase();
+
+    // Validate email domain structure
+    const emailErr = validateEmailDomainServer(targetEmail);
+    if (emailErr) {
+      return res.status(400).json({ success: false, message: emailErr });
+    }
+
     let user = await User.findOne({ $or: [{ email: targetEmail }, { username: targetEmail }] });
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -407,8 +483,10 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email, OTP code, and new password are required.' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+    // Validate strong password criteria
+    const passErr = validateStrongPasswordServer(newPassword);
+    if (passErr) {
+      return res.status(400).json({ success: false, message: passErr });
     }
 
     const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+otp +otpExpire +password');

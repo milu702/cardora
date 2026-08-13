@@ -1,245 +1,306 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X, CheckCircle, ShieldCheck, Phone, Star, DollarSign,
-  Award, MessageSquare, UserPlus, Briefcase, Clock
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Briefcase, Calendar, IndianRupee, CreditCard, Send, Star } from 'lucide-react';
+import apiService from '../../services/api';
 
-const WorkerProfileModal = ({
-  worker,
-  isOpen,
-  onClose,
-  onConnect,
-  onOpenChat,
-  onAssignTask,
-  onPayWage,
-  isConnected = false,
-  isPending = false,
-}) => {
+const WorkerProfileModal = ({ isOpen, onClose, worker, plantationId, showToast }) => {
+  const [activeTab, setActiveTab] = useState('attendance'); // attendance | work | rating | wages | payments | sms
+  const [wageDetails, setWageDetails] = useState(null);
+  const [ratings, setRatings] = useState([]);
+  const [smsLogs, setSmsLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadProfileDetails = async () => {
+      if (!isOpen || !worker) return;
+      setLoading(true);
+      try {
+        const [wRes, rRes, sRes] = await Promise.all([
+          apiService.getSupervisorWorkerWageDetails(worker._id),
+          apiService.getSupervisorWorkerRatings(worker._id),
+          apiService.getSupervisorWorkerSmsLogs(worker._id),
+        ]);
+
+        if (wRes.success) setWageDetails(wRes);
+        if (rRes.success) setRatings(rRes.ratings || []);
+        if (sRes.success) setSmsLogs(sRes.logs || []);
+      } catch (err) {
+        console.error('Error loading worker profile stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfileDetails();
+  }, [isOpen, worker]);
+
   if (!isOpen || !worker) return null;
 
-  const user = worker.user || {};
-  const photo = worker.photo || user.avatar || user.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(worker.fullName || user.name || 'Worker')}&background=1F5E3B&color=ffffff`;
+  const summary = wageDetails?.summary || {};
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-[#D7E6D5] dark:border-slate-800 overflow-hidden my-8"
-        >
-          {/* Header Banner */}
-          <div className="h-32 bg-gradient-to-r from-[#1F5E3B] via-[#2D7A4F] to-[#5C8D4E] relative">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            {worker.isVerified && (
-              <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-slate-900/90 text-[#1F5E3B] dark:text-emerald-400 text-xs font-black rounded-full flex items-center gap-1.5 shadow-md">
-                <ShieldCheck className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />
-                <span>Verified Cardora Worker</span>
-              </div>
-            )}
-          </div>
-
-          {/* Profile Header Main */}
-          <div className="px-6 pb-6 pt-0 relative">
-            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between -mt-14 mb-4 gap-4">
-              <div className="relative">
-                <img
-                  src={photo}
-                  alt={worker.fullName}
-                  className="w-28 h-28 rounded-2xl object-cover border-4 border-white dark:border-slate-900 shadow-xl bg-slate-100 dark:bg-slate-800"
-                />
-                <span className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white ${
-                  worker.availability === 'Available Today' ? 'bg-emerald-500' : 'bg-amber-500'
-                }`}></span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                {isConnected ? (
-                  <>
-                    <button
-                      onClick={() => { onClose(); onOpenChat && onOpenChat(user._id || worker.user); }}
-                      className="flex-1 sm:flex-none px-4 py-2.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-md transition"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Chat Direct</span>
-                    </button>
-                    <button
-                      onClick={() => { onClose(); onAssignTask && onAssignTask(worker); }}
-                      className="flex-1 sm:flex-none px-4 py-2.5 bg-[#5C8D4E] hover:bg-[#4a743e] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-md transition"
-                    >
-                      <Briefcase className="w-4 h-4" />
-                      <span>Assign Work</span>
-                    </button>
-                    <button
-                      onClick={() => { onClose(); onPayWage && onPayWage(worker); }}
-                      className="flex-1 sm:flex-none px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-md transition"
-                    >
-                      <DollarSign className="w-4 h-4" />
-                      <span>Pay Wage</span>
-                    </button>
-                  </>
-                ) : isPending ? (
-                  <button
-                    disabled
-                    className="px-5 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-500 text-xs font-bold rounded-xl flex items-center gap-2 cursor-not-allowed"
-                  >
-                    <Clock className="w-4 h-4" />
-                    <span>Connection Request Pending</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => onConnect && onConnect(user._id || worker.user)}
-                    className="px-6 py-2.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Connect Worker</span>
-                  </button>
-                )}
-              </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white dark:bg-[#1E293B] w-full max-w-3xl rounded-3xl shadow-2xl border border-emerald-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header Profile Banner */}
+        <div className="px-6 py-5 bg-gradient-to-r from-[#17331F] via-[#2C5E3B] to-[#17331F] text-white flex items-start justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 border-2 border-white/30 text-white font-bold flex items-center justify-center text-xl shadow-lg overflow-hidden">
+              {worker.photo ? (
+                <img src={worker.photo} alt={worker.fullName} className="w-full h-full object-cover" />
+              ) : (
+                worker.fullName.slice(0, 2).toUpperCase()
+              )}
             </div>
-
-            {/* Name & Title Details */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-[#17331F] dark:text-white">{worker.fullName || user.name}</h2>
-                <span className="px-2.5 py-0.5 bg-[#DDEFD9] dark:bg-slate-800 text-[#1F5E3B] dark:text-emerald-400 text-[10px] font-black rounded-md">
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-2xl font-black">{worker.fullName}</h3>
+                <span className="px-2.5 py-0.5 bg-emerald-500/30 text-emerald-300 rounded-md text-xs font-mono font-bold border border-emerald-400/30">
                   {worker.workerId}
                 </span>
               </div>
-              <p className="text-xs text-[#5C8D4E] dark:text-emerald-400 font-bold">
-                {worker.experience} • {worker.district}, {worker.village}
+              <p className="text-xs text-emerald-200/90 mt-1 flex items-center gap-3">
+                <span>{worker.workType || 'Capsule Harvesting'}</span>
+                <span>•</span>
+                <span>{worker.phone || 'No phone registered'}</span>
+                <span>•</span>
+                <span className="font-bold text-amber-300">★ {worker.rating || 4.5} / 5</span>
               </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400 pt-1 leading-relaxed">{worker.bio}</p>
             </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-5">
-              <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800 text-center">
-                <div className="flex items-center justify-center gap-1 text-amber-500 font-black text-sm">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <span>{worker.rating || 4.9}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-medium">Average Rating</p>
-              </div>
+        {/* 6 Tabs Navigation */}
+        <div className="flex items-center space-x-1 px-6 bg-gray-100 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+          {[
+            { id: 'attendance', label: 'Attendance', icon: Calendar },
+            { id: 'work', label: 'Work & Profile', icon: Briefcase },
+            { id: 'rating', label: 'Rating', icon: Star },
+            { id: 'wages', label: 'Wages', icon: IndianRupee },
+            { id: 'payments', label: 'Payments', icon: CreditCard },
+            { id: 'sms', label: 'SMS History', icon: Send },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-3 text-xs font-bold flex items-center space-x-1.5 border-b-2 transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-white dark:bg-[#1E293B]'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-              <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800 text-center">
-                <p className="text-sm font-black text-[#1F5E3B] dark:text-emerald-400">₹{worker.dailyWage} / day</p>
-                <p className="text-[10px] text-slate-500 font-medium">Daily Wage</p>
-              </div>
+        {/* Modal Tab Body */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          {loading ? (
+            <div className="py-12 text-center text-gray-400 text-sm">Loading worker statistics...</div>
+          ) : (
+            <>
+              {/* TAB 1: ATTENDANCE */}
+              {activeTab === 'attendance' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800/50 text-center">
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Present</span>
+                      <p className="text-2xl font-black text-emerald-800 dark:text-emerald-200 mt-1">
+                        {summary.presentDays || 0} days
+                      </p>
+                    </div>
+                    <div className="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/50 text-center">
+                      <span className="text-xs font-bold text-amber-700 dark:text-amber-300">Half Day</span>
+                      <p className="text-2xl font-black text-amber-800 dark:text-amber-200 mt-1">
+                        {summary.halfDays || 0} days
+                      </p>
+                    </div>
+                    <div className="p-4 bg-red-50 dark:bg-red-950/40 rounded-2xl border border-red-200 dark:border-red-800/50 text-center">
+                      <span className="text-xs font-bold text-red-700 dark:text-red-300">Absent</span>
+                      <p className="text-2xl font-black text-red-800 dark:text-red-200 mt-1">
+                        {summary.absentDays || 0} days
+                      </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/40 rounded-2xl border border-blue-200 dark:border-blue-800/50 text-center">
+                      <span className="text-xs font-bold text-blue-700 dark:text-blue-300">Overtime</span>
+                      <p className="text-2xl font-black text-blue-800 dark:text-blue-200 mt-1">
+                        {summary.totalOvertimeHours || 0} hrs
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800 text-center">
-                <p className="text-sm font-black text-slate-800 dark:text-white">{worker.completedJobs || 0}</p>
-                <p className="text-[10px] text-slate-500 font-medium">Completed Jobs</p>
-              </div>
-
-              <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/60 rounded-xl border border-[#D7E6D5] dark:border-slate-800 text-center">
-                <span className={`text-xs font-black px-2 py-0.5 rounded-md inline-block ${
-                  worker.availability === 'Available Today'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                }`}>
-                  {worker.availability}
-                </span>
-                <p className="text-[10px] text-slate-500 font-medium mt-1">Status</p>
-              </div>
-            </div>
-
-            {/* Detailed Info Sections */}
-            <div className="space-y-4 text-xs">
-              {/* Skills & Specializations */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl space-y-2 border border-slate-200 dark:border-slate-800">
-                <h4 className="font-extrabold text-[#17331F] dark:text-white flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />
-                  <span>Plantation Skills & Specializations</span>
-                </h4>
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {(worker.skills || []).map((skill, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-white dark:bg-slate-800 text-[#1F5E3B] dark:text-emerald-300 border border-[#D7E6D5] dark:border-slate-700 rounded-lg font-medium shadow-2xs">
-                      {skill}
-                    </span>
-                  ))}
-                  {(worker.specializations || []).map((spec, idx) => (
-                    <span key={`spec-${idx}`} className="px-2.5 py-1 bg-[#DDEFD9] dark:bg-slate-700 text-[#17331F] dark:text-emerald-200 font-bold rounded-lg">
-                      ★ {spec}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Languages & Districts */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                  <p className="font-bold text-slate-500 text-[10px]">Languages Spoken</p>
-                  <p className="font-bold text-slate-800 dark:text-slate-200">
-                    {(worker.languages || ['Malayalam', 'Tamil']).join(', ')}
-                  </p>
-                </div>
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                  <p className="font-bold text-slate-500 text-[10px]">Preferred Work Districts</p>
-                  <p className="font-bold text-slate-800 dark:text-slate-200">
-                    {(worker.preferredDistricts || ['Idukki', 'Wayanad']).join(', ')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Certificates */}
-              {worker.certificates && worker.certificates.length > 0 && (
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
-                  <p className="font-bold text-slate-500 text-[10px] flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Certifications & Verification Badges</span>
-                  </p>
-                  <div className="space-y-1">
-                    {worker.certificates.map((cert, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-[#17331F] dark:text-slate-300 font-medium">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{cert}</span>
-                      </div>
-                    ))}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-700/60">
+                    <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                      Attendance Compliance Rate
+                    </h4>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="bg-emerald-500 h-full rounded-full transition-all"
+                        style={{
+                          width: `${
+                            summary.presentDays || summary.halfDays
+                              ? Math.min(
+                                  100,
+                                  Math.round(
+                                    (((summary.presentDays || 0) + (summary.halfDays || 0) * 0.5) /
+                                      Math.max(1, (summary.presentDays || 0) + (summary.absentDays || 0) + (summary.halfDays || 0))) *
+                                      100
+                                  )
+                                )
+                              : 100
+                          }%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Sensitive Info (Only if connected or owner) */}
-              <div className="p-4 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span>Verified Contact Information</span>
-                  </h4>
-                  {!isConnected && (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">
-                      🔒 Protected (Connect to View)
+              {/* TAB 2: WORK & PROFILE */}
+              {activeTab === 'work' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-2xl space-y-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">Gender:</span>
+                        <p className="font-bold text-gray-900 dark:text-white">{worker.gender || 'Male'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Daily Wage:</span>
+                        <p className="font-bold text-emerald-600 dark:text-emerald-400">₹{worker.dailyWage || 700} / day</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Joining Date:</span>
+                        <p className="font-bold text-gray-900 dark:text-white">
+                          {new Date(worker.joiningDate || worker.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Status:</span>
+                        <p className="font-bold text-emerald-600">{worker.status || 'Active'}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-2xl space-y-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">Address:</span>
+                        <p className="font-bold text-gray-900 dark:text-white">{worker.address || 'Vandanmedu, Idukki'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Emergency Contact:</span>
+                        <p className="font-bold text-gray-900 dark:text-white">
+                          {worker.emergencyContact?.name || 'Family Contact'} ({worker.emergencyContact?.phone || 'N/A'})
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Login Access:</span>
+                        <p className="font-bold text-gray-500 italic">None (Supervisor Managed)</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: RATING */}
+              {activeTab === 'rating' && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/50 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-300">Overall Rating</span>
+                      <p className="text-3xl font-black text-amber-600 dark:text-amber-400">★ {worker.rating || 4.5} / 5</p>
+                    </div>
+                    <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">
+                      Based on {ratings.length} supervisor evaluations
                     </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {ratings.length === 0 ? (
+                      <p className="text-xs text-gray-400">No rating history logged yet.</p>
+                    ) : (
+                      ratings.map((r, idx) => (
+                        <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs flex justify-between items-center">
+                          <div>
+                            <span className="font-bold text-gray-900 dark:text-white">{r.date}</span>
+                            <p className="text-[10px] text-gray-500">{r.comment || 'General rating'}</p>
+                          </div>
+                          <span className="font-black text-amber-500">★ {r.overallRating}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: WAGES */}
+              {activeTab === 'wages' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                      <span className="text-gray-500">Gross Earned</span>
+                      <p className="font-black text-emerald-600 text-base">₹{summary.totalEarned || 0}</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                      <span className="text-gray-500">Total Paid</span>
+                      <p className="font-black text-green-600 text-base">₹{summary.totalPaidAmount || 0}</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                      <span className="text-gray-500">Pending</span>
+                      <p className="font-black text-amber-600 text-base">₹{summary.pendingAmount || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: PAYMENTS */}
+              {activeTab === 'payments' && (
+                <div className="space-y-2">
+                  {!wageDetails?.payments || wageDetails.payments.length === 0 ? (
+                    <p className="text-xs text-gray-400">No payment logs.</p>
+                  ) : (
+                    wageDetails.payments.map((p, i) => (
+                      <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs flex justify-between">
+                        <div>
+                          <p className="font-bold">{p.type || 'Salary'} via {p.paymentMethod}</p>
+                          <p className="text-[10px] text-gray-400">{new Date(p.paymentDate).toLocaleDateString()}</p>
+                        </div>
+                        <span className="font-black text-emerald-600">₹{p.amount}</span>
+                      </div>
+                    ))
                   )}
                 </div>
+              )}
 
-                {isConnected ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-medium">
-                    <p><strong className="text-slate-500">Phone:</strong> {worker.phone || user.phone || '+91 98471 11223'}</p>
-                    <p><strong className="text-slate-500">Village:</strong> {worker.village}</p>
-                    <p><strong className="text-slate-500">District:</strong> {worker.district}</p>
-                    <p><strong className="text-slate-500">Emergency Contact:</strong> {worker.emergencyContact?.name || 'Family'} ({worker.emergencyContact?.phone || worker.phone})</p>
-                  </div>
-                ) : (
-                  <p className="text-slate-600 dark:text-slate-400 text-[11px] italic">
-                    Full phone number and emergency contacts are protected. Click "Connect Worker" to request access.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
+              {/* TAB 6: SMS HISTORY */}
+              {activeTab === 'sms' && (
+                <div className="space-y-2">
+                  {smsLogs.length === 0 ? (
+                    <p className="text-xs text-gray-400">No SMS dispatch history found.</p>
+                  ) : (
+                    smsLogs.map((log, i) => (
+                      <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs space-y-1">
+                        <div className="flex justify-between font-bold">
+                          <span className="text-emerald-600">{log.type} SMS</span>
+                          <span className="text-gray-400 text-[10px]">{new Date(log.sentAt).toLocaleString()}</span>
+                        </div>
+                        <p className="text-gray-700 dark:text-gray-300 font-mono text-[11px]">"{log.message}"</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 };
 

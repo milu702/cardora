@@ -25,6 +25,48 @@ const {
   submitComplaint,
 } = require('../controllers/workforceController');
 
+const {
+  createWorker: createSupervisorWorker,
+  getPlantationWorkers,
+  updateWorker: updateSupervisorWorker,
+  deleteWorker: deleteSupervisorWorker,
+  markBulkAttendance,
+  getAttendanceByDate,
+  submitWorkerRating: submitSupervisorWorkerRating,
+  getWorkerRatings: getSupervisorWorkerRatings,
+  getWorkerWageDetails,
+  recordPayment: recordSupervisorWorkerPayment,
+  sendWorkerSms,
+  getWorkerSmsLogs,
+  getSmsSettingsController,
+  updateSmsSettingsController,
+  getOwnerMonitoringSummary,
+  assignSupervisorToPlantation,
+} = require('../controllers/supervisorWorkerController');
+
+// Supervisor–Worker Management Module Routes
+router.post('/supervisor/workers', protect, createSupervisorWorker);
+router.get('/supervisor/workers/plantation/:plantationId', protect, getPlantationWorkers);
+router.put('/supervisor/workers/:id', protect, updateSupervisorWorker);
+router.delete('/supervisor/workers/:id', protect, deleteSupervisorWorker);
+
+router.post('/supervisor/attendance/bulk', protect, markBulkAttendance);
+router.get('/supervisor/attendance/:plantationId/:date', protect, getAttendanceByDate);
+
+router.post('/supervisor/ratings', protect, submitSupervisorWorkerRating);
+router.get('/supervisor/ratings/worker/:workerId', protect, getSupervisorWorkerRatings);
+
+router.get('/supervisor/wages/worker/:workerId', protect, getWorkerWageDetails);
+router.post('/supervisor/payments', protect, recordSupervisorWorkerPayment);
+
+router.post('/supervisor/sms/send', protect, sendWorkerSms);
+router.get('/supervisor/sms/history/:workerId', protect, getWorkerSmsLogs);
+router.get('/supervisor/sms/settings', protect, getSmsSettingsController);
+router.put('/supervisor/sms/settings', protect, updateSmsSettingsController);
+
+router.get('/owner-summary/:plantationId', protect, getOwnerMonitoringSummary);
+router.post('/plantations/:plantationId/assign-supervisor', protect, assignSupervisorToPlantation);
+
 // Worker Routes
 router.get('/workers', getWorkers);
 router.get('/workers/:id', getWorkerById);
