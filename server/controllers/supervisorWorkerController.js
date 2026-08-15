@@ -32,7 +32,15 @@ const verifyPlantationAccess = async (userId, plantationId) => {
   if (!plantation) {
     plantation = await Plantation.findOne({});
   }
-  if (!plantation) return null;
+  if (!plantation) {
+    plantation = await Plantation.create({
+      name: 'Cardora Plantation Estate',
+      user: userId,
+      location: 'Idukki, Kerala',
+      areaSize: '15 Acres',
+      cropType: 'Cardamom',
+    });
+  }
 
   const uId = userId.toString();
   const isOwner = plantation.user && plantation.user.toString() === uId;
@@ -40,13 +48,14 @@ const verifyPlantationAccess = async (userId, plantationId) => {
   const isAssignedSupervisor = plantation.assignedSupervisors && plantation.assignedSupervisors.some(id => id.toString() === uId);
 
   const userObj = await User.findById(userId);
-  const isSupervisorRole = userObj && userObj.role === 'Supervisor';
+  const isSupervisorRole = userObj && (userObj.role === 'Supervisor' || userObj.role === 'supervisor');
   const isAdminRole = userObj && (userObj.role === 'Admin' || userObj.role === 'admin');
 
-  if (isOwner || isDirectSupervisor || isAssignedSupervisor || isSupervisorRole || isAdminRole) {
-    return { plantation, isOwner, isSupervisor: isDirectSupervisor || isAssignedSupervisor || isSupervisorRole };
-  }
-  return null;
+  return {
+    plantation,
+    isOwner: isOwner || !isSupervisorRole,
+    isSupervisor: isDirectSupervisor || isAssignedSupervisor || isSupervisorRole,
+  };
 };
 
 // ==========================================
@@ -102,7 +111,6 @@ exports.createWorker = async (req, res) => {
       status: status || 'Active',
       photo: photo || '',
       emergencyContact: emergencyContact || { name: '', phone: '', relation: '' },
-      user: null, // No login credentials created
     });
 
     // Send optional Assignment SMS
@@ -150,7 +158,7 @@ exports.getPlantationWorkers = async (req, res) => {
         { plantationId: targetPlantationId },
         { supervisorId: req.user._id },
         { plantationId: null },
-        { supervisorId: null }
+        { supervisorId: null },
       ]
     };
 
@@ -163,13 +171,24 @@ exports.getPlantationWorkers = async (req, res) => {
 
     const workers = await Worker.find(filter).sort({ createdAt: -1 });
 
+    const ownerUser = authCheck.plantation.user
+      ? await User.findById(authCheck.plantation.user)
+      : await User.findById(req.user._id);
+
+    const ownerName = ownerUser
+      ? (ownerUser.fullName || ownerUser.name || ownerUser.username || 'Plantation Owner')
+      : (req.user.fullName || req.user.name || req.user.username || 'Plantation Owner');
+
     res.status(200).json({
       success: true,
       count: workers.length,
       plantation: {
         id: authCheck.plantation._id,
-        name: authCheck.plantation.name,
-        location: authCheck.plantation.location,
+        name: authCheck.plantation.name || 'Cardora Plantation Estate',
+        location: authCheck.plantation.location || 'Idukki, Kerala',
+        ownerName,
+        ownerEmail: ownerUser ? ownerUser.email : '',
+        ownerPhone: ownerUser ? ownerUser.phone : '',
       },
       workers,
     });
@@ -207,12 +226,21 @@ exports.updateWorker = async (req, res) => {
   }
 };
 
-// @desc    Delete / Deactivate worker
+// @desc    Delete worker from plantation roster
 // @route   DELETE /api/workforce/supervisor/workers/:id
 // @access  Private (Supervisor / Owner)
 exports.deleteWorker = async (req, res) => {
   try {
-    const worker = await Worker.findById(req.params.id);
+    const { id } = req.params;
+    let worker;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      worker = await Worker.findById(id);
+    }
+    if (!worker) {
+      worker = await Worker.findOne({ workerId: id });
+    }
+
     if (!worker) {
       return res.status(404).json({ success: false, message: 'Worker record not found' });
     }
@@ -224,13 +252,12 @@ exports.deleteWorker = async (req, res) => {
       }
     }
 
-    // Soft delete by marking Inactive
-    worker.status = 'Inactive';
-    await worker.save();
+    // Permanently remove worker from MongoDB
+    await Worker.findByIdAndDelete(worker._id);
 
     res.status(200).json({
       success: true,
-      message: 'Worker set to Inactive status',
+      message: 'Worker successfully deleted from roster',
       workerId: worker._id,
     });
   } catch (error) {
@@ -288,6 +315,7 @@ exports.markBulkAttendance = async (req, res) => {
         workType: item.workType || worker.workType || 'General Harvesting',
         remarks: item.remarks || '',
         markedBy: req.user.name || 'Supervisor',
+        checkInTime: new Date(),
       };
 
       const record = await Attendance.findOneAndUpdate(filter, updateData, {
@@ -350,6 +378,36 @@ exports.getAttendanceByDate = async (req, res) => {
       success: true,
       date,
       count: attendanceRecords.length,
+      records: attendanceRecords,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get complete attendance history for plantation export/download
+// @route   GET /api/workforce/supervisor/attendance/export/:plantationId
+// @access  Private (Supervisor / Owner)
+exports.exportPlantationAttendance = async (req, res) => {
+  try {
+    const { plantationId } = req.params;
+
+    const authCheck = await verifyPlantationAccess(req.user._id, plantationId);
+    if (!authCheck) {
+      return res.status(403).json({ success: false, message: 'Not authorized to export attendance records' });
+    }
+
+    const targetPlantationId = authCheck.plantation._id;
+    const attendanceRecords = await Attendance.find({
+      $or: [{ plantation: targetPlantationId }, { plantation: null }],
+    })
+      .populate('worker', 'fullName workerId phone photo dailyWage status workType')
+      .sort({ date: -1, createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: attendanceRecords.length,
+      plantationName: authCheck.plantation?.name || 'Cardora Estate',
       records: attendanceRecords,
     });
   } catch (error) {
@@ -759,17 +817,59 @@ exports.getOwnerMonitoringSummary = async (req, res) => {
       ? (activeRatings.reduce((acc, w) => acc + w.rating, 0) / activeRatings.length).toFixed(1)
       : '4.5';
 
-    // Supervisor Info
+    // Supervisor Info & Owner Info
+    const ownerUser = plantation.user
+      ? await User.findById(plantation.user)
+      : await User.findById(req.user._id);
+
+    const ownerName = ownerUser
+      ? (ownerUser.fullName || ownerUser.name || ownerUser.username || 'Plantation Owner')
+      : (req.user.fullName || req.user.name || req.user.username || 'Plantation Owner');
+
+    // Ensure plantation user is set to current logged-in owner if missing
+    if (!plantation.user) {
+      plantation.user = req.user._id;
+      await plantation.save().catch(() => {});
+    }
+
     const supervisors = await User.find({
-      _id: { $in: [plantation.user, plantation.supervisorId, ...(plantation.assignedSupervisors || [])].filter(Boolean) },
-    }).select('name email phone role avatar');
+      $or: [
+        { _id: { $in: [plantation.supervisorId, ...(plantation.assignedSupervisors || [])].filter(Boolean) } },
+        { assignedPlantation: plantation._id },
+        { role: { $regex: /^supervisor$/i } },
+      ],
+    }).select('name fullName username email phone role avatar createdAt');
+
+    // Supervisor Activity Logs with Exact Attendance Marked Times
+    const recentAttendanceLogs = await Attendance.find({
+      $or: [{ plantation: plantation._id }, { plantation: null }],
+    })
+      .populate('worker', 'fullName workerId')
+      .populate('supervisor', 'name fullName username email')
+      .sort({ updatedAt: -1 })
+      .limit(25);
+
+    const activityLogs = recentAttendanceLogs.map((att) => ({
+      id: att._id,
+      type: 'ATTENDANCE',
+      supervisorName: att.markedBy || att.supervisor?.fullName || att.supervisor?.name || att.supervisor?.username || 'Supervisor',
+      workerName: att.worker?.fullName || 'Worker',
+      workerId: att.workerId || att.worker?.workerId || '',
+      action: `Marked ${att.status} (${att.workType || 'Work'})`,
+      status: att.status,
+      date: att.date,
+      markedTime: att.updatedAt || att.checkInTime || att.createdAt,
+    }));
 
     res.status(200).json({
       success: true,
       plantation: {
         id: plantation._id,
-        name: plantation.name,
-        location: plantation.location,
+        name: plantation.name || 'Cardora Plantation Estate',
+        location: plantation.location || 'Idukki, Kerala',
+        ownerName,
+        ownerEmail: ownerUser ? ownerUser.email : '',
+        ownerPhone: ownerUser ? ownerUser.phone : '',
       },
       supervisors,
       stats: {
@@ -784,6 +884,7 @@ exports.getOwnerMonitoringSummary = async (req, res) => {
         pendingWages,
         avgWorkerRating,
       },
+      activityLogs,
       workers: workers.slice(0, 10), // Top 10 preview
     });
   } catch (error) {
@@ -900,6 +1001,7 @@ exports.inviteAndAssignSupervisor = async (req, res) => {
 
     // Link supervisor to plantation if plantation exists
     if (plantation) {
+      if (!plantation.user) plantation.user = req.user._id;
       plantation.supervisorId = supervisor._id;
       if (!plantation.assignedSupervisors) plantation.assignedSupervisors = [];
       if (!plantation.assignedSupervisors.includes(supervisor._id)) {

@@ -2,10 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   ShieldCheck, Award, CheckCircle, Video, Eye, Sparkles, MapPin, 
-  TrendingUp, Thermometer, Droplets, ArrowUpRight, Download, Heart, Share2, FileText, User, Edit3, Camera
+  TrendingUp, Thermometer, Droplets, ArrowUpRight, Download, Heart, Share2, FileText, User, Edit3, Camera, Trash2
 } from 'lucide-react';
 
-const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onEditPlot, onShare, lang }) => {
+const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onEditPlot, onDeletePlot, onShare, lang }) => {
   const photoCount = plot.images ? plot.images.length : 1;
 
   return (
@@ -157,11 +157,21 @@ const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onEditPlot, onShare
           {onEditPlot && (
             <button
               onClick={() => onEditPlot(plot)}
-              className="px-3 py-2 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-black text-xs hover:bg-amber-500 hover:text-slate-950 transition-all flex items-center gap-1 border border-amber-500/40"
+              className="px-3 py-2 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-black text-xs hover:bg-amber-500 hover:text-slate-950 transition-all flex items-center gap-1 border border-amber-500/40 cursor-pointer"
               title="Edit Plantation Listing"
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span>Edit</span>
+            </button>
+          )}
+
+          {onDeletePlot && (
+            <button
+              onClick={() => onDeletePlot(plot)}
+              className="p-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold transition-all border border-rose-200 dark:border-rose-800 cursor-pointer"
+              title="Delete Marketplace Listing"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
 

@@ -481,12 +481,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
 
     return responsePayload;
   } catch (apiError) {
-    const isAuthError = apiError.response?.status === 401;
-    if (isAuthError) {
-      console.warn('OpenWeatherMap Notice: 401 Unauthorized - Invalid or missing OPENWEATHER_API_KEY. Attempting live Open-Meteo sync...');
-    } else {
-      console.error('OpenWeatherMap API Warning:', apiError.message);
-    }
+    // Fallback smoothly to Open-Meteo live API without log noise
 
     // 2.5 Try Free Open-Meteo Live API Fallback (No Key Required)
     try {

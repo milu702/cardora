@@ -12,6 +12,7 @@ import {
   Trash2,
   Edit,
   Award,
+  Leaf,
 } from 'lucide-react';
 import apiService from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -26,7 +27,7 @@ import OwnerMonitoringView from './OwnerMonitoringView';
 const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast }) => {
   const { user } = useAuth();
   const isSupervisor = (user?.role || '').toLowerCase() === 'supervisor';
-  const [activeView, setActiveView] = useState(isSupervisor ? 'attendance' : 'owner'); // attendance | owner | dashboard | wages | sms
+  const [activeView, setActiveView] = useState('dashboard'); // dashboard | attendance | wages | owner
   const [workers, setWorkers] = useState([]);
   const [plantationInfo, setPlantationInfo] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -81,6 +82,11 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
     if (plantationId) {
       loadWorkersData();
       loadTodayAttendance();
+      const interval = setInterval(() => {
+        loadWorkersData();
+        loadTodayAttendance();
+      }, 5000);
+      return () => clearInterval(interval);
     }
   }, [plantationId, loadWorkersData, loadTodayAttendance]);
 
@@ -106,18 +112,21 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
     }
   };
 
-  // Delete/Deactivate worker
+  // Delete worker from plantation roster
   const handleDeleteWorker = async (workerId) => {
-    if (!window.confirm('Are you sure you want to set this worker status to Inactive?')) return;
+    if (!window.confirm('Are you sure you want to remove this worker from your plantation roster?')) return;
     try {
-      const res = await apiService.deleteSupervisorWorker(workerId);
-      if (res.success) {
-        if (showToast) showToast('Worker marked as Inactive');
-        loadWorkersData();
+      const res = await apiService.deleteWorker(workerId);
+      if (res && res.success) {
+        if (showToast) showToast(res.message || 'Worker removed from roster');
+        setWorkers((prev) => prev.filter((w) => (w._id || w.id || w.workerId || '').toString() !== (workerId || '').toString()));
+      } else {
+        if (showToast) showToast(`❌ ${res?.message || 'Failed to remove worker'}`);
       }
     } catch (err) {
-      if (showToast) showToast(`❌ Error: ${err.message}`);
+      if (showToast) showToast(`❌ Error removing worker: ${err.message}`);
     }
+    loadWorkersData();
   };
 
   // KPI Calculations
@@ -149,27 +158,36 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
       {/* Top Header & View Navigation Switcher */}
       <div className="bg-white dark:bg-[#1E293B] p-6 rounded-3xl shadow-xl border border-emerald-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-            Cardora Supervisor Hub
+          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Leaf className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Cardora Supervisor Hub</span>
           </span>
-          <h1 className="text-2xl font-black text-[#17331F] dark:text-white">
-            {plantationInfo?.name || 'Cardamom Estate'} — Worker Management
+          <h1 className="text-2xl font-black text-[#17331F] dark:text-white mt-0.5">
+            {plantationInfo?.name || 'Cardora Cardamom Estate'}
           </h1>
+          <div className="flex items-center gap-3 mt-1 text-xs">
+            <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+              👤 Plantation Owner: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{plantationInfo?.ownerName || 'Plantation Owner'}</strong>
+            </span>
+            {plantationInfo?.location && (
+              <span className="text-gray-500">• 📍 {plantationInfo.location}</span>
+            )}
+          </div>
         </div>
 
         {/* View Switcher Tabs */}
         <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl overflow-x-auto">
           {(isSupervisor
             ? [
-                { id: 'attendance', label: "GPS Attendance Board", icon: UserCheck },
                 { id: 'dashboard', label: 'Workers Roster', icon: Users },
+                { id: 'attendance', label: 'GPS Attendance Board', icon: UserCheck },
                 { id: 'wages', label: 'Daily Wage Settlement', icon: IndianRupee },
               ]
             : [
-                { id: 'owner', label: 'Owner Attendance Monitoring', icon: ShieldCheck },
-                { id: 'attendance', label: "Supervisor Attendance Tracker", icon: UserCheck },
                 { id: 'dashboard', label: 'Workers Roster', icon: Users },
-                { id: 'wages', label: 'Wages & Payments', icon: IndianRupee },
+                { id: 'attendance', label: 'GPS Attendance Board', icon: UserCheck },
+                { id: 'wages', label: 'Daily Wage Settlement', icon: IndianRupee },
+                { id: 'owner', label: 'Owner Executive Oversight', icon: ShieldCheck },
               ]
           ).map((tab) => {
             const Icon = tab.icon;
@@ -273,14 +291,6 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
                 <Send className="w-4 h-4" />
                 <span>Send Worker SMS</span>
               </button>
-
-              <button
-                onClick={() => setActiveView('owner')}
-                className="px-5 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-2xl text-xs font-bold border border-purple-500/30 flex items-center space-x-2 transition-all"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Owner Reports</span>
-              </button>
             </div>
           </div>
 
@@ -293,22 +303,22 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
               </h2>
 
               {/* Search & Status Filters */}
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-gray-400 z-10" />
                   <input
                     type="text"
                     placeholder="Search by name, ID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
+                  className="px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none font-bold"
                 >
                   <option value="All">All Status</option>
                   <option value="Active">Active Only</option>
@@ -437,8 +447,10 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
         <WagePaymentManager plantationId={plantationId} workers={workers} showToast={showToast} />
       )}
 
-      {/* RENDER VIEW: 4. OWNER REPORTING */}
-      {activeView === 'owner' && <OwnerMonitoringView plantationId={plantationId} showToast={showToast} />}
+      {/* RENDER VIEW: 4. OWNER EXECUTIVE OVERSIGHT (For Estate Owners) */}
+      {!isSupervisor && activeView === 'owner' && (
+        <OwnerMonitoringView plantationId={plantationId} showToast={showToast} />
+      )}
 
       {/* MODALS */}
       <AddWorkerModal

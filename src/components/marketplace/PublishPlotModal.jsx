@@ -335,7 +335,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-[#2E7D32]/40 flex flex-col max-h-[92vh]"
+        className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-[#2E7D32]/40 flex flex-col max-h-[92vh]"
       >
         {/* Header Strip */}
         <div className="bg-[#1B5E20] text-white p-4 px-6 flex items-center justify-between border-b border-[#66BB6A]/30">

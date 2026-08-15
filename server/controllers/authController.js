@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const generateToken = require('../utils/generateToken');
 
 const EMAIL_DOMAIN_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -116,6 +117,32 @@ exports.signup = async (req, res) => {
 
     const token = generateToken(user._id);
 
+    // Non-blocking Background Notification creation
+    (async () => {
+      try {
+        await Notification.create({
+          user: user._id,
+          type: 'registration',
+          title: '🎉 Welcome to Cardora!',
+          message: `Registration successful! Welcome ${user.name} (${user.role}) to Cardora platform.`,
+          link: '/dashboard',
+        });
+
+        const admins = await User.find({ role: /admin/i });
+        if (admins.length > 0) {
+          const adminNotifs = admins.map((admin) => ({
+            user: admin._id,
+            sender: user._id,
+            type: 'registration',
+            title: '👤 New Registration Alert',
+            message: `New user registered: ${user.name} (${user.role}) in ${user.district || 'Idukki'}.`,
+            link: '/dashboard?tab=admin',
+          }));
+          await Notification.insertMany(adminNotifs);
+        }
+      } catch (e) {}
+    })();
+
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -171,6 +198,40 @@ exports.login = async (req, res) => {
     }
 
     const token = generateToken(user._id);
+
+    // Non-blocking Background Notification creation (Deduplicated to 1 per 24 hours)
+    (async () => {
+      try {
+        const recentAlert = await Notification.findOne({
+          user: user._id,
+          type: 'login',
+          createdAt: { $gt: new Date(Date.now() - 86400000) },
+        });
+
+        if (!recentAlert) {
+          await Notification.create({
+            user: user._id,
+            type: 'login',
+            title: '🔐 Login Security Alert',
+            message: `Welcome back, ${user.name || user.username}! Successfully logged into Cardora.`,
+            link: '/dashboard',
+          });
+        }
+
+        const adminUsers = await User.find({ role: /admin/i, _id: { $ne: user._id } });
+        if (adminUsers.length > 0) {
+          const adminNotifs = adminUsers.map((admin) => ({
+            user: admin._id,
+            sender: user._id,
+            type: 'login',
+            title: '🔐 User Login Alert',
+            message: `User ${user.name} (${user.role}) logged into Cardora.`,
+            link: '/dashboard?tab=admin',
+          }));
+          await Notification.insertMany(adminNotifs);
+        }
+      } catch (e) {}
+    })();
 
     res.status(200).json({
       success: true,

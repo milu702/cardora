@@ -346,6 +346,29 @@ export const apiService = {
     }
   },
 
+  deleteCommunityPost: async (id) => {
+    try {
+      const res = await api.delete(`/community/posts/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Delete failed' };
+    }
+  },
+
+  deleteWorker: async (id) => {
+    try {
+      const res = await api.delete(`/workforce/supervisor/workers/${id}`);
+      return res.data;
+    } catch (error) {
+      try {
+        const res2 = await api.delete(`/workforce/workers/${id}`);
+        return res2.data;
+      } catch (err2) {
+        return { success: false, message: error.response?.data?.message || err2.response?.data?.message || error.message || 'Delete failed' };
+      }
+    }
+  },
+
   // ===== 5. MARKETPLACE APIs =====
   getMarketplaceListings: async () => {
     try {
@@ -482,6 +505,15 @@ export const apiService = {
     }
   },
 
+  getAllPlantationsAdmin: async () => {
+    try {
+      const res = await api.get('/admin/plantations/recent');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
   // ===== 8. PUBLIC PROFILE & SOCIAL FOLLOW APIs =====
   getPublicProfile: async (identifier) => {
     try {
@@ -562,6 +594,15 @@ export const apiService = {
       return res.data;
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  },
+
+  searchUsersForMessaging: async (query = '') => {
+    try {
+      const res = await api.get(`/messages/users/search?query=${encodeURIComponent(query)}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, users: [], message: error.message };
     }
   },
 
@@ -705,6 +746,15 @@ export const apiService = {
   getWeatherData: async () => {
     try {
       const res = await api.get('/admin/weather');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
+  getDistrictWeatherAndUsers: async () => {
+    try {
+      const res = await api.get('/admin/districts-weather-users');
       return res.data;
     } catch (error) {
       return { success: false, message: error.message };
@@ -1044,6 +1094,15 @@ export const apiService = {
   getSupervisorAttendanceByDate: async (plantationId, date) => {
     try {
       const res = await api.get(`/workforce/supervisor/attendance/${plantationId}/${date}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  exportPlantationAttendance: async (plantationId) => {
+    try {
+      const res = await api.get(`/workforce/supervisor/attendance/export/${plantationId}`);
       return res.data;
     } catch (error) {
       return { success: false, message: error.response?.data?.message || error.message };

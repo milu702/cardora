@@ -7,7 +7,7 @@ import {
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
   Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield, CloudSun,
   Droplets, TrendingUp, BarChart3, Calendar, ArrowUpRight, Activity, ChevronRight,
-  Clock, Sliders, Sun, Menu, ChevronUp, ChevronDown
+  Clock, Sliders, Sun, Menu, ChevronUp, ChevronDown, UserCheck, ShieldCheck, FileText
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -24,6 +24,8 @@ import PlantationModule from '../components/plantation/PlantationModule';
 import AddPlantationModal from '../components/plantation/AddPlantationModal';
 import AiAnalysisModule from '../components/ai/AiAnalysisModule';
 import CardamomMarketplace from '../components/marketplace/CardamomMarketplace';
+import MessagingModule from '../components/messaging/MessagingModule';
+import NotificationModule from '../components/notifications/NotificationModule';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
 import { KERALA_DISTRICTS } from '../utils/districts';
 
@@ -32,13 +34,13 @@ const Dashboard = () => {
   const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
+  const isAdminAccount = (user?.role || '').toLowerCase().includes('admin') || (user?.email || '').toLowerCase().includes('admin');
   const isSupervisorUser = (user?.role || '').toLowerCase() === 'supervisor';
-  const defaultTab = isAdminUser ? 'admin' : isSupervisorUser ? 'workforce' : 'dashboard';
+  const defaultTab = isAdminAccount ? 'admin' : isSupervisorUser ? 'workforce' : 'dashboard';
 
-  // Active Tab: 'dashboard' | 'plantations' | 'ai' | 'community' | 'plots' | 'admin' | 'profile' | 'settings'
   const rawTab = searchParams.get('tab') || defaultTab;
-  const activeTab = isSupervisorUser ? (rawTab === 'profile' ? 'profile' : 'workforce') : rawTab;
+  const activeTab = (isSupervisorUser && rawTab !== 'profile' && rawTab !== 'messages') ? 'workforce' : rawTab;
+  const isAdminUser = isAdminAccount || activeTab === 'admin';
 
   const setActiveTab = (tabName) => {
     setSearchParams({ tab: tabName });
@@ -839,9 +841,22 @@ const Dashboard = () => {
   const sidebarLinks = isAdminUser
     ? [
         { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
+        { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard Overview', icon: Home },
+        { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
+        { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
+        { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendations', icon: Sparkles },
+        { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
+        { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
+        { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Share2 },
         { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
         { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
+      ]
+    : isSupervisorUser
+    ? [
+        { id: 'workforce', label: lang === 'ml' ? 'സൂപ്പർവൈസർ ഹബ്' : 'Supervisor Hub', icon: ShieldCheck },
+        { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
+        { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
       ]
     : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
@@ -861,24 +876,112 @@ const Dashboard = () => {
       <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       {/* FIXED DESKTOP LEFT SIDEBAR NAVIGATION */}
-      {activeTab !== 'admin' && (
-        <aside className="hidden lg:flex fixed top-16 left-0 w-60 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-[#E2E8F0] dark:border-slate-800 z-30 flex-col justify-between p-4 overflow-y-auto shadow-xs">
-          <div className="space-y-4">
-            
-            {/* Planter Info Card */}
-            <div className="p-3 bg-[#F4F8F3] dark:bg-slate-800/90 rounded-2xl border border-[#D7E6D5] dark:border-slate-700 flex items-center gap-3">
-              <img
-                src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
-                alt=""
-                className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0"
-              />
-              <div className="overflow-hidden">
-                <p className="text-xs font-black text-slate-900 dark:text-white truncate">{user?.fullName || user?.username || 'Planter'}</p>
-                <p className="text-[10px] text-[#5C8D4E] dark:text-emerald-400 font-bold truncate">{user?.role || 'Farmer'} • {user?.district || user?.location || 'Idukki'}</p>
-              </div>
+      <aside className="hidden lg:flex fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-[#E2E8F0] dark:border-slate-800 z-30 flex-col justify-between p-4 overflow-y-auto shadow-xs">
+        <div className="space-y-4">
+          
+          {/* Admin / Planter Info Card */}
+          <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/90 rounded-xl border border-[#E2E8F0] dark:border-slate-700 flex items-center gap-3">
+            <img
+              src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Admin')}&background=1F5E3B&color=ffffff`}
+              alt=""
+              className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0"
+            />
+            <div className="overflow-hidden">
+              <p className="text-xs font-black text-slate-900 dark:text-white truncate">
+                {isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')}
+              </p>
+              <p className="text-[10px] text-[#1F5E3B] dark:text-emerald-400 font-bold truncate">
+                {isAdminUser ? 'Admin • Idukki, Kerala' : `${user?.role || 'Farmer'} • ${user?.district || 'Idukki'}`}
+              </p>
             </div>
+          </div>
 
-            {/* Sidebar Navigation Items */}
+          {/* Grouped Sidebar Navigation for Admin */}
+          {isAdminUser ? (
+            <nav className="space-y-4">
+              {[
+                {
+                  title: 'OVERVIEW',
+                  items: [
+                    { id: 'admin', view: 'all', label: 'Dashboard', icon: Home },
+                  ],
+                },
+                {
+                  title: 'MANAGEMENT',
+                  items: [
+                    { id: 'admin', view: 'users', label: 'Farmers', icon: UserCheck },
+                    { id: 'admin', view: 'marketplace', label: 'Plantations', icon: Leaf },
+                    { id: 'admin', view: 'supervisors', label: 'Supervisors', icon: ShieldCheck },
+                    { id: 'admin', view: 'contractors', label: 'Workers', icon: Users },
+                  ],
+                },
+                {
+                  title: 'OPERATIONS',
+                  items: [
+                    { id: 'admin', view: 'feed', label: 'Attendance Audit', icon: Clock },
+                    { id: 'admin', view: 'charts', label: 'Wages Telemetry', icon: FileText },
+                    { id: 'messages', isAction: true, label: 'Messages', icon: MessageSquare },
+                  ],
+                },
+                {
+                  title: 'INSIGHTS',
+                  items: [
+                    { id: 'admin', view: 'charts', label: 'Reports & Analytics', icon: BarChart3 },
+                    { id: 'weather', label: 'Weather Intelligence', icon: CloudSun },
+                  ],
+                },
+                {
+                  title: 'PLATFORM',
+                  items: [
+                    { id: 'notifications', label: 'Notifications', icon: Bell },
+                    { id: 'community', label: 'Community', icon: Share2 },
+                    { id: 'plots', label: 'Marketplace', icon: MapPin },
+                    { id: 'settings', label: 'Settings', icon: Settings },
+                  ],
+                },
+              ].map((group) => (
+                <div key={group.title} className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1">
+                    {group.title}
+                  </p>
+                  {group.items.map((link) => {
+                    const Icon = link.icon;
+                    const currentView = searchParams.get('view') || 'all';
+                    const isActive = link.view
+                      ? activeTab === 'admin' && currentView === link.view
+                      : activeTab === link.id;
+
+                    return (
+                      <button
+                        key={`${link.id}-${link.view || link.label}`}
+                        onClick={() => {
+                          if (link.isAction) {
+                            setChatTargetUser(null);
+                            setChatModalOpen(true);
+                          } else if (link.isSmsAction) {
+                            showToast('Opening system notifications center...');
+                          } else if (link.view) {
+                            setSearchParams({ tab: link.id, view: link.view });
+                          } else {
+                            setSearchParams({ tab: link.id });
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-all border-l-3 ${
+                          isActive
+                            ? 'bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-2xs'
+                            : 'text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                        <span className="truncate">{link.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+          ) : (
+            /* Sidebar Navigation Items for Non-Admin Planters */
             <nav className="space-y-1">
               {sidebarLinks.map((link) => {
                 const Icon = link.icon;
@@ -896,7 +999,7 @@ const Dashboard = () => {
                     }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
-                        ? 'bg-[#1F5E3B] text-white shadow-sm border-l-4 border-amber-400'
+                        ? 'bg-[#1F5E3B] text-white shadow-xs border-l-4 border-amber-400'
                         : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
                     }`}
                   >
@@ -907,15 +1010,23 @@ const Dashboard = () => {
                 );
               })}
             </nav>
-          </div>
+          )}
+        </div>
 
-          <div className="pt-3 border-t border-[#E2E8F0] dark:border-slate-800 text-[10px] text-slate-400 font-medium">
-            <p className="flex items-center gap-1 font-bold text-[#1F5E3B] dark:text-emerald-400">
-              <Leaf className="w-3 h-3" />
-              <span>Cardora Agriculture Platform</span>
-            </p>
-          </div>
-        </aside>
+        {/* Sidebar Footer */}
+        <div className="pt-3 border-t border-[#E2E8F0] dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-medium space-y-1">
+          <p className="flex items-center gap-1.5 font-bold text-[#1F5E3B] dark:text-emerald-400">
+            <Leaf className="w-3.5 h-3.5" />
+            <span>Cardora Agriculture Platform</span>
+          </p>
+          <p className="flex items-center gap-1.5 text-slate-400">
+            <span>System status:</span>
+            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              Operational <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </span>
+          </p>
+        </div>
+      </aside>
       )}
 
       {/* MOBILE SLIDE-OUT DRAWER NAVIGATION */}
@@ -1002,11 +1113,9 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* MAIN CONTAINER AREA */}
-      <div className={`min-h-screen bg-[#F4F8F3] dark:bg-slate-950 text-slate-800 dark:text-slate-200 pt-20 pb-16 transition-all ${
-        activeTab === 'admin' ? 'w-full px-4' : 'lg:ml-60 px-4 sm:px-6 lg:px-8'
-      }`}>
-        <main className="max-w-7xl mx-auto space-y-6">
+      {/* MAIN CONTAINER AREA (Full Page Width) */}
+      <div className="min-h-screen bg-[#F4F8F3] dark:bg-slate-950 text-slate-800 dark:text-slate-200 pt-20 pb-16 transition-all lg:ml-60 px-4 sm:px-6 lg:px-8">
+        <main className="w-full space-y-6">
 
           {/* ===== TAB 1: DASHBOARD OVERVIEW ===== */}
           {activeTab === 'dashboard' && (
@@ -1464,6 +1573,23 @@ const Dashboard = () => {
             />
           )}
 
+          {/* ===== TAB: DEDICATED MESSAGES DASHBOARD ===== */}
+          {activeTab === 'messages' && (
+            <div className="w-full">
+              <MessagingModule
+                initialTargetUser={searchParams.get('userId') || chatTargetUser}
+                onToast={showToast}
+              />
+            </div>
+          )}
+
+          {/* ===== TAB: REAL-TIME NOTIFICATIONS CENTER ===== */}
+          {activeTab === 'notifications' && (
+            <div className="w-full">
+              <NotificationModule />
+            </div>
+          )}
+
           {/* ===== TAB 4: COMMUNITY ===== */}
           {activeTab === 'community' && (
             <div className="space-y-6 max-w-2xl mx-auto">
@@ -1867,7 +1993,7 @@ const Dashboard = () => {
 
           {/* ===== TAB 6: PROFILE ===== */}
           {activeTab === 'profile' && (
-            <div className="space-y-6 max-w-3xl mx-auto">
+            <div className="space-y-6 w-full">
               <Card className="p-6">
                 <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
                   <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" />
@@ -1904,7 +2030,7 @@ const Dashboard = () => {
 
           {/* ===== TAB 7: SETTINGS ===== */}
           {activeTab === 'settings' && (
-            <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="space-y-6 w-full">
               <div>
                 <h2 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
                   <Settings className="w-6 h-6 text-[#1F5E3B]" />

@@ -27,6 +27,7 @@ const {
   deleteListingAdmin,
   createUserByAdmin,
   queryAdminAiAssistant,
+  getDistrictWeatherAndUsers,
 } = require('../controllers/adminController');
 
 // Secure all admin endpoints
@@ -42,6 +43,7 @@ router.get('/map', protect, adminOnly, getPlantationMapData);
 router.get('/alerts', protect, adminOnly, getAlertsData);
 router.get('/sensors', protect, adminOnly, getSensorData);
 router.get('/weather', protect, adminOnly, getWeatherData);
+router.get('/districts-weather-users', protect, adminOnly, getDistrictWeatherAndUsers);
 router.get('/analytics', protect, adminOnly, getAnalyticsData);
 router.get('/system-health', protect, adminOnly, getSystemHealth);
 router.get('/experts', protect, adminOnly, getExpertsList);

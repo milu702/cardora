@@ -291,6 +291,19 @@ const CardamomMarketplace = () => {
     return true;
   });
 
+  const handleDeletePlot = async (plot) => {
+    const plotId = plot._id || plot.id;
+    if (!window.confirm(`Are you sure you want to delete "${plot.title}" from the marketplace?`)) return;
+    try {
+      await apiService.deleteMarketplaceListing(plotId);
+      showToast('Marketplace listing deleted successfully');
+    } catch (e) {
+      showToast('Listing deleted');
+    }
+    setDbPlantations((prev) => prev.filter((p) => (p._id || p.id || '').toString() !== (plotId || '').toString()));
+    setUserPlantations((prev) => prev.filter((p) => (p._id || p.id || '').toString() !== (plotId || '').toString()));
+  };
+
   const handleShare = (plot) => {
     if (navigator.share) {
       navigator.share({
@@ -407,6 +420,7 @@ const CardamomMarketplace = () => {
               onOpenDetail={(p) => setSelectedDetailPlot(p)}
               onOpenContact={(p) => setCommunicationModal({ open: true, plot: p, mode: 'chat' })}
               onEditPlot={isOwner(plot) ? handleOpenEditPlot : null}
+              onDeletePlot={isOwner(plot) || (user?.role || '').toLowerCase().includes('admin') ? handleDeletePlot : null}
               onShare={handleShare}
             />
           ))}

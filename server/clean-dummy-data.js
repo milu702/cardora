@@ -5,6 +5,7 @@ const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const User = require('./models/User');
+const Worker = require('./models/Worker');
 const Plantation = require('./models/Plantation');
 const CommunityPost = require('./models/CommunityPost');
 const MarketplaceListing = require('./models/MarketplaceListing');
@@ -30,11 +31,25 @@ const cleanDummyData = async () => {
       'anand.kumar@gmail.com',
       'mathew.j@gmail.com',
       'priya.nair@outlook.com',
+      'ramesh.worker@cardora.com',
+      'anitha.worker@cardora.com',
+      'suresh.worker@cardora.com',
+      'devi.worker@cardora.com',
     ];
 
     // Delete dummy users
     const userRes = await User.deleteMany({ email: { $in: dummyEmails } });
     console.log(`🧹 Deleted ${userRes.deletedCount} dummy sample users from User collection.`);
+
+    // Delete static sample workers
+    const staticWorkerRes = await Worker.deleteMany({
+      $or: [
+        { workerId: { $in: ['WRK-1001', 'WRK-1002', 'WRK-1003', 'WRK-1004'] } },
+        { fullName: { $in: ['Ramesh Kumaar', 'Anitha Selvam', 'Suresh Joseph', 'Devi P.'] } },
+        { phone: { $in: ['+91 98471 11223', '+91 98472 33445', '+91 98473 55667', '+91 98474 77889'] } },
+      ],
+    });
+    console.log(`🧹 Deleted ${staticWorkerRes.deletedCount} static sample workers from Worker collection.`);
 
     // Clear dummy sample collections
     await Plantation.deleteMany({});

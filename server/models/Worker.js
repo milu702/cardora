@@ -6,7 +6,6 @@ const workerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: false,
-      default: null,
     },
     plantationId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -157,5 +156,7 @@ const workerSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+workerSchema.index({ user: 1 }, { sparse: true });
 
 module.exports = mongoose.model('Worker', workerSchema);

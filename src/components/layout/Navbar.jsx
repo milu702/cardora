@@ -17,7 +17,9 @@ import {
   Shield,
   Moon,
   Sun,
-  CloudSun
+  CloudSun,
+  MessageSquare,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
@@ -51,23 +53,22 @@ const Navbar = ({ onToggleMobileSidebar }) => {
     { name: 'FAQ', href: '/#faq' },
   ];
 
-  const isAdminUser = (user?.role || '').toLowerCase() === 'admin';
-  const isSupervisorUser = (user?.role || '').toLowerCase() === 'supervisor';
+  const userRoleClean = (user?.role || '').toLowerCase();
+  const isAdminUser = userRoleClean.includes('admin') || (user?.email || '').toLowerCase().includes('admin');
+  const isSupervisorUser = userRoleClean === 'supervisor';
 
-  const loggedInNavLinks = isAdminUser
+  const loggedInNavLinks = isSupervisorUser
     ? [
-        { name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield },
-        { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
-      ]
-    : isSupervisorUser
-    ? [
-        { name: 'Supervisor Dashboard', href: '/dashboard?tab=workforce', icon: Shield },
+        { name: 'Supervisor Hub', href: '/dashboard?tab=workforce', icon: ShieldCheck },
+        { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
         { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
       ]
     : [
+        ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
         { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
         { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
         { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },
+        { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
         { name: 'Weather Intelligence', href: '/dashboard?tab=weather', icon: CloudSun },
         { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
         { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
@@ -96,7 +97,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-slate-800 shadow-sm transition-colors"
     >
-      <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+      <div className="h-full w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
         
         {/* Left Section: Mobile Menu Toggle & Brand Logo */}
         <div className="flex items-center gap-3">
@@ -130,9 +131,9 @@ const Navbar = ({ onToggleMobileSidebar }) => {
 
         {/* Center Section: Search Bar */}
         {isAuthenticated ? (
-          <div className="flex-1 max-w-md mx-2 sm:mx-4 hidden sm:block">
+          <div className="flex-1 max-w-lg mx-2 sm:mx-4 hidden sm:block">
             <div className="relative flex items-center">
-              <Search className="w-4 h-4 text-[#5C8D4E] dark:text-emerald-400 absolute left-3.5 pointer-events-none" />
+              <Search className="w-4 h-4 text-[#5C8D4E] dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
               <input
                 type="text"
                 value={searchQuery}
@@ -142,8 +143,8 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                     navigate(`/dashboard?tab=community&search=${encodeURIComponent(searchQuery.trim())}`);
                   }
                 }}
-                placeholder={lang === 'ml' ? "ഡാഷ്‌ബോർഡ് അല്ലെങ്കിൽ കർഷകരെ തിരയുക..." : "Search plantations, updates, workers..."}
-                className="w-full pl-10 pr-4 py-1.5 text-xs rounded-full bg-[#F4F8F3] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F5E3B] focus:ring-1 focus:ring-[#1F5E3B] transition-all"
+                placeholder={lang === 'ml' ? "ഡാഷ്‌ബോർഡ് അല്ലെങ്കിൽ കർഷകരെ തിരയുക..." : "Search farmers, plantations, workers..."}
+                className="w-full pl-10 pr-4 py-2 text-sm rounded-full bg-[#F4F8F3] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F5E3B] focus:ring-1 focus:ring-[#1F5E3B] transition-all"
               />
             </div>
           </div>
@@ -220,19 +221,24 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                 </button>
 
                 {showNotificationsDropdown && (
-                  <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-[#D7E6D5] dark:border-slate-800 shadow-2xl p-4 z-50">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl border border-[#D7E6D5] dark:border-slate-800 shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 font-sans">
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
-                      <h4 className="text-xs font-black text-slate-900 dark:text-white">Notifications</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white font-poppins">Real-Time Notifications</h4>
+                        {notifications.filter((n) => !n.read).length > 0 && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         {notifications.length > 0 && (
-                          <span className="text-[10px] font-bold text-[#1F5E3B] bg-[#EAF3E8] dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-full">
-                            {notifications.length} New
+                          <span className="text-[10px] font-black text-[#1F5E3B] bg-[#EAF3E8] dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-full">
+                            {notifications.filter((n) => !n.read).length} Unread
                           </span>
                         )}
                         {notifications.length > 0 && (
                           <button 
                             onClick={() => clearNotifications && clearNotifications()}
-                            className="text-[10px] font-bold text-red-600 hover:underline"
+                            className="text-[10px] font-extrabold text-red-600 hover:underline cursor-pointer"
                           >
                             Clear
                           </button>
@@ -240,19 +246,52 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                       </div>
                     </div>
 
-                    <div className="space-y-2 text-xs max-h-60 overflow-y-auto">
+                    <div className="space-y-2 text-xs max-h-72 overflow-y-auto scrollbar-none">
                       {notifications.length === 0 ? (
-                        <p className="text-center text-xs font-bold text-slate-400 py-4">No new notifications.</p>
+                        <div className="py-6 text-center space-y-1">
+                          <p className="text-xs font-bold text-slate-400">No new notifications.</p>
+                          <p className="text-[10px] text-slate-400">Logins, messages, registrations & alerts will appear here live.</p>
+                        </div>
                       ) : (
-                        notifications.map((n, idx) => (
-                          <div key={n._id || n.id || idx} className="p-2.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                            <p className="font-bold text-slate-900 dark:text-white">{n.title}</p>
-                            <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">{n.body || n.message}</p>
-                            <span className="text-[9px] text-[#5C8D4E] font-bold mt-1 block">
-                              {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (n.time || 'Just now')}
-                            </span>
-                          </div>
-                        ))
+                        notifications.map((n, idx) => {
+                          const nType = (n.type || '').toLowerCase();
+                          let iconSymbol = '🔔';
+                          if (nType.includes('login')) iconSymbol = '🔐';
+                          else if (nType.includes('message')) iconSymbol = '💬';
+                          else if (nType.includes('alert') || nType.includes('weather')) iconSymbol = '⚠️';
+                          else if (nType.includes('register') || nType.includes('registration')) iconSymbol = '👤';
+                          else if (nType.includes('work') || nType.includes('task')) iconSymbol = '📋';
+
+                          return (
+                            <div 
+                              key={n._id || n.id || idx} 
+                              onClick={() => {
+                                setShowNotificationsDropdown(false);
+                                if (markNotificationsRead) markNotificationsRead();
+                                if (n.link) navigate(n.link);
+                                else if (nType.includes('message')) navigate('/dashboard?tab=messages');
+                                else if (nType.includes('login') || nType.includes('register')) navigate('/dashboard?tab=admin');
+                                else navigate('/dashboard');
+                              }}
+                              className={`p-3 rounded-2xl transition-all cursor-pointer border flex items-start gap-2.5 ${
+                                !n.read
+                                  ? 'bg-[#EAF3E8]/80 dark:bg-slate-800 border-[#1F5E3B]/40 shadow-xs'
+                                  : 'bg-slate-50/70 dark:bg-slate-850 border-slate-100 dark:border-slate-800 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span className="text-base shrink-0 mt-0.5">{iconSymbol}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className="font-extrabold text-slate-900 dark:text-white truncate font-poppins">{n.title}</p>
+                                  <span className="text-[9px] text-[#5C8D4E] font-bold shrink-0">
+                                    {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (n.time || 'Just now')}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">{n.message || n.body}</p>
+                              </div>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>

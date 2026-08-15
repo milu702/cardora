@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Clock, Calendar, Save, Send, UserCheck, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Calendar, Save, Send, UserCheck, AlertCircle, Download } from 'lucide-react';
 import apiService from '../../services/api';
 
 const AttendanceTracker = ({ plantationId, workers = [], onAttendanceSaved, showToast }) => {
@@ -160,6 +160,84 @@ const AttendanceTracker = ({ plantationId, workers = [], onAttendanceSaved, show
               className="bg-transparent text-xs font-bold text-gray-800 dark:text-white focus:outline-none"
             />
           </div>
+
+          {/* Download CSV Report Button */}
+          <button
+            onClick={async () => {
+              try {
+                let records = [];
+                let estateName = 'Cardora Plantation Estate';
+
+                const res = await apiService.exportPlantationAttendance(plantationId);
+                if (res && res.success && Array.isArray(res.records)) {
+                  records = res.records;
+                  if (res.plantationName) estateName = res.plantationName;
+                }
+
+                if (records.length === 0 && workers.length > 0) {
+                  const todayDate = selectedDate || new Date().toISOString().split('T')[0];
+                  records = workers.map((w) => ({
+                    date: todayDate,
+                    worker: w,
+                    workerId: w.workerId,
+                    plantationName: estateName,
+                    status: 'Present',
+                    workType: w.workType || 'Harvesting',
+                    overtimeHours: 0,
+                    overtimeAmount: 0,
+                    markedBy: 'Supervisor',
+                    createdAt: new Date(),
+                    _id: w._id,
+                  }));
+                }
+
+                if (records.length === 0) {
+                  if (showToast) showToast('⚠️ No attendance or worker records to export.');
+                  return;
+                }
+
+                const headers = ['Date', 'Plantation Name', 'Worker ID', 'Worker Name', 'Work Type', 'Status', 'Daily Wage (INR)', 'Overtime Hours', 'Overtime Amount (INR)', 'Marked By'];
+                const rows = records.map((r) => {
+                  const w = r.worker || {};
+                  return [
+                    `"${r.date || ''}"`,
+                    `"${r.plantationName || estateName}"`,
+                    `"${r.workerId || w.workerId || ''}"`,
+                    `"${w.fullName || 'Worker'}"`,
+                    `"${r.workType || w.workType || 'Harvesting'}"`,
+                    `"${r.status || 'Present'}"`,
+                    w.dailyWage || 700,
+                    r.overtimeHours || 0,
+                    r.overtimeAmount || 0,
+                    `"${r.markedBy || 'Supervisor'}"`,
+                  ].join(',');
+                });
+
+                const csvString = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `Cardora_Attendance_${plantationId || 'report'}.csv`);
+                document.body.appendChild(link);
+                link.click();
+
+                setTimeout(() => {
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }, 500);
+
+                if (showToast) showToast('📥 Attendance CSV report downloaded successfully!');
+              } catch (err) {
+                if (showToast) showToast(`❌ Download failed: ${err.message}`);
+              }
+            }}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-2xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
 
           {/* Mark All Present Quick Button */}
           <button

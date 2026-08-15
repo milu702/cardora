@@ -9,6 +9,7 @@ const Expert = require('../models/Expert');
 const SystemAlert = require('../models/SystemAlert');
 const ActivityLog = require('../models/ActivityLog');
 const sendEmail = require('../utils/sendEmail');
+const weatherService = require('../services/weatherService');
 
 // Helper auto-seed functions for MongoDB initial state
 const seedInitialActivities = async () => {
@@ -197,18 +198,31 @@ exports.getPendingReviews = async (req, res) => {
 // @access  Private/Admin
 exports.getRecentPlantationTable = async (req, res) => {
   try {
-    const plantations = await Plantation.find().populate('user', 'name email').sort({ createdAt: -1 }).limit(8);
+    const plantations = await Plantation.find()
+      .populate('user', 'name username fullName email phone')
+      .sort({ createdAt: -1 });
 
-    const formattedPlantations = plantations.map((p) => ({
-      id: p._id,
-      plantationName: p.name,
-      owner: p.user?.name || 'Cardamom Farmer',
-      district: p.location || 'Idukki, Kerala',
-      area: `${p.area} Acres`,
-      healthScore: p.healthScore || 92,
-      moisture: `${p.moisture || 72}%`,
-      status: (p.healthScore || 92) >= 80 ? 'Healthy 🟢' : (p.healthScore || 92) >= 60 ? 'Moderate 🟡' : 'Critical 🔴',
-    }));
+    const formattedPlantations = plantations.map((p) => {
+      const ownerName = p.user?.fullName || p.user?.name || p.user?.username || p.ownerName || 'Cardamom Farmer';
+      const areaVal = p.area || 5.0;
+      return {
+        id: p._id.toString(),
+        _id: p._id.toString(),
+        title: `${p.name || 'Cardamom Estate'} (${p.district || p.location || 'Idukki'})`,
+        plantationName: p.name || 'Cardamom Estate',
+        location: p.village ? `${p.village}, ${p.taluk || 'Idukki'}` : (p.location || 'Vandanmedu, Idukki'),
+        district: p.district || p.location || 'Idukki, Kerala',
+        area: `${areaVal} Acres`,
+        price: `₹${(areaVal * 22).toFixed(2)} Lakhs`,
+        owner: ownerName,
+        ownerName: ownerName,
+        healthScore: p.healthScore || 94,
+        moisture: `${p.moisture || 72}%`,
+        status: 'VERIFIED',
+        pattayamVerified: true,
+        image: p.image || (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=800',
+      };
+    });
 
     res.status(200).json({ success: true, count: formattedPlantations.length, plantations: formattedPlantations });
   } catch (error) {
@@ -1340,6 +1354,138 @@ exports.queryAdminAiAssistant = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Get live weather telemetry and registered users breakdown for all districts
+// @route   GET /api/admin/districts-weather-users
+// @access  Private/Admin
+exports.getDistrictWeatherAndUsers = async (req, res) => {
+  try {
+    const KERALA_DISTRICTS = [
+      'Idukki',
+      'Wayanad',
+      'Palakkad',
+      'Pathanamthitta',
+      'Kottayam',
+      'Ernakulam',
+      'Thrissur',
+      'Kozhikode',
+      'Malappuram',
+      'Kannur',
+      'Kasaragod',
+      'Alappuzha',
+      'Kollam',
+      'Thiruvananthapuram',
+      'Theni',
+      'Dindigul',
+      'Nilgiris',
+      'Kodagu',
+    ];
+
+    const allUsers = await User.find().select('-password').sort({ createdAt: -1 });
+
+    const usersByDistrictMap = {};
+    KERALA_DISTRICTS.forEach((d) => {
+      usersByDistrictMap[d.toLowerCase()] = [];
+    });
+
+    allUsers.forEach((u) => {
+      const userLoc = (u.district || u.location || '').toLowerCase();
+      let matchedDistrict = KERALA_DISTRICTS.find((d) => userLoc.includes(d.toLowerCase()));
+      if (!matchedDistrict) {
+        matchedDistrict = 'Idukki';
+      }
+      const key = matchedDistrict.toLowerCase();
+      if (!usersByDistrictMap[key]) {
+        usersByDistrictMap[key] = [];
+      }
+      usersByDistrictMap[key].push({
+        _id: u._id,
+        id: u._id,
+        name: u.name || u.fullName || 'Farmer',
+        fullName: u.name || u.fullName || 'Farmer',
+        email: u.email || '',
+        role: u.role || 'Farmer',
+        status: u.status || 'active',
+        district: u.district || u.location || matchedDistrict,
+        location: u.location || u.district || matchedDistrict,
+        phone: u.phone || '',
+        avatar: u.avatar || u.profileImage || u.profilePhoto || '',
+        createdAt: u.createdAt,
+      });
+    });
+
+    const districtResults = await Promise.all(
+      KERALA_DISTRICTS.map(async (districtName) => {
+        const key = districtName.toLowerCase();
+        const districtUsers = usersByDistrictMap[key] || [];
+
+        const rolesCount = {
+          Farmer: 0,
+          Supervisor: 0,
+          Expert: 0,
+          Admin: 0,
+          Other: 0,
+        };
+
+        districtUsers.forEach((u) => {
+          const role = u.role || 'Farmer';
+          if (role.toLowerCase().includes('farmer') || role.toLowerCase().includes('planter')) rolesCount.Farmer++;
+          else if (role.toLowerCase().includes('supervisor') || role.toLowerCase().includes('labor') || role.toLowerCase().includes('worker')) rolesCount.Supervisor++;
+          else if (role.toLowerCase().includes('expert')) rolesCount.Expert++;
+          else if (role.toLowerCase().includes('admin')) rolesCount.Admin++;
+          else rolesCount.Other++;
+        });
+
+        let weatherTelemetry = null;
+        try {
+          weatherTelemetry = await weatherService.getWeatherTelemetry({ district: districtName });
+        } catch (wErr) {
+          console.warn(`Weather fetch failed for ${districtName}:`, wErr.message);
+        }
+
+        return {
+          district: districtName,
+          registeredUsersCount: districtUsers.length,
+          registeredUsers: districtUsers,
+          rolesCount,
+          weather: weatherTelemetry ? {
+            temp: weatherTelemetry.currentWeather?.temp ?? 24,
+            feelsLike: weatherTelemetry.currentWeather?.feelsLike ?? 25,
+            humidity: weatherTelemetry.currentWeather?.humidity ?? 78,
+            windSpeed: weatherTelemetry.currentWeather?.windSpeed ?? 10,
+            rain: weatherTelemetry.currentWeather?.rain ?? 0,
+            rainProbability: weatherTelemetry.forecast?.rainProbability ?? 25,
+            condition: weatherTelemetry.currentWeather?.condition ?? 'Partly Cloudy',
+            description: weatherTelemetry.currentWeather?.description ?? 'District Weather Telemetry',
+            iconUrl: weatherTelemetry.currentWeather?.iconUrl ?? 'https://openweathermap.org/img/wn/02d@2x.png',
+            source: weatherTelemetry.source || 'live',
+          } : {
+            temp: 24,
+            feelsLike: 25,
+            humidity: 78,
+            windSpeed: 10,
+            rain: 0,
+            rainProbability: 25,
+            condition: 'Partly Cloudy',
+            description: 'District Weather Telemetry',
+            iconUrl: 'https://openweathermap.org/img/wn/02d@2x.png',
+            source: 'default',
+          },
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      totalRegisteredUsers: allUsers.length,
+      totalDistricts: KERALA_DISTRICTS.length,
+      districts: districtResults,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 
 

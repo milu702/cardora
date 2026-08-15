@@ -178,3 +178,70 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-8px) scale(1.01);
   box-shadow: 0 20px 40px -10px rgba(31, 94, 59, 0.12);
 }
+
+/* ==========================================================================
+   GLOBAL FORM CONTROLS & FULL-PAGE SPACIOUS INPUT FIELD SYSTEM
+   Ensures ALL input, select, and textarea fields across the entire application
+   are spacious, full-width, highly legible, and comfortable on mobile & desktop.
+   ========================================================================== */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="url"],
+select,
+textarea {
+  font-size: 0.9375rem !important; /* 15px */
+  line-height: 1.5 !important;
+  padding-top: 0.75rem !important; /* 12px */
+  padding-bottom: 0.75rem !important; /* 12px */
+  padding-left: 1rem !important; /* 16px */
+  padding-right: 1rem !important; /* 16px */
+  min-height: 48px !important;
+  border-radius: 1rem !important; /* 16px rounded-2xl */
+  font-weight: 500 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Ensure search inputs with icons maintain left padding clearance */
+input[class*="pl-8"], input.pl-8 { padding-left: 2.25rem !important; }
+input[class*="pl-9"], input.pl-9 { padding-left: 2.6rem !important; }
+input[class*="pl-10"], input.pl-10 { padding-left: 2.85rem !important; }
+input[class*="pl-11"], input.pl-11 { padding-left: 3.1rem !important; }
+input[class*="pl-12"], input.pl-12 { padding-left: 3.35rem !important; }
+
+/* Focus states for ultimate legibility & aesthetics */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="search"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: #1F5E3B !important;
+  box-shadow: 0 0 0 3px rgba(31, 94, 59, 0.2), 0 4px 12px rgba(31, 94, 59, 0.08) !important;
+}
+
+/* Generous textarea height */
+textarea {
+  min-height: 110px !important;
+  padding-top: 0.875rem !important;
+}
+
+/* Custom placeholder legibility */
+::placeholder {
+  font-size: 0.875rem !important;
+  opacity: 0.7 !important;
+}

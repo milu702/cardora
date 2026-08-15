@@ -23,6 +23,7 @@ const {
   getAdminVerifications,
   adminVerifyUser,
   submitComplaint,
+  deleteWorker,
 } = require('../controllers/workforceController');
 
 const {
@@ -32,6 +33,7 @@ const {
   deleteWorker: deleteSupervisorWorker,
   markBulkAttendance,
   getAttendanceByDate,
+  exportPlantationAttendance,
   submitWorkerRating: submitSupervisorWorkerRating,
   getWorkerRatings: getSupervisorWorkerRatings,
   getWorkerWageDetails,
@@ -53,6 +55,7 @@ router.delete('/supervisor/workers/:id', protect, deleteSupervisorWorker);
 
 router.post('/supervisor/attendance/bulk', protect, markBulkAttendance);
 router.get('/supervisor/attendance/:plantationId/:date', protect, getAttendanceByDate);
+router.get('/supervisor/attendance/export/:plantationId', protect, exportPlantationAttendance);
 
 router.post('/supervisor/ratings', protect, submitSupervisorWorkerRating);
 router.get('/supervisor/ratings/worker/:workerId', protect, getSupervisorWorkerRatings);
@@ -73,6 +76,7 @@ router.post('/plantations/:plantationId/invite-supervisor', protect, inviteAndAs
 router.get('/workers', getWorkers);
 router.get('/workers/:id', getWorkerById);
 router.post('/workers/profile', protect, updateWorkerProfile);
+router.delete('/workers/:id', protect, deleteWorker);
 
 // Contractor Routes
 router.get('/contractors', getContractors);

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 
 // @desc    Get user notifications
@@ -6,31 +7,27 @@ const Notification = require('../models/Notification');
 exports.getNotifications = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
+    // Automatic cleanup of self-connection requests (where user === sender)
+    await Notification.deleteMany({
+      user: userId,
+      sender: userId,
+      type: 'connection_request',
+    }).catch(() => {});
+
     let notifications = await Notification.find({ user: userId })
       .populate('sender', 'name avatar profilePhoto role')
       .sort({ createdAt: -1 });
 
-    // Seed default notifications if none present for user
-    if (notifications.length === 0) {
-      notifications = [
-        {
-          _id: 'notif-1',
-          type: 'weather_alert',
-          title: '🌧️ Heavy Rainfall Warning',
-          message: 'Heavy mountain showers expected in High Range, Idukki. Ensure soil drainage channels are clear.',
-          read: false,
-          createdAt: new Date(),
-        },
-        {
-          _id: 'notif-2',
-          type: 'recommendation',
-          title: '🌿 NPK Fertilization Reminder',
-          message: 'Optimal weather window for organic neem cake & potash application on your plantation.',
-          read: false,
-          createdAt: new Date(Date.now() - 3600000 * 4),
-        },
-      ];
-    }
+    // Deduplicate duplicate login notifications in response
+    const seenTitles = new Set();
+    notifications = notifications.filter((n) => {
+      if (n.type === 'login') {
+        const key = `login_${n.title}`;
+        if (seenTitles.has(key)) return false;
+        seenTitles.add(key);
+      }
+      return true;
+    });
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -50,11 +47,22 @@ exports.getNotifications = async (req, res) => {
 // @access  Private
 exports.markAsRead = async (req, res) => {
   try {
-    const notification = await Notification.findById(req.params.id);
-    if (notification) {
-      notification.read = true;
-      await notification.save();
+    const userId = req.user._id || req.user.id;
+    const { id } = req.params;
+
+    if (id === 'all' || id === 'read-all') {
+      await Notification.updateMany({ user: userId, read: false }, { read: true });
+      return res.status(200).json({ success: true, message: 'All notifications marked as read' });
     }
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const notification = await Notification.findOne({ _id: id, user: userId });
+      if (notification) {
+        notification.read = true;
+        await notification.save();
+      }
+    }
+
     res.status(200).json({ success: true, message: 'Notification marked as read' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

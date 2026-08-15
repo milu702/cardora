@@ -6,12 +6,14 @@ const {
   sendMessage,
   deleteMessage,
   blockUser,
+  searchUsersForMessaging,
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.use(protect);
 
 router.get('/conversations', getConversations);
+router.get('/users/search', searchUsersForMessaging);
 router.get('/:userId', getChatMessages);
 router.post('/:userId', sendMessage);
 router.delete('/:messageId', deleteMessage);

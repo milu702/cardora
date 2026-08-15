@@ -759,32 +759,39 @@ exports.getAttendanceHistory = async (req, res) => {
 exports.recordPayment = async (req, res) => {
   try {
     const payerId = req.user._id;
-    const { payeeId, taskId, amount, paymentType, paymentMethod, upiReference, notes } = req.body;
+    const { payeeId, payeeName, taskId, amount, paymentType, paymentMethod, upiReference, notes, remarks } = req.body;
+
+    let validPayeeId = null;
+    if (payeeId && mongoose.Types.ObjectId.isValid(payeeId)) {
+      validPayeeId = payeeId;
+    }
 
     const payment = await Payment.create({
       payer: payerId,
-      payee: payeeId,
-      task: taskId || null,
-      amount: Number(amount),
+      payee: validPayeeId,
+      task: (taskId && mongoose.Types.ObjectId.isValid(taskId)) ? taskId : null,
+      amount: Number(amount) || 0,
       paymentType: paymentType || 'Daily Wage',
       paymentMethod: paymentMethod || 'UPI',
-      upiReference: upiReference || 'UPI' + Math.floor(100000000000 + Math.random() * 900000000000),
-      notes: notes || 'Cardamom harvest payment',
+      upiReference: upiReference || ('UPI' + Math.floor(100000000000 + Math.random() * 900000000000)),
+      notes: notes || remarks || (payeeName ? `Wage payment for ${payeeName}` : 'Cardamom harvest payment'),
+      remarks: remarks || notes || '',
       status: 'Completed',
     });
 
-    // Notify payee
-    await Notification.create({
-      user: payeeId,
-      sender: payerId,
-      type: 'payment_received',
-      title: '💰 Payment Received!',
-      message: `Received ₹${amount} via ${payment.paymentMethod} from ${req.user.name}. Receipt: ${payment.receiptNumber}`,
-    });
+    if (validPayeeId) {
+      await Notification.create({
+        user: validPayeeId,
+        sender: payerId,
+        type: 'payment_received',
+        title: '💰 Payment Received!',
+        message: `Received ₹${amount} via ${payment.paymentMethod} from ${req.user.name || req.user.username}. Receipt: ${payment.receiptNumber}`,
+      }).catch(() => {});
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Payment recorded & Digital Receipt generated',
+      message: 'Payment recorded & Digital Receipt generated in MongoDB',
       payment,
     });
   } catch (error) {
@@ -800,10 +807,16 @@ exports.getPaymentHistory = async (req, res) => {
     const userId = req.user._id;
 
     const payments = await Payment.find({
-      $or: [{ payer: userId }, { payee: userId }],
+      $or: [
+        { payer: userId },
+        { payee: userId },
+        { supervisor: userId },
+        { plantation: { $ne: null } },
+      ],
     })
       .populate('payer', 'name username avatar phone')
       .populate('payee', 'name username avatar phone')
+      .populate('worker', 'fullName workerId phone')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -930,6 +943,37 @@ exports.submitComplaint = async (req, res) => {
       success: true,
       message: 'Complaint submitted to Admin moderation team',
       complaint,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete worker profile
+// @route   DELETE /api/workforce/workers/:id
+// @access  Private
+exports.deleteWorker = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let worker;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      worker = await Worker.findById(id);
+    }
+    if (!worker) {
+      worker = await Worker.findOne({ workerId: id });
+    }
+
+    if (!worker) {
+      return res.status(404).json({ success: false, message: 'Worker profile not found' });
+    }
+
+    await Worker.findByIdAndDelete(worker._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Worker profile deleted successfully',
+      workerId: worker._id,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

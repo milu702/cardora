@@ -189,10 +189,30 @@ const AddPlantationModal = ({ isOpen, onClose, onSave, editingPlantation = null 
     const { name, value, type, checked } = e.target;
     const finalVal = type === 'checkbox' ? checked : value;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: finalVal,
-    }));
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: finalVal,
+      };
+
+      // ⚡ AUTO-CALCULATE AVERAGE PLANT AGE FROM PLANTING YEAR
+      if (name === 'plantingYear' && value) {
+        const year = Number(value);
+        const currentYear = new Date().getFullYear(); // 2026
+        if (year >= 1950 && year <= currentYear) {
+          const age = Math.max(0.5, currentYear - year);
+          updated.plantAge = `${age} Years`;
+        }
+      }
+
+      // ⚡ AUTO-CALCULATE ESTIMATED PLANT COUNT FROM AREA (350 plants per acre)
+      if (name === 'area' && value && Number(value) > 0) {
+        const acres = Number(value);
+        updated.plantsCount = Math.round(acres * 350);
+      }
+
+      return updated;
+    });
 
     const fieldError = validateField(name, finalVal);
     setErrors((prev) => ({
@@ -453,36 +473,49 @@ const AddPlantationModal = ({ isOpen, onClose, onSave, editingPlantation = null 
                       } focus:outline-none focus:border-[#1F5E3B]`}
                     />
                     {errors.pincode && <p className="text-[11px] text-red-600 font-bold mt-1">{errors.pincode}</p>}
-                  </div>
-
-
-
-                  <div>
+                  </div>                  <div>
                     <label className="block text-xs font-bold text-[#17331F] mb-1">
                       Area (Acres) <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
-                      step="0.1"
+                    <select
                       name="area"
                       value={formData.area}
                       onChange={handleChange}
-                      placeholder="5.0"
-                      className="w-full px-4 py-2.5 rounded-xl text-xs font-medium border border-[#D7E6D5] bg-[#F8FAF7] focus:outline-none focus:border-[#1F5E3B]"
-                    />
+                      className="w-full px-4 py-2.5 rounded-xl text-xs font-bold border border-[#D7E6D5] bg-[#F8FAF7] focus:outline-none focus:border-[#1F5E3B]"
+                    >
+                      <option value="0.5">0.5 Acre (Small Holding)</option>
+                      <option value="1.0">1.0 Acre</option>
+                      <option value="1.5">1.5 Acres</option>
+                      <option value="2.0">2.0 Acres</option>
+                      <option value="2.5">2.5 Acres</option>
+                      <option value="3.0">3.0 Acres</option>
+                      <option value="4.0">4.0 Acres</option>
+                      <option value="5.0">5.0 Acres (Standard Cardamom Plot)</option>
+                      <option value="7.5">7.5 Acres</option>
+                      <option value="10.0">10.0 Acres</option>
+                      <option value="12.5">12.5 Acres</option>
+                      <option value="15.0">15.0 Acres</option>
+                      <option value="20.0">20.0 Acres</option>
+                      <option value="25.0">25.0 Acres</option>
+                      <option value="50.0">50.0+ Acres (Commercial Estate)</option>
+                    </select>
                     {errors.area && <p className="text-[11px] text-red-600 font-bold mt-1">{errors.area}</p>}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-[#17331F] mb-1">Altitude (Meters)</label>
-                    <input
-                      type="number"
+                    <select
                       name="altitude"
                       value={formData.altitude}
                       onChange={handleChange}
-                      placeholder="950"
-                      className="w-full px-4 py-2.5 rounded-xl text-xs font-medium border border-[#D7E6D5] bg-[#F8FAF7] focus:outline-none focus:border-[#1F5E3B]"
-                    />
+                      className="w-full px-4 py-2.5 rounded-xl text-xs font-bold border border-[#D7E6D5] bg-[#F8FAF7] focus:outline-none focus:border-[#1F5E3B]"
+                    >
+                      <option value="800">800 m (Mid Elevation)</option>
+                      <option value="900">900 m (Optimal Cardamom Elevation)</option>
+                      <option value="950">950 m (Vandanmedu Ideal Belt)</option>
+                      <option value="1050">1050 m (High Elevation Plot)</option>
+                      <option value="1200">1200 m (Peak Cardamom Altitude)</option>
+                    </select>
                   </div>
 
                   <div>
@@ -543,10 +576,11 @@ const AddPlantationModal = ({ isOpen, onClose, onSave, editingPlantation = null 
                       onChange={handleChange}
                       className="w-full px-4 py-2.5 rounded-xl text-xs font-bold border border-[#D7E6D5] bg-[#F8FAF7] focus:outline-none focus:border-[#1F5E3B]"
                     >
-                      <option value="Njallani">Njallani (High Yield)</option>
-                      <option value="Green Gold">Green Gold</option>
+                      <option value="Njallani">Njallani (High Yield — Green Gold)</option>
+                      <option value="Green Gold">Green Gold Hybrid</option>
                       <option value="Vazhukka">Vazhukka (Traditional High Altitude)</option>
                       <option value="Mysore">Mysore Variety</option>
+                      <option value="Palakuzhi">Palakuzhi</option>
                       <option value="Custom Variety">Custom Variety</option>
                     </select>
                   </div>
@@ -566,22 +600,28 @@ const AddPlantationModal = ({ isOpen, onClose, onSave, editingPlantation = null 
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">Planting Year</label>
-                    <input
-                      type="number"
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">
+                      Planting Year <span className="text-[#5C8D4E] text-[10px] font-normal">(Auto-calculates Plant Age)</span>
+                    </label>
+                    <select
                       name="plantingYear"
                       value={formData.plantingYear}
                       onChange={handleChange}
-                      placeholder="2021"
-                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-medium border ${
+                      className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border ${
                         errors.plantingYear ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5] bg-[#F8FAF7]'
                       } focus:outline-none focus:border-[#1F5E3B]`}
-                    />
+                    >
+                      {Array.from({ length: 35 }, (_, i) => 2026 - i).map((yr) => (
+                        <option key={yr} value={yr}>
+                          Year {yr} ({2026 - yr} yrs old)
+                        </option>
+                      ))}
+                    </select>
                     {errors.plantingYear && <p className="text-[11px] text-red-600 font-bold mt-1">{errors.plantingYear}</p>}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">Total Plant Count</label>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Total Plant Count (Est: 350 / acre)</label>
                     <input
                       type="number"
                       name="plantsCount"
@@ -595,16 +635,20 @@ const AddPlantationModal = ({ isOpen, onClose, onSave, editingPlantation = null 
                     {errors.plantsCount && <p className="text-[11px] text-red-600 font-bold mt-1">{errors.plantsCount}</p>}
                   </div>
 
-
                   <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">Average Plant Age</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-[#17331F]">Average Plant Age</label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300">
+                        ✨ Auto-Filled
+                      </span>
+                    </div>
                     <input
                       type="text"
                       name="plantAge"
                       value={formData.plantAge}
                       onChange={handleChange}
-                      placeholder="e.g. 3.5 Years"
-                      className="w-full px-4 py-2.5 rounded-xl text-xs font-medium border border-[#D7E6D5] bg-[#F8FAF7] focus:outline-none focus:border-[#1F5E3B]"
+                      placeholder="e.g. 5 Years"
+                      className="w-full px-4 py-2.5 rounded-xl text-xs font-bold border border-[#D7E6D5] bg-emerald-50/50 text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
                     />
                   </div>
                 </div>

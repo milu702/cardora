@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { translations } from '../utils/translations';
 import { apiService } from '../services/api';
 
@@ -16,6 +16,39 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {}
     return localStorage.getItem('cardora_token') || null;
   });
+
+  const knownNotificationIdsRef = useRef(new Set());
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.2);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(987.77, ctx.currentTime + 0.15);
+      gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.15);
+      osc2.stop(ctx.currentTime + 0.45);
+    } catch (e) {}
+  };
+
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -148,7 +181,29 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await apiService.getNotifications();
       if (res && res.success && Array.isArray(res.notifications)) {
-        setNotifications(res.notifications);
+        const fetchedNotifs = res.notifications;
+
+        // Diff tracking: Detect newly arrived unread notifications for real-time alert
+        if (knownNotificationIdsRef.current.size > 0) {
+          const brandNewList = fetchedNotifs.filter(
+            (n) => n._id && !knownNotificationIdsRef.current.has(n._id.toString()) && !n.read
+          );
+
+          if (brandNewList.length > 0) {
+            playNotificationSound();
+            const latest = brandNewList[0];
+            const toastMsg = `🔔 ${latest.title}: ${latest.message || latest.body || 'New alert'}`;
+            setToastMessage(toastMsg);
+            setTimeout(() => setToastMessage(null), 5000);
+          }
+        }
+
+        // Add all fetched notification IDs to known set
+        fetchedNotifs.forEach((n) => {
+          if (n._id) knownNotificationIdsRef.current.add(n._id.toString());
+        });
+
+        setNotifications(fetchedNotifs);
       }
     } catch (err) {}
   };
@@ -158,7 +213,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (currentUserId) {
       fetchUserNotifications();
-      const interval = setInterval(fetchUserNotifications, 5000);
+      const interval = setInterval(fetchUserNotifications, 3000);
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

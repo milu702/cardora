@@ -268,3 +268,45 @@ exports.blockUser = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Search registered users to start a new conversation
+// @route   GET /api/messages/users/search
+// @access  Private
+exports.searchUsersForMessaging = async (req, res) => {
+  try {
+    const currentUserId = req.user._id || req.user.id;
+    const query = (req.query.query || '').trim();
+
+    let filter = { _id: { $ne: currentUserId } };
+    if (query) {
+      filter.$or = [
+        { name: { $regex: query, $options: 'i' } },
+        { username: { $regex: query, $options: 'i' } },
+        { email: { $regex: query, $options: 'i' } },
+        { role: { $regex: query, $options: 'i' } },
+        { location: { $regex: query, $options: 'i' } },
+        { district: { $regex: query, $options: 'i' } },
+      ];
+    }
+
+    const users = await User.find(filter)
+      .select('name username avatar profilePhoto role location district email')
+      .limit(25);
+
+    const formattedUsers = users.map((u) => ({
+      id: u._id,
+      _id: u._id,
+      name: u.name || u.username || 'Cardora User',
+      username: u.username || 'user',
+      avatar: u.avatar || u.profilePhoto || '',
+      role: u.role || 'Farmer',
+      location: u.location || u.district || 'Idukki, Kerala',
+      email: u.email || '',
+    }));
+
+    res.status(200).json({ success: true, users: formattedUsers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

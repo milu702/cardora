@@ -102,6 +102,18 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Cardora MERN Backend Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const ALT_PORT = Number(PORT) + 1;
+    console.warn(`⚠️ Port ${PORT} is in use. Retrying on port ${ALT_PORT}...`);
+    app.listen(ALT_PORT, () => {
+      console.log(`🚀 Cardora MERN Backend Server running on port ${ALT_PORT}`);
+    });
+  } else {
+    console.error('Server error:', err);
+  }
 });

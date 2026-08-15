@@ -86,7 +86,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white dark:bg-[#1E293B] w-full max-w-xl rounded-3xl shadow-2xl border border-emerald-100 dark:border-gray-800 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-[#1E293B] w-full max-w-3xl rounded-3xl shadow-2xl border border-emerald-100 dark:border-gray-800 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-5 bg-gradient-to-r from-[#17331F] to-[#2C5E3B] text-white flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -120,7 +120,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Full Name */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
                 Worker Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -139,7 +139,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
             {/* Mobile Number */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
                 Mobile Number (For SMS)
               </label>
               <div className="relative">
@@ -157,7 +157,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
             {/* Work Type */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
                 Work Type / Role
               </label>
               <div className="relative">
@@ -179,7 +179,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
             {/* Daily Wage */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
                 Daily Wage (₹)
               </label>
               <div className="relative">
@@ -198,7 +198,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
             {/* Gender */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">Gender</label>
+              <label className="block text-xs sm:text-sm font-bold text-[#17331F] dark:text-slate-200 mb-1.5">Gender</label>
               <select
                 name="gender"
                 value={formData.gender}
@@ -213,7 +213,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
             {/* Joining Date */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
                 Joining Date
               </label>
               <div className="relative">
