@@ -70,7 +70,7 @@ const WorkerProfileModal = ({
               <p className="text-xs text-emerald-200/90 mt-1 flex items-center gap-3">
                 <span>{worker.workType || 'Capsule Harvesting'}</span>
                 <span>•</span>
-                <span>{worker.phone || 'No phone registered'}</span>
+                <span className="font-extrabold text-amber-300">📱 {worker.phone || worker.user?.phone || 'No phone registered'}</span>
                 <span>•</span>
                 <span className="font-bold text-amber-300">★ {worker.rating || 4.5} / 5</span>
               </p>

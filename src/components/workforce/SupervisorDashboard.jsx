@@ -13,6 +13,7 @@ import {
   Edit,
   Award,
   Leaf,
+  Phone,
 } from 'lucide-react';
 import apiService from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +25,14 @@ import WorkerProfileModal from './WorkerProfileModal';
 import SmsNotificationModal from './SmsNotificationModal';
 import OwnerMonitoringView from './OwnerMonitoringView';
 
+const getTodayDateStr = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast }) => {
   const { user } = useAuth();
   const isSupervisor = (user?.role || '').toLowerCase() === 'supervisor';
@@ -31,6 +40,8 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
   const [workers, setWorkers] = useState([]);
   const [plantationInfo, setPlantationInfo] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const activePlantationId = plantationInfo?.id || plantationInfo?._id || (plantationId !== 'default_plantation_id' ? plantationId : undefined);
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -68,15 +79,16 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
 
   const loadTodayAttendance = useCallback(async () => {
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const res = await apiService.getSupervisorAttendanceByDate(plantationId, todayStr);
-      if (res.success && res.records) {
+      const targetId = activePlantationId || plantationId;
+      const todayStr = getTodayDateStr();
+      const res = await apiService.getSupervisorAttendanceByDate(targetId, todayStr);
+      if (res && res.success && Array.isArray(res.records)) {
         setTodayAttendance(res.records);
       }
     } catch (err) {
       console.error('Error loading today attendance:', err);
     }
-  }, [plantationId]);
+  }, [plantationId, activePlantationId]);
 
   useEffect(() => {
     if (plantationId) {
@@ -373,9 +385,12 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
                           <span>Daily Wage:</span>
                           <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{worker.dailyWage || 700} / day</span>
                         </p>
-                        <p className="flex justify-between">
-                          <span>Mobile:</span>
-                          <span className="font-mono text-gray-800 dark:text-gray-200">{worker.phone || 'N/A'}</span>
+                        <p className="flex justify-between items-center text-[#1F5E3B] dark:text-emerald-400 font-extrabold">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>Mobile Number:</span>
+                          </span>
+                          <span className="font-mono text-xs">{worker.phone || worker.user?.phone || 'N/A'}</span>
                         </p>
                       </div>
                     </div>
@@ -432,7 +447,7 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
       {/* RENDER VIEW: 2. TODAY'S ATTENDANCE */}
       {activeView === 'attendance' && (
         <AttendanceTracker
-          plantationId={plantationId}
+          plantationId={activePlantationId}
           workers={workers}
           onAttendanceSaved={() => {
             loadTodayAttendance();
@@ -444,12 +459,12 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
 
       {/* RENDER VIEW: 3. WAGES & PAYMENTS */}
       {activeView === 'wages' && (
-        <WagePaymentManager plantationId={plantationId} workers={workers} showToast={showToast} />
+        <WagePaymentManager plantationId={activePlantationId} workers={workers} showToast={showToast} />
       )}
 
       {/* RENDER VIEW: 4. OWNER EXECUTIVE OVERSIGHT (For Estate Owners) */}
       {!isSupervisor && activeView === 'owner' && (
-        <OwnerMonitoringView plantationId={plantationId} showToast={showToast} />
+        <OwnerMonitoringView plantationId={activePlantationId} showToast={showToast} />
       )}
 
       {/* MODALS */}
@@ -460,7 +475,7 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
           setEditingWorker(null);
         }}
         onSave={handleSaveWorker}
-        plantationId={plantationId}
+        plantationId={activePlantationId}
         initialData={editingWorker}
       />
 
@@ -471,7 +486,7 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
           setRatingWorker(null);
         }}
         worker={ratingWorker}
-        plantationId={plantationId}
+        plantationId={activePlantationId}
         onRatingSaved={loadWorkersData}
         showToast={showToast}
       />
@@ -483,7 +498,7 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
           setSelectedProfileWorker(null);
         }}
         worker={selectedProfileWorker}
-        plantationId={plantationId}
+        plantationId={activePlantationId}
         showToast={showToast}
       />
 

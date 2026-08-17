@@ -11,9 +11,11 @@ exports.createRecommendation = async (req, res) => {
     const phVal = Number(soilPh) || 6.0;
     const calcHealth = Math.min(100, Math.max(50, Math.round((moistureVal / 75) * 50 + (phVal / 6.5) * 50)));
 
+    const validPlantation = (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) ? plantationId : null;
+
     const recommendation = await Recommendation.create({
       user: req.user._id || req.user.id,
-      plantation: plantationId || null,
+      plantation: validPlantation,
       moisture: moistureVal,
       soilPh: phVal,
       npk: { n: Number(n) || 140, p: Number(p) || 45, k: Number(k) || 180 },

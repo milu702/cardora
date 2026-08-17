@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Filter, ShieldCheck, MapPin, Star, DollarSign,
   CheckCircle, Clock, Plus, UserPlus, MessageSquare, Briefcase,
-  Shield, ChevronRight, Navigation, RefreshCw, Mail, X, Trash2
+  Shield, ChevronRight, Navigation, RefreshCw, Mail, X, Trash2, Phone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
@@ -140,19 +140,24 @@ const WorkforceModule = ({ onOpenChat }) => {
   // Register Worker Details Modal
   const [registerWorkerModalOpen, setRegisterWorkerModalOpen] = useState(false);
   const [userUploadedWorkers, setUserUploadedWorkers] = useState(() => {
-    const saved = localStorage.getItem('cardora_uploaded_workers');
+    const key = `cardora_uploaded_workers_${user?._id || user?.id || 'guest'}`;
+    const saved = localStorage.getItem(key);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validOnly = parsed.filter((w) => w && w.phone && w.phone.toString().trim().replace(/[^0-9]/g, '').length >= 7);
+          return validOnly;
+        }
       } catch (e) {}
     }
     return [];
   });
 
   useEffect(() => {
-    localStorage.setItem('cardora_uploaded_workers', JSON.stringify(userUploadedWorkers));
-  }, [userUploadedWorkers]);
+    const key = `cardora_uploaded_workers_${user?._id || user?.id || 'guest'}`;
+    localStorage.setItem(key, JSON.stringify(userUploadedWorkers));
+  }, [userUploadedWorkers, user]);
 
   const [registerWorkerForm, setRegisterWorkerForm] = useState({
     fullName: user?.fullName || user?.name || '',
@@ -187,6 +192,7 @@ const WorkforceModule = ({ onOpenChat }) => {
       availability: registerWorkerForm.availability || 'Available Today',
       bio: registerWorkerForm.bio || '',
       photo: registerWorkerForm.photo || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+      supervisorId: user?._id || user?.id,
       isVerified: true,
       rating: 4.9,
       completedJobs: 16,
@@ -257,7 +263,7 @@ const WorkforceModule = ({ onOpenChat }) => {
       return;
     }
     try {
-      const res = await apiService.recordWorkforcePayment({
+      await apiService.recordWorkforcePayment({
         payeeName: payForm.payeeName || 'Workforce Member',
         amount: amt,
         paymentType: payForm.paymentType || 'UPI Transfer',
@@ -487,9 +493,13 @@ const WorkforceModule = ({ onOpenChat }) => {
       if (wRes && wRes.success) {
         const fetched = wRes.workers || [];
         const map = new Map();
-        [...userUploadedWorkers, ...fetched].forEach((w) => {
-          const id = w._id || w.id || w.workerId;
-          if (id && !map.has(id)) map.set(id, w);
+        const addedWorkersOnly = [...userUploadedWorkers, ...fetched].filter((w) => {
+          const rawPhone = (w.phone || w.user?.phone || '').toString().trim().replace(/[^0-9]/g, '');
+          return rawPhone.length >= 7;
+        });
+        addedWorkersOnly.forEach((w) => {
+          const key = (w.workerId || w.phone || w.fullName || w._id || w.id).toString().toLowerCase().trim();
+          if (key && !map.has(key)) map.set(key, w);
         });
         setWorkers(Array.from(map.values()));
       }
@@ -915,6 +925,10 @@ const WorkforceModule = ({ onOpenChat }) => {
                       <div>
                         <h4 className="text-xs font-black text-[#17331F] dark:text-white">{w.fullName}</h4>
                         <p className="text-[10px] text-[#5C8D4E] font-bold">{w.workerId} • {w.village}</p>
+                        <p className="text-[10px] font-extrabold text-[#1F5E3B] dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-[#1F5E3B] dark:text-emerald-400" />
+                          <span>{w.phone || w.user?.phone || 'No phone'}</span>
+                        </p>
                         <div className="flex items-center gap-1 text-amber-500 font-bold text-[11px] mt-0.5">
                           <Star className="w-3 h-3 fill-amber-400" />
                           <span>{w.rating} ({w.completedJobs} jobs)</span>
@@ -1172,6 +1186,10 @@ const WorkforceModule = ({ onOpenChat }) => {
                             {w.isVerified && <ShieldCheck className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />}
                           </div>
                           <p className="text-[10px] text-[#5C8D4E] font-bold">{w.workerId} • {w.village}, {w.district}</p>
+                          <p className="text-[11px] font-extrabold text-[#1F5E3B] dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5 text-[#1F5E3B] dark:text-emerald-400" />
+                            <span>Mobile: {w.phone || w.user?.phone || 'No phone'}</span>
+                          </p>
                           <div className="flex items-center gap-1 text-amber-500 font-bold text-xs mt-0.5">
                             <Star className="w-3.5 h-3.5 fill-amber-400" />
                             <span>{w.rating} ({w.completedJobs} jobs done)</span>

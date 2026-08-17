@@ -32,14 +32,25 @@ const PlantationModule = ({ onToast }) => {
   const [areaFilter, setAreaFilter] = useState(''); // '' | 'small' | 'medium' | 'large'
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'oldest' | 'health_desc' | 'health_asc' | 'area_desc'
 
-  // Fetch plantations from API (Strictly for logged in user)
+  // Fetch plantations from API & local storage
   const fetchPlantations = async () => {
     setLoading(true);
     try {
-      const res = await apiService.getPlantations();
-      if (res && res.success && Array.isArray(res.plantations)) {
-        setPlantations(res.plantations);
+      const saved = localStorage.getItem('cardora_uploaded_plantations');
+      let localItems = [];
+      if (saved) {
+        try { localItems = JSON.parse(saved) || []; } catch (e) {}
       }
+
+      const res = await apiService.getPlantations();
+      const apiItems = (res && res.success && Array.isArray(res.plantations)) ? res.plantations : [];
+
+      const map = new Map();
+      [...localItems, ...apiItems].forEach((p) => {
+        const id = p._id || p.id;
+        if (id && !map.has(id)) map.set(id, p);
+      });
+      setPlantations(Array.from(map.values()));
     } catch (err) {
       console.error(err);
     } finally {

@@ -73,7 +73,7 @@ router.post('/plantations/:plantationId/assign-supervisor', protect, assignSuper
 router.post('/plantations/:plantationId/invite-supervisor', protect, inviteAndAssignSupervisor);
 
 // Worker Routes
-router.get('/workers', getWorkers);
+router.get('/workers', protect, getWorkers);
 router.get('/workers/:id', getWorkerById);
 router.post('/workers/profile', protect, updateWorkerProfile);
 router.delete('/workers/:id', protect, deleteWorker);

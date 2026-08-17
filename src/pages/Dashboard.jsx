@@ -216,22 +216,35 @@ const Dashboard = () => {
 
   const fetchPlantations = async () => {
     try {
-      const res = await apiService.getPlantations();
-      if (res && res.success && Array.isArray(res.plantations)) {
-        const formatted = res.plantations.map((p) => ({
-          id: p._id || p.id,
-          name: p.name,
-          location: p.district || p.location || 'Idukki, Kerala',
-          area: p.area,
-          plants: p.plantsCount || p.plants || 1500,
-          variety: p.variety || 'Njallani',
-          moisture: p.soil?.moisture ?? p.moisture ?? 72,
-          ph: p.soil?.ph ?? p.soilPh ?? 6.2,
-          health: p.healthScore || p.health || 94,
-          history: (p.history && Array.isArray(p.history) && p.history[0]?.title) || 'Plantation registered',
-        }));
-        setPlantations(formatted);
+      const saved = localStorage.getItem('cardora_uploaded_plantations');
+      let localItems = [];
+      if (saved) {
+        try { localItems = JSON.parse(saved) || []; } catch (e) {}
       }
+
+      const res = await apiService.getPlantations();
+      const apiItems = (res && res.success && Array.isArray(res.plantations)) ? res.plantations : [];
+
+      const map = new Map();
+      [...localItems, ...apiItems].forEach((p) => {
+        const id = p._id || p.id;
+        if (id && !map.has(id)) map.set(id, p);
+      });
+
+      const allPlantations = Array.from(map.values());
+      const formatted = allPlantations.map((p) => ({
+        id: p._id || p.id,
+        name: p.name,
+        location: p.district || p.location || 'Idukki, Kerala',
+        area: p.area,
+        plants: p.plantsCount || p.plants || 1500,
+        variety: p.variety || 'Njallani',
+        moisture: p.soil?.moisture ?? p.moisture ?? 72,
+        ph: p.soil?.ph ?? p.soilPh ?? 6.2,
+        health: p.healthScore || p.health || 94,
+        history: (p.history && Array.isArray(p.history) && p.history[0]?.title) || 'Plantation registered',
+      }));
+      setPlantations(formatted);
     } catch (e) {}
   };
 

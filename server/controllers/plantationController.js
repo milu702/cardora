@@ -143,17 +143,27 @@ exports.createPlantation = async (req, res) => {
 exports.getPlantations = async (req, res) => {
   try {
     const userId = req.user ? (req.user._id || req.user.id) : null;
+    const userRole = (req.user?.role || '').toLowerCase();
     const ownerNameVal = req.user?.fullName || req.user?.name || '';
     
     let query = {};
     if (userId) {
-      query = {
-        $or: [
-          { user: userId },
-          { user: userId.toString() },
-          ...(ownerNameVal ? [{ ownerName: new RegExp(`^${ownerNameVal}$`, 'i') }] : [])
-        ]
-      };
+      if (userRole.includes('admin')) {
+        query = {};
+      } else {
+        const uIdStr = userId.toString();
+        query = {
+          $or: [
+            { user: userId },
+            { user: uIdStr },
+            { supervisorId: userId },
+            { supervisorId: uIdStr },
+            { assignedSupervisors: userId },
+            { assignedSupervisors: uIdStr },
+            ...(ownerNameVal ? [{ ownerName: new RegExp(`^${ownerNameVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }] : [])
+          ]
+        };
+      }
     }
     const plantations = await Plantation.find(query).sort({ createdAt: -1 });
 

@@ -9,6 +9,7 @@ const Rating = require('../models/Rating');
 const Complaint = require('../models/Complaint');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const Plantation = require('../models/Plantation');
 
 // Helper to ensure a worker document has a valid linked User account for connections & chat
 const ensureWorkerUserAccount = async (worker) => {
@@ -102,7 +103,9 @@ exports.getWorkers = async (req, res) => {
       query,
     } = req.query;
 
-    let filter = {};
+    let filter = {
+      phone: { $exists: true, $ne: '' },
+    };
 
     if (district) {
       filter.district = { $regex: district, $options: 'i' };
@@ -145,6 +148,43 @@ exports.getWorkers = async (req, res) => {
         { district: { $regex: query, $options: 'i' } },
         { village: { $regex: query, $options: 'i' } },
       ];
+    }
+
+    // Strict multi-tenant authorization scoping by req.user
+    if (req.user) {
+      const userRole = (req.user.role || '').toLowerCase();
+      if (!userRole.includes('admin')) {
+        const isOwner = userRole === 'farmer' || userRole === 'plantation owner' || userRole === 'owner';
+        if (isOwner) {
+          const myPlantations = await Plantation.find({ user: req.user._id });
+          const myPlantationIds = myPlantations.map((p) => p._id);
+          filter.$and = filter.$and || [];
+          filter.$and.push({
+            $or: [
+              { supervisorId: req.user._id },
+              { plantationId: { $in: myPlantationIds } },
+              { user: req.user._id },
+            ],
+          });
+        } else {
+          // Supervisor or Worker role
+          const supPlantations = await Plantation.find({
+            $or: [
+              { supervisorId: req.user._id },
+              { assignedSupervisors: req.user._id },
+            ],
+          });
+          const supPlantationIds = supPlantations.map((p) => p._id);
+          filter.$and = filter.$and || [];
+          filter.$and.push({
+            $or: [
+              { supervisorId: req.user._id },
+              { plantationId: { $in: supPlantationIds }, supervisorId: req.user._id },
+              { user: req.user._id },
+            ],
+          });
+        }
+      }
     }
 
     const workers = await Worker.find(filter)
@@ -558,7 +598,7 @@ exports.createTask = async (req, res) => {
       description: req.body.description,
       priority: req.body.priority || 'Medium',
       deadline: req.body.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      plantation: req.body.plantationId || null,
+      plantation: (req.body.plantationId && mongoose.Types.ObjectId.isValid(req.body.plantationId)) ? req.body.plantationId : null,
       plantationName: req.body.plantationName || 'Vandanmedu Green Estate',
       owner: ownerId,
       assignedWorkers: req.body.assignedWorkers || [],
@@ -670,7 +710,7 @@ exports.checkInAttendance = async (req, res) => {
     attendance = await Attendance.create({
       worker: workerId,
       task: taskId || null,
-      plantation: plantationId || null,
+      plantation: (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) ? plantationId : null,
       plantationName: plantationName || 'Vandanmedu Green Estate',
       date: today,
       checkInTime: new Date(),

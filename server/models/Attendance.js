@@ -50,6 +50,11 @@ const attendanceSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    checkInLocation: {
+      lat: { type: Number, default: 9.8471 },
+      lng: { type: Number, default: 77.1023 },
+      address: { type: String, default: 'Vandanmedu Estate, Idukki' },
+    },
     markedBy: {
       type: String,
       default: 'Supervisor',

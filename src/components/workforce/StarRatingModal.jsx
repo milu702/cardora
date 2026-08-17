@@ -52,7 +52,7 @@ const StarRatingModal = ({ isOpen, onClose, worker, plantationId, onRatingSaved,
     try {
       const payload = {
         workerId: worker._id,
-        plantationId,
+        plantationId: (plantationId && plantationId !== 'default_plantation_id') ? plantationId : undefined,
         workQuality: ratings.workQuality,
         punctuality: ratings.punctuality,
         teamwork: ratings.teamwork,

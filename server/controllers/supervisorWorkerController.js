@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const Worker = require('../models/Worker');
 const Attendance = require('../models/Attendance');
 const WorkerRating = require('../models/WorkerRating');
@@ -10,6 +12,47 @@ const sendEmail = require('../utils/sendEmail');
 const { sendSmsNotification, getSmsSettings, updateSmsSettings } = require('../services/smsService');
 
 /**
+ * Helper to auto-append attendance records to server CSV log
+ */
+const appendToCsvFile = (records, plantationName = 'Cardora Plantation Estate') => {
+  try {
+    const dirPath = path.join(__dirname, '../exports');
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    const filePath = path.join(dirPath, 'attendance_register.csv');
+    const fileExists = fs.existsSync(filePath);
+
+    const headers = ['Date', 'Plantation Name', 'Worker ID', 'Worker Name', 'Work Type', 'Status', 'Daily Wage (INR)', 'Overtime Hours', 'Overtime Amount (INR)', 'Marked By'];
+    let csvContent = '';
+
+    if (!fileExists) {
+      csvContent += '\uFEFF' + headers.join(',') + '\n';
+    }
+
+    records.forEach((r) => {
+      const row = [
+        `"${r.date || ''}"`,
+        `"${r.plantationName || plantationName}"`,
+        `"${r.workerId || ''}"`,
+        `"${r.worker?.fullName || r.markedBy || 'Worker'}"`,
+        `"${r.workType || 'Harvesting'}"`,
+        `"${r.status || 'Present'}"`,
+        r.worker?.dailyWage || 700,
+        r.overtimeHours || 0,
+        r.overtimeAmount || 0,
+        `"${r.markedBy || 'Supervisor'}"`,
+      ].join(',');
+      csvContent += row + '\n';
+    });
+
+    fs.appendFileSync(filePath, csvContent, 'utf8');
+  } catch (err) {
+    console.error('Error writing to attendance CSV file on server:', err);
+  }
+};
+
+/**
  * Helper to check plantation authorization
  */
 const verifyPlantationAccess = async (userId, plantationId) => {
@@ -17,11 +60,10 @@ const verifyPlantationAccess = async (userId, plantationId) => {
   if (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) {
     plantation = await Plantation.findById(plantationId);
   }
-  if (!plantation) {
-    const userObj = await User.findById(userId);
-    if (userObj && userObj.assignedPlantation) {
-      plantation = await Plantation.findById(userObj.assignedPlantation);
-    }
+  const userObj = await User.findById(userId);
+
+  if (!plantation && userObj && userObj.assignedPlantation) {
+    plantation = await Plantation.findById(userObj.assignedPlantation);
   }
   if (!plantation) {
     plantation = await Plantation.findOne({ user: userId });
@@ -30,13 +72,15 @@ const verifyPlantationAccess = async (userId, plantationId) => {
     plantation = await Plantation.findOne({ supervisorId: userId });
   }
   if (!plantation) {
-    plantation = await Plantation.findOne({});
+    plantation = await Plantation.findOne({ assignedSupervisors: userId });
   }
   if (!plantation) {
+    const ownerName = userObj ? (userObj.fullName || userObj.name || userObj.username || 'Estate Owner') : 'Estate Owner';
     plantation = await Plantation.create({
-      name: 'Cardora Plantation Estate',
+      name: `${ownerName}'s Plantation Estate`,
       user: userId,
-      location: 'Idukki, Kerala',
+      supervisorId: (userObj?.role || '').toLowerCase() === 'supervisor' ? userId : undefined,
+      location: userObj?.location || 'Idukki, Kerala',
       areaSize: '15 Acres',
       cropType: 'Cardamom',
     });
@@ -47,13 +91,11 @@ const verifyPlantationAccess = async (userId, plantationId) => {
   const isDirectSupervisor = plantation.supervisorId && plantation.supervisorId.toString() === uId;
   const isAssignedSupervisor = plantation.assignedSupervisors && plantation.assignedSupervisors.some(id => id.toString() === uId);
 
-  const userObj = await User.findById(userId);
   const isSupervisorRole = userObj && (userObj.role === 'Supervisor' || userObj.role === 'supervisor');
-  const isAdminRole = userObj && (userObj.role === 'Admin' || userObj.role === 'admin');
 
   return {
     plantation,
-    isOwner: isOwner || !isSupervisorRole,
+    isOwner: isOwner || (!isSupervisorRole && !isDirectSupervisor && !isAssignedSupervisor),
     isSupervisor: isDirectSupervisor || isAssignedSupervisor || isSupervisorRole,
   };
 };
@@ -153,14 +195,24 @@ exports.getPlantationWorkers = async (req, res) => {
     }
 
     const targetPlantationId = authCheck.plantation._id;
-    let filter = {
-      $or: [
-        { plantationId: targetPlantationId },
-        { supervisorId: req.user._id },
-        { plantationId: null },
-        { supervisorId: null },
-      ]
-    };
+
+    // Strict multi-tenant isolation: Owners see their plantation workers; Supervisors see their created/assigned workers
+    let filter = {};
+    if (authCheck.isOwner) {
+      filter = {
+        $or: [
+          { plantationId: targetPlantationId },
+          { supervisorId: req.user._id },
+        ],
+      };
+    } else {
+      filter = {
+        $or: [
+          { supervisorId: req.user._id },
+          { plantationId: targetPlantationId, supervisorId: req.user._id },
+        ],
+      };
+    }
 
     if (status && status !== 'All') {
       filter.status = status;
@@ -281,20 +333,26 @@ exports.markBulkAttendance = async (req, res) => {
     }
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to mark attendance for this plantation' });
     }
 
+    const targetPlantationId = authCheck.plantation._id;
     const attendanceDate = date || new Date().toISOString().split('T')[0];
     const updatedRecords = [];
 
     for (const item of attendanceList) {
-      const worker = await Worker.findById(item.workerId);
+      let worker;
+      if (item.workerId && mongoose.Types.ObjectId.isValid(item.workerId)) {
+        worker = await Worker.findById(item.workerId);
+      }
+      if (!worker && item.workerId) {
+        worker = await Worker.findOne({ workerId: item.workerId });
+      }
       if (!worker) continue;
 
       const filter = {
         worker: worker._id,
-        plantation: plantationId,
         date: attendanceDate,
       };
 
@@ -306,7 +364,7 @@ exports.markBulkAttendance = async (req, res) => {
         worker: worker._id,
         workerId: worker.workerId,
         supervisor: req.user._id,
-        plantation: plantationId,
+        plantation: targetPlantationId,
         plantationName: authCheck.plantation.name,
         date: attendanceDate,
         status: item.status || 'Present',
@@ -316,6 +374,11 @@ exports.markBulkAttendance = async (req, res) => {
         remarks: item.remarks || '',
         markedBy: req.user.name || 'Supervisor',
         checkInTime: new Date(),
+        checkInLocation: item.checkInLocation || {
+          lat: Number(item.lat) || 9.8471,
+          lng: Number(item.lng) || 77.1023,
+          address: item.address || `${authCheck.plantation.name || 'Cardora Estate'}, Idukki`,
+        },
       };
 
       const record = await Attendance.findOneAndUpdate(filter, updateData, {
@@ -347,9 +410,12 @@ exports.markBulkAttendance = async (req, res) => {
       }
     }
 
+    // Auto-append to server CSV storage
+    appendToCsvFile(updatedRecords, authCheck.plantation.name);
+
     res.status(200).json({
       success: true,
-      message: `Attendance recorded for ${updatedRecords.length} workers`,
+      message: `Attendance recorded for ${updatedRecords.length} workers & stored in CSV register`,
       date: attendanceDate,
       records: updatedRecords,
     });
@@ -366,11 +432,19 @@ exports.getAttendanceByDate = async (req, res) => {
     const { plantationId, date } = req.params;
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to view attendance' });
     }
 
-    const attendanceRecords = await Attendance.find({ plantation: plantationId, date })
+    const targetPlantationId = authCheck.plantation._id;
+    const attendanceRecords = await Attendance.find({
+      date,
+      $or: [
+        { plantation: targetPlantationId },
+        { supervisor: req.user._id },
+        { plantation: null },
+      ],
+    })
       .populate('worker', 'fullName workerId phone photo dailyWage status workType')
       .sort({ createdAt: -1 });
 
@@ -399,7 +473,7 @@ exports.exportPlantationAttendance = async (req, res) => {
 
     const targetPlantationId = authCheck.plantation._id;
     const attendanceRecords = await Attendance.find({
-      $or: [{ plantation: targetPlantationId }, { plantation: null }],
+      $or: [{ plantation: targetPlantationId }, { supervisor: req.user._id }, { plantation: null }],
     })
       .populate('worker', 'fullName workerId phone photo dailyWage status workType')
       .sort({ date: -1, createdAt: -1 });
@@ -441,8 +515,14 @@ exports.submitWorkerRating = async (req, res) => {
     }
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId || worker.plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to submit ratings' });
+    }
+
+    const targetPlantationId = authCheck.plantation._id;
+
+    if (!worker.plantationId || !mongoose.Types.ObjectId.isValid(worker.plantationId)) {
+      worker.plantationId = targetPlantationId;
     }
 
     const wQ = Number(workQuality) || 5;
@@ -454,11 +534,11 @@ exports.submitWorkerRating = async (req, res) => {
     const ratingDate = date || new Date().toISOString().split('T')[0];
 
     const ratingDoc = await WorkerRating.findOneAndUpdate(
-      { worker: worker._id, plantation: plantationId || worker.plantationId, date: ratingDate },
+      { worker: worker._id, plantation: targetPlantationId, date: ratingDate },
       {
         worker: worker._id,
         workerId: worker.workerId,
-        plantation: plantationId || worker.plantationId,
+        plantation: targetPlantationId,
         supervisor: req.user._id,
         date: ratingDate,
         workQuality: wQ,
@@ -649,14 +729,16 @@ exports.recordPayment = async (req, res) => {
     }
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId || worker.plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to record payments' });
     }
+
+    const targetPlantationId = authCheck.plantation._id;
 
     const payment = await Payment.create({
       worker: worker._id,
       workerId: worker.workerId,
-      plantation: plantationId || worker.plantationId,
+      plantation: targetPlantationId,
       supervisor: req.user._id,
       payer: req.user._id,
       amount: Number(amount),
@@ -763,15 +845,16 @@ exports.getOwnerMonitoringSummary = async (req, res) => {
     const { plantationId } = req.params;
 
     const authCheck = await verifyPlantationAccess(req.user._id, plantationId);
-    if (!authCheck) {
+    if (!authCheck || !authCheck.plantation) {
       return res.status(403).json({ success: false, message: 'Not authorized to view monitoring summary' });
     }
 
     const plantation = authCheck.plantation;
-    const workers = await Worker.find({ plantationId });
+    const targetPlantationId = plantation._id;
+    const workers = await Worker.find({ plantationId: targetPlantationId });
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const todayAttendance = await Attendance.find({ plantation: plantationId, date: todayStr });
+    const todayAttendance = await Attendance.find({ plantation: targetPlantationId, date: todayStr });
 
     let presentToday = 0;
     let absentToday = 0;
@@ -789,8 +872,8 @@ exports.getOwnerMonitoringSummary = async (req, res) => {
     const unrecordedToday = Math.max(0, totalWorkers - todayAttendance.length);
 
     // Financial Liabilities & Wage Aggregates
-    const allPayments = await Payment.find({ plantation: plantationId });
-    const allAttendance = await Attendance.find({ plantation: plantationId });
+    const allPayments = await Payment.find({ plantation: targetPlantationId });
+    const allAttendance = await Attendance.find({ plantation: targetPlantationId });
 
     let totalGrossEarned = 0;
     let totalPaid = 0;
@@ -900,7 +983,13 @@ exports.assignSupervisorToPlantation = async (req, res) => {
     const { plantationId } = req.params;
     const { supervisorId, emailOrUsername } = req.body;
 
-    const plantation = await Plantation.findById(plantationId);
+    let plantation;
+    if (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) {
+      plantation = await Plantation.findById(plantationId);
+    }
+    if (!plantation) {
+      plantation = await Plantation.findOne({ user: req.user._id });
+    }
     if (!plantation) {
       return res.status(404).json({ success: false, message: 'Plantation not found' });
     }
