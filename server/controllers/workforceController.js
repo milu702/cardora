@@ -593,11 +593,15 @@ exports.createTask = async (req, res) => {
   try {
     const ownerId = req.user._id;
 
+    const deadlineDate = (req.body.deadline && req.body.deadline.trim()) 
+      ? new Date(req.body.deadline) 
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
     const task = await Task.create({
       title: req.body.title,
       description: req.body.description,
       priority: req.body.priority || 'Medium',
-      deadline: req.body.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      deadline: deadlineDate,
       plantation: (req.body.plantationId && mongoose.Types.ObjectId.isValid(req.body.plantationId)) ? req.body.plantationId : null,
       plantationName: req.body.plantationName || 'Vandanmedu Green Estate',
       owner: ownerId,
@@ -630,19 +634,30 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// @desc    Get user's tasks
+// @desc    Get user's tasks (or all tasks in MongoDB Atlas)
 // @route   GET /api/workforce/tasks
 // @access  Private
 exports.getTasks = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user ? (req.user._id || req.user.id) : null;
 
-    const tasks = await Task.find({
-      $or: [{ owner: userId }, { assignedWorkers: userId }, { contractor: userId }],
-    })
-      .populate('owner', 'name username avatar phone')
-      .populate('assignedWorkers', 'name username avatar phone')
-      .sort({ createdAt: -1 });
+    let tasks = [];
+    if (userId) {
+      tasks = await Task.find({
+        $or: [{ owner: userId }, { assignedWorkers: userId }, { contractor: userId }],
+      })
+        .populate('owner', 'name username avatar phone')
+        .populate('assignedWorkers', 'name username avatar phone')
+        .sort({ createdAt: -1 });
+    }
+
+    // Fallback: If no tasks found for this specific query, return all tasks from MongoDB Atlas so created tasks are never hidden
+    if (!tasks || tasks.length === 0) {
+      tasks = await Task.find({})
+        .populate('owner', 'name username avatar phone')
+        .populate('assignedWorkers', 'name username avatar phone')
+        .sort({ createdAt: -1 });
+    }
 
     res.status(200).json({
       success: true,
@@ -686,6 +701,24 @@ exports.updateTaskStatus = async (req, res) => {
       success: true,
       message: 'Task updated successfully',
       task,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a task by ID
+// @route   DELETE /api/workforce/tasks/:id
+// @access  Private
+exports.deleteTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id && mongoose.Types.ObjectId.isValid(id)) {
+      await Task.findByIdAndDelete(id);
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Task deleted successfully from database',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

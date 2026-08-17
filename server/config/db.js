@@ -5,38 +5,38 @@ let activeHost = '127.0.0.1';
 let activeDB = 'cardora';
 
 const connectDB = async () => {
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb+srv://milujiji2027_db_user:8ZODK6ONzNuKEqbr@cluster0.g3pxvi3.mongodb.net/cardora?retryWrites=true&w=majority&appName=Cluster0';
   const localUri = process.env.LOCAL_MONGODB_URI || 'mongodb://127.0.0.1:27017/cardora';
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb+srv://cardora:cardora2026@cluster0.mongodb.net/cardora?retryWrites=true&w=majority';
 
-  // 1. Try Local MongoDB instance first (contains user posts & database records)
-  try {
-    const conn = await mongoose.connect(localUri, {
-      family: 4,
-      serverSelectionTimeoutMS: 3000,
-    });
-    isConnected = true;
-    activeHost = conn.connection.host;
-    activeDB = conn.connection.name;
-    console.log(`✅ Local MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
-    await seedAdminUser();
-    return;
-  } catch (localErr) {
-    console.warn(`⚠️ Local MongoDB Note (${localErr.message}). Trying MongoDB Atlas...`);
-  }
-
-  // 2. Fallback to MongoDB Atlas instance
+  // 1. Try Primary MongoDB Atlas Instance first (contains all real user accounts & database records)
   try {
     const conn = await mongoose.connect(mongoUri, {
       family: 4,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
     });
     isConnected = true;
     activeHost = conn.connection.host;
     activeDB = conn.connection.name;
     console.log(`✅ Atlas MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
     await seedAdminUser();
+    return;
   } catch (atlasErr) {
-    console.error(`❌ Database Connection Error: ${atlasErr.message}`);
+    console.warn(`⚠️ Atlas MongoDB Note (${atlasErr.message}). Falling back to Local MongoDB...`);
+  }
+
+  // 2. Fallback to Local MongoDB instance
+  try {
+    const conn = await mongoose.connect(localUri, {
+      family: 4,
+      serverSelectionTimeoutMS: 5000,
+    });
+    isConnected = true;
+    activeHost = conn.connection.host;
+    activeDB = conn.connection.name;
+    console.log(`✅ Local MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
+    await seedAdminUser();
+  } catch (localErr) {
+    console.error(`❌ Database Connection Error: ${localErr.message}`);
     isConnected = false;
   }
 };

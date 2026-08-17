@@ -44,6 +44,7 @@ import { useAuth } from '../../context/AuthContext';
 import PlantationMap from './PlantationMap';
 import AdminAnalyticsCharts from './AdminAnalyticsCharts';
 import DistrictWeatherUsers from './DistrictWeatherUsers';
+import AdminPlantationIntelligenceView from './AdminPlantationIntelligenceView';
 
 const AdminDashboard = () => {
   const { user, showToast, darkMode } = useAuth();
@@ -412,6 +413,7 @@ const AdminDashboard = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {[
           { id: 'all', label: 'Executive Dashboard', icon: Shield },
+          { id: 'intelligence', label: 'Plantation Intelligence', icon: Sparkles, badge: 'Live Reports' },
           { id: 'district-weather', label: 'Districts Weather & Users', icon: CloudSun, badge: '18 Belts' },
           { id: 'charts', label: 'Analytics & Reports', icon: BarChart3 },
           { id: 'activity', label: 'Recent System Audit', icon: Activity, badge: activities.length },
@@ -989,6 +991,8 @@ const AdminDashboard = () => {
 
           </div>
         </div>
+      ) : adminViewMode === 'intelligence' ? (
+        <AdminPlantationIntelligenceView onToast={showToast} />
       ) : adminViewMode === 'district-weather' ? (
         /* ========================================================================= */
         /* SUB-VIEW: DISTRICTS WEATHER TELEMETRY & REGISTERED USERS */

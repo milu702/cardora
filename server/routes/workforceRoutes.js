@@ -24,6 +24,7 @@ const {
   adminVerifyUser,
   submitComplaint,
   deleteWorker,
+  deleteTask,
 } = require('../controllers/workforceController');
 
 const {
@@ -92,6 +93,7 @@ router.get('/connections/requests', protect, getConnectionRequests);
 router.post('/tasks', protect, createTask);
 router.get('/tasks', protect, getTasks);
 router.put('/tasks/:id/status', protect, updateTaskStatus);
+router.delete('/tasks/:id', protect, deleteTask);
 
 // Attendance GPS Routes
 router.post('/attendance/check-in', protect, checkInAttendance);

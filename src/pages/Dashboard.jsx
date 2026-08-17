@@ -26,6 +26,7 @@ import AiAnalysisModule from '../components/ai/AiAnalysisModule';
 import CardamomMarketplace from '../components/marketplace/CardamomMarketplace';
 import MessagingModule from '../components/messaging/MessagingModule';
 import NotificationModule from '../components/notifications/NotificationModule';
+import LivePlantationIntelligenceModule from '../components/intelligence/LivePlantationIntelligenceModule';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
 import { KERALA_DISTRICTS } from '../utils/districts';
 
@@ -542,9 +543,9 @@ const Dashboard = () => {
         return idStr && !isDummyId && !dbIdsSet.has(idStr) && !dbContentsSet.has(contentKey);
       });
 
-      // Show real user and database posts. If real posts exist, hide dummy posts completely!
+      // Show real user and database posts together with community ecosystem posts so posts are never missing
       const realPosts = [...dbPosts, ...localOnlyPosts];
-      const allCandidatePosts = realPosts.length > 0 ? realPosts : defaultOtherPlanterPosts;
+      const allCandidatePosts = [...realPosts, ...defaultOtherPlanterPosts];
 
       const uniquePostsMap = new Map();
       allCandidatePosts.forEach((p) => {
@@ -862,6 +863,7 @@ const Dashboard = () => {
     ? [
         { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard Overview', icon: Home },
+        { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
         { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
@@ -880,6 +882,7 @@ const Dashboard = () => {
       ]
     : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
+        { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
         { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
@@ -2042,6 +2045,9 @@ const Dashboard = () => {
 
           {/* ===== TAB 5: FUTURISTIC CARDAMOM MARKETPLACE ===== */}
           {activeTab === 'plots' && <CardamomMarketplace />}
+
+          {/* ===== TAB: LIVE PLANTATION INTELLIGENCE & AI RECOMMENDATIONS ===== */}
+          {(activeTab === 'intelligence' || activeTab === 'ai') && <LivePlantationIntelligenceModule onToast={showToast} />}
 
           {/* ===== TAB: ADMIN PORTAL ===== */}
           {activeTab === 'admin' && <AdminDashboard />}

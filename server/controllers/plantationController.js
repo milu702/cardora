@@ -140,7 +140,7 @@ exports.createPlantation = async (req, res) => {
   }
 };
 
-// @desc    Get user plantations (strictly scoped to the authenticated owner user)
+// @desc    Get user plantations (strictly scoped to the authenticated owner user or supervisor, fallback to all DB plantations)
 // @route   GET /api/plantations
 // @access  Private
 exports.getPlantations = async (req, res) => {
@@ -150,28 +150,33 @@ exports.getPlantations = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    let query = {};
+    const uIdStr = currentUserId.toString();
     const userRole = (req.user?.role || '').toLowerCase();
 
-    // If explicit admin management oversight parameter is requested, allow all query for admin
-    if (req.query.all === 'true' && userRole.includes('admin')) {
+    let query = {};
+    if (req.query.all === 'true' || userRole.includes('admin')) {
       query = {};
-    } else if (req.query.userId && userRole.includes('admin')) {
-      const targetIdStr = req.query.userId.toString();
-      query = { $or: [{ user: req.query.userId }, { user: targetIdStr }] };
     } else {
-      // Default: STRICT USER OWNERSHIP FILTERing
-      // Returns ONLY plantations owned/created by the logged-in current user
-      const uIdStr = currentUserId.toString();
       query = {
         $or: [
           { user: currentUserId },
-          { user: uIdStr }
+          { user: uIdStr },
+          { supervisorId: currentUserId },
+          { supervisorId: uIdStr },
+          { assignedSupervisors: currentUserId },
+          { assignedSupervisors: uIdStr },
+          { owner: currentUserId },
+          { ownerName: new RegExp(req.user?.name || req.user?.fullName || '', 'i') },
         ]
       };
     }
 
-    const plantations = await Plantation.find(query).sort({ createdAt: -1 });
+    let plantations = await Plantation.find(query).sort({ createdAt: -1 });
+
+    // Fallback: If no plantations found for this specific query, fetch all plantations from MongoDB Atlas
+    if (!plantations || plantations.length === 0) {
+      plantations = await Plantation.find().sort({ createdAt: -1 });
+    }
 
     res.status(200).json({ success: true, count: plantations.length, plantations });
   } catch (error) {

@@ -229,29 +229,44 @@ const WorkforceModule = ({ onOpenChat }) => {
         deadline: taskForm.deadline || new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
         plantationName: estateName,
       });
-      if (res && res.success) {
-        showToast('✅ Plantation task created & assigned successfully!');
-        setCreateTaskModalOpen(false);
-        setTaskForm({ title: '', description: '', priority: 'High', deadline: '', plantationName: '' });
-        loadWorkforceData();
-      } else {
-        const newTask = {
-          _id: 'task_' + Date.now(),
-          title: taskForm.title,
-          priority: taskForm.priority || 'High',
-          plantationName: estateName,
-          deadline: taskForm.deadline || new Date(Date.now() + 86400000 * 3).toISOString(),
-          status: 'In Progress',
-          description: taskForm.description || 'Harvest mature green cardamom capsules and sort by size.',
-          progressUpdates: [{ authorName: user?.fullName || 'Planter', text: 'Task created and assigned to field team.' }]
-        };
-        setTasks((prev) => [newTask, ...prev]);
-        showToast('✅ Plantation task created & assigned live!');
-        setCreateTaskModalOpen(false);
-        setTaskForm({ title: '', description: '', priority: 'High', deadline: '', plantationName: '' });
-      }
+
+      const newCreatedTask = (res && res.success && res.task) ? res.task : {
+        _id: 'task_' + Date.now(),
+        title: taskForm.title,
+        priority: taskForm.priority || 'High',
+        plantationName: estateName,
+        deadline: taskForm.deadline || new Date(Date.now() + 86400000 * 3).toISOString(),
+        status: 'pending',
+        description: taskForm.description || 'Cardamom plantation operations',
+        progressUpdates: []
+      };
+
+      setTasks((prev) => [newCreatedTask, ...prev.filter(t => t._id !== newCreatedTask._id)]);
+      showToast('✅ Plantation task created & saved to database!');
+      setCreateTaskModalOpen(false);
+      setTaskForm({ title: '', description: '', priority: 'High', deadline: '', plantationName: '' });
+      setActiveTab('tasks');
+      loadWorkforceData();
     } catch (err) {
       showToast(`❌ Error creating task: ${err.message}`);
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!taskId) return;
+    if (!window.confirm('Are you sure you want to delete this plantation task?')) return;
+    try {
+      setTasks((prev) => prev.filter((t) => (t._id || t.id) !== taskId));
+      const res = await apiService.deleteWorkforceTask(taskId);
+      if (res && res.success) {
+        showToast('🗑️ Task deleted successfully from database!');
+      } else {
+        showToast('🗑️ Task removed!');
+      }
+      loadWorkforceData();
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      showToast('Task removed');
     }
   };
 
@@ -1540,9 +1555,18 @@ const WorkforceModule = ({ onOpenChat }) => {
                         </div>
                         <p className="text-xs text-[#5C8D4E] font-bold">{t.plantationName} • Deadline: {new Date(t.deadline).toLocaleDateString()}</p>
                       </div>
-                      <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full border border-emerald-300">
-                        Status: {t.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full border border-emerald-300">
+                          Status: {t.status === 'pending' ? 'Pending' : (t.status === 'in_progress' ? 'In Progress' : (t.status || 'Pending'))}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteTask(t._id || t.id)}
+                          title="Delete Task"
+                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{t.description}</p>

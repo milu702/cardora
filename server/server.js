@@ -95,6 +95,7 @@ app.use('/api/weather', require('./routes/weatherRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/workforce', require('./routes/workforceRoutes'));
+app.use('/api/plantation-intelligence', require('./routes/plantationIntelligenceRoutes'));
 
 // 404 & Error Handlers
 app.use(notFound);

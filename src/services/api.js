@@ -505,6 +505,129 @@ export const apiService = {
     }
   },
 
+  // ===== WORKFORCE TASKS APIs =====
+  getWorkTasks: async () => {
+    try {
+      const res = await api.get('/workforce/tasks');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getWorkforceTasks: async () => {
+    try {
+      const res = await api.get('/workforce/tasks');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  createWorkforceTask: async (payload) => {
+    try {
+      const res = await api.post('/workforce/tasks', payload);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  updateWorkforceTaskStatus: async (taskId, payload) => {
+    try {
+      const res = await api.put(`/workforce/tasks/${taskId}/status`, payload);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  deleteWorkforceTask: async (taskId) => {
+    try {
+      const res = await api.delete(`/workforce/tasks/${taskId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  // ===== 7.5 LIVE PLANTATION INTELLIGENCE APIs =====
+  getIntelligenceCurrent: async (plantationId) => {
+    try {
+      const res = await api.get(`/plantation-intelligence/${plantationId}/current`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to fetch current plantation intelligence' };
+    }
+  },
+
+  analyzeIntelligence: async (plantationId) => {
+    try {
+      const res = await api.post(`/plantation-intelligence/${plantationId}/analyze`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to analyze plantation intelligence' };
+    }
+  },
+
+  getIntelligenceHistory: async (plantationId) => {
+    try {
+      const res = await api.get(`/plantation-intelligence/${plantationId}/history`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getIntelligenceReportById: async (plantationId, analysisId) => {
+    try {
+      const res = await api.get(`/plantation-intelligence/${plantationId}/report/${analysisId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  downloadIntelligencePdf: async (plantationId, analysisId) => {
+    try {
+      const token = localStorage.getItem('cardora_token');
+      const response = await axios({
+        url: `${API_BASE_URL}/plantation-intelligence/${plantationId}/pdf/${analysisId}`,
+        method: 'GET',
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Cardora_Intelligence_Report_${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: 'PDF download failed' };
+    }
+  },
+
+  submitIntelligenceToAdmin: async (plantationId, analysisId) => {
+    try {
+      const res = await api.post(`/plantation-intelligence/${plantationId}/submit/${analysisId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to submit intelligence report to admin' };
+    }
+  },
+
+  getAdminIntelligenceOverview: async () => {
+    try {
+      const res = await api.get('/admin/plantation-intelligence');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
   getAllPlantationsAdmin: async () => {
     try {
       const res = await api.get('/admin/plantations/recent');
@@ -929,24 +1052,6 @@ export const apiService = {
   getConnectionRequests: async () => {
     try {
       const res = await api.get('/workforce/connections/requests');
-      return res.data;
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  },
-
-  createWorkTask: async (data) => {
-    try {
-      const res = await api.post('/workforce/tasks', data);
-      return res.data;
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  },
-
-  getWorkTasks: async () => {
-    try {
-      const res = await api.get('/workforce/tasks');
       return res.data;
     } catch (error) {
       return { success: false, message: error.message };

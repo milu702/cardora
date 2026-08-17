@@ -66,6 +66,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
     : [
         ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
         { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
+        { name: 'Live Intelligence', href: '/dashboard?tab=intelligence', icon: Sparkles },
         { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
         { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },
         { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },

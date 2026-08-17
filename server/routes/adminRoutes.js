@@ -58,5 +58,8 @@ router.delete('/users/:userId', protect, adminOnly, deleteUser);
 router.delete('/posts/:postId', protect, adminOnly, deletePostAdmin);
 router.delete('/listings/:listingId', protect, adminOnly, deleteListingAdmin);
 
+const { getAdminIntelligenceOverview } = require('../controllers/plantationIntelligenceController');
+router.get('/plantation-intelligence', protect, adminOnly, getAdminIntelligenceOverview);
+
 module.exports = router;
 
