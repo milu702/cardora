@@ -16,6 +16,11 @@ const calculateHealthScore = (moisture = 72, ph = 6.2, district = '') => {
 // @access  Private
 exports.createPlantation = async (req, res) => {
   try {
+    const userId = req.user ? (req.user._id || req.user.id) : null;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required to create a plantation' });
+    }
+
     const {
       name, ownerName, district, taluk, village, address, pincode,
       latitude, longitude, area, altitude, image, images,
@@ -28,7 +33,6 @@ exports.createPlantation = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Plantation name and area are required' });
     }
 
-    const userId = req.user ? (req.user._id || req.user.id || '650000000000000000000001') : '650000000000000000000001';
     const calculatedMoisture = Number(moisture) || 72;
     const calculatedPh = Number(ph) || 6.2;
     const selectedDistrict = district || 'Idukki, Kerala';
@@ -136,35 +140,37 @@ exports.createPlantation = async (req, res) => {
   }
 };
 
-// @desc    Get user plantations
-// @desc    Get user plantations
+// @desc    Get user plantations (strictly scoped to the authenticated owner user)
 // @route   GET /api/plantations
 // @access  Private
 exports.getPlantations = async (req, res) => {
   try {
-    const userId = req.user ? (req.user._id || req.user.id) : null;
-    const userRole = (req.user?.role || '').toLowerCase();
-    const ownerNameVal = req.user?.fullName || req.user?.name || '';
-    
-    let query = {};
-    if (userId) {
-      if (userRole.includes('admin')) {
-        query = {};
-      } else {
-        const uIdStr = userId.toString();
-        query = {
-          $or: [
-            { user: userId },
-            { user: uIdStr },
-            { supervisorId: userId },
-            { supervisorId: uIdStr },
-            { assignedSupervisors: userId },
-            { assignedSupervisors: uIdStr },
-            ...(ownerNameVal ? [{ ownerName: new RegExp(`^${ownerNameVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }] : [])
-          ]
-        };
-      }
+    const currentUserId = req.user ? (req.user._id || req.user.id) : null;
+    if (!currentUserId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
     }
+
+    let query = {};
+    const userRole = (req.user?.role || '').toLowerCase();
+
+    // If explicit admin management oversight parameter is requested, allow all query for admin
+    if (req.query.all === 'true' && userRole.includes('admin')) {
+      query = {};
+    } else if (req.query.userId && userRole.includes('admin')) {
+      const targetIdStr = req.query.userId.toString();
+      query = { $or: [{ user: req.query.userId }, { user: targetIdStr }] };
+    } else {
+      // Default: STRICT USER OWNERSHIP FILTERing
+      // Returns ONLY plantations owned/created by the logged-in current user
+      const uIdStr = currentUserId.toString();
+      query = {
+        $or: [
+          { user: currentUserId },
+          { user: uIdStr }
+        ]
+      };
+    }
+
     const plantations = await Plantation.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: plantations.length, plantations });

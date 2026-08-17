@@ -24,6 +24,7 @@ exports.getConversations = async (req, res) => {
     const conversationMap = new Map();
 
     messages.forEach((msg) => {
+      if (!msg.sender || !msg.sender._id || !msg.recipient || !msg.recipient._id) return;
       const isSender = msg.sender._id.toString() === currentUserId.toString();
       const partner = isSender ? msg.recipient : msg.sender;
       if (!partner || !partner._id) return;

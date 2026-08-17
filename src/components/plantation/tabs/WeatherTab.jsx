@@ -117,6 +117,41 @@ const WeatherTab = ({ plantation }) => {
         </span>
       </div>
 
+      {/* RUNNING MARQUEE WARNING TICKER FOR NON-IDUKKI / NON-WAYANAD DISTRICTS */}
+      {!isIdeal && (
+        <div className="w-full bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white p-3 rounded-[20px] shadow-lg border-2 border-red-400/80 overflow-hidden relative">
+          <style>{`
+            @keyframes runningTickerTab {
+              0% { transform: translateX(0%); }
+              100% { transform: translateX(-50%); }
+            }
+            .animate-running-ticker-tab {
+              display: inline-block;
+              white-space: nowrap;
+              animation: runningTickerTab 22s linear infinite;
+            }
+            .animate-running-ticker-tab:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 text-amber-300 font-black text-xs uppercase tracking-wider shrink-0 z-10 border border-amber-400/40 shadow-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-300 animate-bounce" />
+              <span>Region Alert</span>
+            </div>
+            
+            <div className="overflow-hidden whitespace-nowrap w-full">
+              <div className="animate-running-ticker-tab font-extrabold text-xs sm:text-sm tracking-wide text-amber-100">
+                ⚠️ UNSUITABLE CARDAMOM CULTIVATION REGION: {district.split(',')[0]} is NOT suitable for cardamom cultivation! Cardamom requires high-altitude (700m–1500m MSL) cool hill micro-climates found naturally EXCLUSIVELY in Idukki and Wayanad districts.
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                ⚠️ UNSUITABLE CARDAMOM CULTIVATION REGION: {district.split(',')[0]} is NOT suitable for cardamom cultivation! Cardamom requires high-altitude (700m–1500m MSL) cool hill micro-climates found naturally EXCLUSIVELY in Idukki and Wayanad districts.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* REGION SUITABILITY BANNER */}
       <div className={`p-4 rounded-2xl border text-xs font-medium ${
         isIdeal ? 'bg-[#DDEFD9]/60 border-[#5C8D4E]/40 text-[#1F5E3B]' : 'bg-amber-50 border-amber-300 text-amber-900'

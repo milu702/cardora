@@ -1,4 +1,6 @@
 const CommunityPost = require('../models/CommunityPost');
+const mongoose = require('mongoose');
+
 
 /**
  * @desc    Get all community posts
@@ -43,6 +45,7 @@ exports.createCommunityPost = async (req, res) => {
       authorName,
       username,
       authorAvatar,
+      userId: bodyUserId,
     } = req.body;
 
     const postContent = content || description || '';
@@ -50,13 +53,35 @@ exports.createCommunityPost = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Post text content is required.' });
     }
 
-    const userId = req.user ? req.user._id : '66bb00000000000000000001';
+    const User = require('../models/User');
+    let targetUserId = req.user ? req.user._id : bodyUserId;
+
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      if (username) {
+        const foundUser = await User.findOne({ username: new RegExp(`^${username.trim()}$`, 'i') });
+        if (foundUser) targetUserId = foundUser._id;
+      }
+    }
+
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      const anyUser = await User.findOne();
+      if (anyUser) {
+        targetUserId = anyUser._id;
+      } else {
+        targetUserId = new mongoose.Types.ObjectId('66bb00000000000000000001');
+      }
+    }
+
+    const finalAuthorName = authorName || (req.user ? (req.user.name || req.user.fullName) : 'Cardamom Planter');
+    const finalUsername = username || (req.user ? req.user.username : 'planter');
+    const finalAvatar = authorAvatar || (req.user ? (req.user.avatar || req.user.profileImage) : '');
 
     const newPost = await CommunityPost.create({
-      user: userId,
-      authorName: authorName || (req.user ? req.user.name : 'Cardamom Planter'),
-      username: username || (req.user ? req.user.username : 'planter'),
-      authorAvatar: authorAvatar || (req.user ? req.user.avatar : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
+      user: targetUserId,
+      userId: targetUserId.toString(),
+      authorName: finalAuthorName,
+      username: finalUsername,
+      authorAvatar: finalAvatar,
       content: postContent,
       description: postContent,
       category,
@@ -80,6 +105,7 @@ exports.createCommunityPost = async (req, res) => {
     });
   }
 };
+
 
 /**
  * @desc    Like / Unlike a community post
@@ -154,8 +180,6 @@ exports.commentOnCommunityPost = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to add comment.' });
   }
 };
-
-const mongoose = require('mongoose');
 
 exports.deleteCommunityPost = async (req, res) => {
   try {

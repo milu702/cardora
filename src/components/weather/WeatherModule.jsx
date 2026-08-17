@@ -146,6 +146,9 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
   const weatherAlerts = weatherData?.weatherAlerts || [];
   const forecast = weatherData?.forecast || { hourly: [], daily: [] };
 
+  const isCardamomDistrict = selectedDistrict.toLowerCase().includes('idukki') || selectedDistrict.toLowerCase().includes('wayanad');
+  const cleanDistrictName = selectedDistrict.split(',')[0].trim();
+
   return (
     <div className="space-y-6">
       
@@ -223,6 +226,45 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
           </motion.button>
         </div>
       </motion.div>
+
+      {/* ===== RUNNING MARQUEE WARNING TICKER FOR NON-IDUKKI / NON-WAYANAD DISTRICTS ===== */}
+      {!isCardamomDistrict && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full bg-gradient-to-r from-red-600 via-amber-600 to-red-600 text-white p-3 rounded-[20px] shadow-lg border-2 border-red-400/80 overflow-hidden relative"
+        >
+          <style>{`
+            @keyframes runningTicker {
+              0% { transform: translateX(0%); }
+              100% { transform: translateX(-50%); }
+            }
+            .animate-running-ticker {
+              display: inline-block;
+              white-space: nowrap;
+              animation: runningTicker 20s linear infinite;
+            }
+            .animate-running-ticker:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 text-amber-300 font-black text-xs uppercase tracking-wider shrink-0 z-10 border border-amber-400/40 shadow-sm">
+              <AlertTriangle className="w-4 h-4 text-amber-300 animate-bounce" />
+              <span>Region Alert</span>
+            </div>
+            
+            <div className="overflow-hidden whitespace-nowrap w-full">
+              <div className="animate-running-ticker font-extrabold text-xs sm:text-sm tracking-wide text-amber-100">
+                ⚠️ UNSUITABLE CARDAMOM CULTIVATION REGION: {cleanDistrictName} is NOT suitable for cardamom cultivation! Cardamom requires high-altitude (700m–1500m MSL) cool hill micro-climates found naturally EXCLUSIVELY in Idukki and Wayanad districts.
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                ⚠️ UNSUITABLE CARDAMOM CULTIVATION REGION: {cleanDistrictName} is NOT suitable for cardamom cultivation! Cardamom requires high-altitude (700m–1500m MSL) cool hill micro-climates found naturally EXCLUSIVELY in Idukki and Wayanad districts.
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* ===== ALL DISTRICTS WEATHER TELEMETRY GRID ===== */}
       <AnimatePresence>

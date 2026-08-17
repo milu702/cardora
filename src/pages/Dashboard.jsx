@@ -216,24 +216,12 @@ const Dashboard = () => {
 
   const fetchPlantations = async () => {
     try {
-      const saved = localStorage.getItem('cardora_uploaded_plantations');
-      let localItems = [];
-      if (saved) {
-        try { localItems = JSON.parse(saved) || []; } catch (e) {}
-      }
-
       const res = await apiService.getPlantations();
       const apiItems = (res && res.success && Array.isArray(res.plantations)) ? res.plantations : [];
 
-      const map = new Map();
-      [...localItems, ...apiItems].forEach((p) => {
-        const id = p._id || p.id;
-        if (id && !map.has(id)) map.set(id, p);
-      });
-
-      const allPlantations = Array.from(map.values());
-      const formatted = allPlantations.map((p) => ({
+      const formatted = apiItems.map((p) => ({
         id: p._id || p.id,
+        _id: p._id || p.id,
         name: p.name,
         location: p.district || p.location || 'Idukki, Kerala',
         area: p.area,
@@ -245,7 +233,9 @@ const Dashboard = () => {
         history: (p.history && Array.isArray(p.history) && p.history[0]?.title) || 'Plantation registered',
       }));
       setPlantations(formatted);
-    } catch (e) {}
+    } catch (e) {
+      setPlantations([]);
+    }
   };
 
   useEffect(() => {
@@ -374,7 +364,12 @@ const Dashboard = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((p) => {
+            const idStr = (p._id || p.id || '').toString();
+            return idStr && !idStr.startsWith('community-10') && !idStr.startsWith('dummy') && !idStr.startsWith('post_');
+          });
+        }
       } catch (e) {}
     }
     return [];
@@ -488,20 +483,20 @@ const Dashboard = () => {
           const postComments = Array.isArray(p.comments) ? p.comments.map((c) => ({
             id: c._id || c.id || Date.now(),
             author: c.authorName || c.user?.name || 'Planter',
-            avatar: c.authorAvatar || c.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            avatar: c.authorAvatar || c.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || 'P')}&background=1F5E3B&color=ffffff`,
             text: c.text || c.content || '',
             time: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
             replies: Array.isArray(c.replies) ? c.replies.map((r) => ({
               id: r._id || r.id || Date.now(),
               author: r.authorName || 'Planter',
-              avatar: r.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+              avatar: r.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.authorName || 'P')}&background=1F5E3B&color=ffffff`,
               text: r.text || '',
               isPostOwner: Boolean(r.isPostOwner || r.authorName === p.authorName),
               time: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recently',
             })) : [],
           })) : [];
 
-          const pId = p._id || p.id;
+          const pId = (p._id || p.id).toString();
           if (postComments.length > 0) {
             initialComments[pId] = postComments;
           }
@@ -516,10 +511,11 @@ const Dashboard = () => {
 
           return {
             id: pId,
+            _id: pId,
             author: authorName,
             username: authorUsername,
             avatar: authorAvatar,
-            time: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jul 26, 2026',
+            time: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
             category: p.category || 'Plantation Update',
             content: p.description || p.content || '',
             description: p.description || p.content || '',
@@ -533,13 +529,29 @@ const Dashboard = () => {
         setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
       
-      // Combine local user posts, MongoDB DB posts, and default ecosystem posts so NO POST IS EVER HIDDEN OR LOST!
-      const allCandidatePosts = [...localCommunityPosts, ...dbPosts, ...defaultOtherPlanterPosts];
+      // Filter out local posts that match DB posts by ID or by Content + Author
+      const dbIdsSet = new Set(dbPosts.map((p) => p.id.toString()));
+      const dbContentsSet = new Set(
+        dbPosts.map((p) => `${(p.author || '').toLowerCase()}_${(p.content || p.description || '').trim().toLowerCase()}`)
+      );
+
+      const localOnlyPosts = localCommunityPosts.filter((p) => {
+        const idStr = (p._id || p.id || '').toString();
+        const contentKey = `${(p.author || '').toLowerCase()}_${(p.content || p.description || '').trim().toLowerCase()}`;
+        const isDummyId = idStr.startsWith('community-10') || idStr.startsWith('dummy');
+        return idStr && !isDummyId && !dbIdsSet.has(idStr) && !dbContentsSet.has(contentKey);
+      });
+
+      // Show real user and database posts. If real posts exist, hide dummy posts completely!
+      const realPosts = [...dbPosts, ...localOnlyPosts];
+      const allCandidatePosts = realPosts.length > 0 ? realPosts : defaultOtherPlanterPosts;
+
       const uniquePostsMap = new Map();
       allCandidatePosts.forEach((p) => {
         const pId = (p._id || p.id || '').toString();
-        const pContent = (p.content || p.description || '').trim();
-        const key = pId || pContent;
+        const pContent = (p.content || p.description || '').trim().toLowerCase();
+        const pAuthor = (p.author || p.username || '').trim().toLowerCase();
+        const key = pId.startsWith('post_') ? `content_${pAuthor}_${pContent}` : pId;
         if (key && !uniquePostsMap.has(key)) {
           uniquePostsMap.set(key, p);
         }
@@ -547,11 +559,20 @@ const Dashboard = () => {
 
       setFeedPosts(Array.from(uniquePostsMap.values()));
     } catch (err) {
-      const allCandidatePosts = [...localCommunityPosts, ...defaultOtherPlanterPosts];
+      const realPosts = localCommunityPosts.filter((p) => {
+        const idStr = (p._id || p.id || '').toString();
+        return idStr && !idStr.startsWith('community-10') && !idStr.startsWith('dummy');
+      });
+      const allCandidatePosts = realPosts.length > 0 ? realPosts : defaultOtherPlanterPosts;
       const uniquePostsMap = new Map();
       allCandidatePosts.forEach((p) => {
-        const key = (p._id || p.id || p.content || '').toString();
-        if (key && !uniquePostsMap.has(key)) uniquePostsMap.set(key, p);
+        const pId = (p._id || p.id || '').toString();
+        const pContent = (p.content || p.description || '').trim().toLowerCase();
+        const pAuthor = (p.author || p.username || '').trim().toLowerCase();
+        const key = pId.startsWith('post_') ? `content_${pAuthor}_${pContent}` : pId;
+        if (key && !uniquePostsMap.has(key)) {
+          uniquePostsMap.set(key, p);
+        }
       });
       setFeedPosts(Array.from(uniquePostsMap.values()));
     }
@@ -586,7 +607,8 @@ const Dashboard = () => {
   React.useEffect(() => {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localCommunityPosts.length]);
+  }, [localCommunityPosts.length, activeTab]);
+
 
   const handleAddPost = async (e) => {
     if (e) e.preventDefault();
@@ -596,42 +618,75 @@ const Dashboard = () => {
     }
     setPostError('');
 
-    const createdId = `post_${Date.now()}`;
-    const newPostObj = {
-      id: createdId,
-      _id: createdId,
-      author: user?.fullName || user?.name || user?.username || 'Planter',
+    const postPayload = {
+      description: newPostText.trim(),
+      content: newPostText.trim(),
+      category: newPostCategory,
+      image: newPostImage.trim(),
+      images: newPostImage.trim() ? [newPostImage.trim()] : [],
+      authorName: user?.fullName || user?.name || user?.username || 'Planter',
       username: user?.username || 'planter',
-      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+      authorAvatar: user?.avatar || user?.profileImage || user?.profilePhoto || '',
+      userId: user?._id || user?.id,
+    };
+
+    const tempId = `post_${Date.now()}`;
+    const newPostObj = {
+      id: tempId,
+      _id: tempId,
+      author: postPayload.authorName,
+      username: postPayload.username,
+      avatar: postPayload.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(postPayload.authorName)}&background=1F5E3B&color=ffffff`,
       time: 'Just now',
       category: newPostCategory,
-      content: newPostText.trim(),
-      description: newPostText.trim(),
-      image: newPostImage.trim(),
+      content: postPayload.content,
+      description: postPayload.content,
+      image: postPayload.image,
       likes: 0,
       comments: 0,
       liked: false,
     };
 
-    setLocalCommunityPosts((prev) => [newPostObj, ...prev]);
-    setFeedPosts((prev) => [newPostObj, ...prev.filter((p) => p.id !== createdId)]);
+    // Optimistically prepend post to state, clearing out any duplicate text matching
+    setFeedPosts((prev) => {
+      const filtered = prev.filter((p) => p.id !== tempId && (p.content || p.description || '').trim() !== postPayload.content);
+      return [newPostObj, ...filtered];
+    });
+    setLocalCommunityPosts((prev) => [newPostObj, ...prev.filter((p) => (p.content || p.description || '').trim() !== postPayload.content)]);
     setNewPostText('');
     setNewPostImage('');
 
     showToast('🎉 Post created & published live to Community Feed!');
 
     try {
-      await apiService.createCommunityPost({
-        description: newPostText.trim(),
-        content: newPostText.trim(),
-        category: newPostCategory,
-        image: newPostImage.trim(),
-        images: newPostImage.trim() ? [newPostImage.trim()] : [],
-        authorName: user?.fullName || user?.name,
-        username: user?.username,
-        authorAvatar: user?.avatar,
-      });
-    } catch (err) {}
+      const res = await apiService.createCommunityPost(postPayload);
+      if (res && res.success && res.post) {
+        const savedPost = res.post;
+        const realId = (savedPost._id || savedPost.id).toString();
+        const formattedSavedPost = {
+          id: realId,
+          _id: realId,
+          author: savedPost.authorName || postPayload.authorName,
+          username: savedPost.username || postPayload.username,
+          avatar: savedPost.authorAvatar || postPayload.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(postPayload.authorName)}&background=1F5E3B&color=ffffff`,
+          time: 'Just now',
+          category: savedPost.category || newPostCategory,
+          content: savedPost.content || postPayload.content,
+          description: savedPost.description || postPayload.content,
+          image: savedPost.image || postPayload.image,
+          likes: 0,
+          comments: 0,
+          liked: false,
+        };
+
+        setFeedPosts((prev) => prev.map((p) => (p.id === tempId ? formattedSavedPost : p)));
+        setLocalCommunityPosts((prev) => [formattedSavedPost, ...prev.filter((p) => (p.id || p._id) !== tempId)]);
+      }
+    } catch (err) {
+      console.error('Error creating community post:', err);
+    } finally {
+      fetchPosts();
+    }
   };
 
   // Interactive Comments State
@@ -799,55 +854,7 @@ const Dashboard = () => {
     { id: 2, title: 'Shade-Grown High Yield Cardamom Garden', location: 'Kattappana, Idukki', area: '8 Acres', price: '₹4,00,000 / year', roi: '26%', health: 96, image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=600', owner: 'Devika Raj' }
   ]);
 
-  // ===== 4. AI RECOMMENDATION STATE & VALIDATION =====
-  const [aiInputs, setAiInputs] = useState({ moisture: '', ph: '', n: '', p: '', k: '' });
-  const [aiErrors, setAiErrors] = useState({});
-  const [aiResult, setAiResult] = useState(null);
 
-  const validateAiInputs = () => {
-    const errs = {};
-    const moisture = Number(aiInputs.moisture);
-    const ph = Number(aiInputs.ph);
-    const n = Number(aiInputs.n);
-    const p = Number(aiInputs.p);
-    const k = Number(aiInputs.k);
-
-    if (isNaN(moisture) || moisture < 0 || moisture > 100) {
-      errs.moisture = 'Moisture must be 0–100%.';
-    }
-    if (isNaN(ph) || ph < 3 || ph > 10) {
-      errs.ph = 'pH must be 3.0–10.0.';
-    }
-    if (isNaN(n) || n < 0 || n > 500) {
-      errs.n = 'N value must be 0–500.';
-    }
-    if (isNaN(p) || p < 0 || p > 500) {
-      errs.p = 'P value must be 0–500.';
-    }
-    if (isNaN(k) || k < 0 || k > 500) {
-      errs.k = 'K value must be 0–500.';
-    }
-
-    setAiErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleRunAI = () => {
-    if (!validateAiInputs()) return;
-
-    const moistureVal = Number(aiInputs.moisture);
-    const phVal = Number(aiInputs.ph);
-    const calcHealth = Math.min(100, Math.max(50, Math.round((moistureVal / 75) * 50 + (phVal / 6.5) * 50)));
-
-    setAiResult({
-      healthScore: calcHealth,
-      yieldPrediction: `${Math.round(calcHealth * 4.5)} kg / acre`,
-      diseaseRisk: moistureVal > 80 ? 'Moderate (High Humidity Rot Risk)' : 'Low Risk',
-      fertilizerAdvice: phVal < 5.8 ? 'Apply Agricultural Lime to raise soil pH to 6.2.' : 'Optimal NPK balanced.',
-      irrigationAdvice: moistureVal < 60 ? 'Increase drip irrigation duration.' : 'Maintain current 48-hr pulse.',
-    });
-    showToast('AI Plantation Analysis complete!');
-  };
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -1260,91 +1267,114 @@ const Dashboard = () => {
                 
                 {/* LEFT COLUMN: MY PLANTATION SUMMARY CARD */}
                 <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400">
-                        <Leaf className="w-5 h-5" />
+                  {plantations.length === 0 ? (
+                    <div className="py-8 px-4 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center mx-auto">
+                        <Leaf className="w-6 h-6" />
                       </div>
-                      <div>
-                        <h3 className="text-base font-black text-slate-900 dark:text-white">
-                          {lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation Summary'}
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          {plantations[0]?.name || 'Vandanmedu Green Estate'} • {plantations[0]?.location || 'Idukki, Kerala'}
-                        </p>
+                      <h4 className="text-base font-black text-slate-900 dark:text-white font-poppins">
+                        No Plantations Added Yet
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto font-medium">
+                        You have not registered any cardamom plantations under your account. Register your estate to view real-time micro-climate telemetry, soil pH, and yield predictions.
+                      </p>
+                      <button
+                        onClick={() => setNewPlantationModalOpen(true)}
+                        className="mt-2 px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black transition-all shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Plantation</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400">
+                            <Leaf className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-black text-slate-900 dark:text-white">
+                              {lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation Summary'}
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                              {plantations[0]?.name} • {plantations[0]?.location}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab('plantations')}
+                          className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                        >
+                          <span>{lang === 'ml' ? 'തോട്ടം കാണുക' : 'View Plantation'}</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('plantations')}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1"
-                    >
-                      <span>{lang === 'ml' ? 'തോട്ടം കാണുക' : 'View Plantation'}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
 
-                  {/* Metric Badges Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                        {lang === 'ml' ? 'വിസ്തീർണ്ണം' : 'Plot Area'}
-                      </span>
-                      <span className="text-sm font-black text-slate-900 dark:text-white">
-                        {plantations[0]?.area || 12} Acres
-                      </span>
-                    </div>
+                      {/* Metric Badges Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                            {lang === 'ml' ? 'വിസ്തീർണ്ണം' : 'Plot Area'}
+                          </span>
+                          <span className="text-sm font-black text-slate-900 dark:text-white">
+                            {plantations[0]?.area} Acres
+                          </span>
+                        </div>
 
-                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                        {lang === 'ml' ? 'മണ്ണിന്റെ അവസ്ഥ' : 'Soil Condition'}
-                      </span>
-                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
-                        pH {plantations[0]?.ph || 6.2} (Balanced)
-                      </span>
-                    </div>
+                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                            {lang === 'ml' ? 'മണ്ണിന്റെ അവസ്ഥ' : 'Soil Condition'}
+                          </span>
+                          <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                            pH {plantations[0]?.ph || 6.2} (Balanced)
+                          </span>
+                        </div>
 
-                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                        {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Current Weather'}
-                      </span>
-                      <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                        28°C Sunny
-                      </span>
-                    </div>
+                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                            {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Current Weather'}
+                          </span>
+                          <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                            28°C Sunny
+                          </span>
+                        </div>
 
-                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                        {lang === 'ml' ? 'ഈർപ്പം തലം' : 'Moisture Level'}
-                      </span>
-                      <span className="text-sm font-black text-blue-600 dark:text-blue-400">
-                        {plantations[0]?.moisture || 72}% Optimal
-                      </span>
-                    </div>
+                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                            {lang === 'ml' ? 'ഈർപ്പം തലം' : 'Moisture Level'}
+                          </span>
+                          <span className="text-sm font-black text-blue-600 dark:text-blue-400">
+                            {plantations[0]?.moisture || 72}% Optimal
+                          </span>
+                        </div>
 
-                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                        {lang === 'ml' ? 'ആരോഗ്യ സ്കോർ' : 'Health Score'}
-                      </span>
-                      <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
-                        {plantations[0]?.health || 94}% Healthy
-                      </span>
-                    </div>
+                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                            {lang === 'ml' ? 'ആരോഗ്യ സ്കോർ' : 'Health Score'}
+                          </span>
+                          <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                            {plantations[0]?.health || 94}% Healthy
+                          </span>
+                        </div>
 
-                    <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                        {lang === 'ml' ? 'അവസാന പ്രവർത്തനം' : 'Recent Activity'}
-                      </span>
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
-                        Irrigated 2 days ago
-                      </span>
-                    </div>
-                  </div>
+                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                            {lang === 'ml' ? 'അവസാന പ്രവർത്തനം' : 'Recent Activity'}
+                          </span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                            Irrigated 2 days ago
+                          </span>
+                        </div>
+                      </div>
 
-                  {plantations.length > 1 && (
-                    <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                      <span>Registered Estates: <strong>{plantations.length} Plots</strong></span>
-                      <button onClick={() => setActiveTab('plantations')} className="text-[#1F5E3B] dark:text-emerald-400 font-bold hover:underline">Manage All Plots →</button>
-                    </div>
+                      {plantations.length > 1 && (
+                        <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                          <span>Registered Estates: <strong>{plantations.length} Plots</strong></span>
+                          <button onClick={() => setActiveTab('plantations')} className="text-[#1F5E3B] dark:text-emerald-400 font-bold hover:underline">Manage All Plots →</button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -1607,7 +1637,19 @@ const Dashboard = () => {
           {activeTab === 'community' && (
             <div className="space-y-6 max-w-2xl mx-auto">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h2 className="text-2xl font-black text-[#17331F] font-poppins">Planters Community Feed</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-black text-[#17331F] font-poppins">Planters Community Feed</h2>
+                  <button
+                    onClick={() => {
+                      fetchPosts();
+                      showToast('🔄 Fetched latest community posts directly from MongoDB DB!');
+                    }}
+                    className="px-3 py-1.5 rounded-full bg-[#DDEFD9] hover:bg-[#1F5E3B] hover:text-white text-[#1F5E3B] text-xs font-extrabold transition-all border border-[#5C8D4E]/30 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Fetch live posts directly from MongoDB Database"
+                  >
+                    <span>🔄 Refresh DB</span>
+                  </button>
+                </div>
                 {communitySearchQuery && (
                   <span className="px-3 py-1 rounded-full bg-[#DDEFD9] text-[#1F5E3B] text-xs font-bold w-fit">
                     Filtered by: "{communitySearchQuery}"

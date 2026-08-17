@@ -5,36 +5,38 @@ let activeHost = '127.0.0.1';
 let activeDB = 'cardora';
 
 const connectDB = async () => {
+  const localUri = process.env.LOCAL_MONGODB_URI || 'mongodb://127.0.0.1:27017/cardora';
   const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb+srv://cardora:cardora2026@cluster0.mongodb.net/cardora?retryWrites=true&w=majority';
 
-  // 1. Try MongoDB Atlas Connection first
+  // 1. Try Local MongoDB instance first (contains user posts & database records)
+  try {
+    const conn = await mongoose.connect(localUri, {
+      family: 4,
+      serverSelectionTimeoutMS: 3000,
+    });
+    isConnected = true;
+    activeHost = conn.connection.host;
+    activeDB = conn.connection.name;
+    console.log(`✅ Local MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
+    await seedAdminUser();
+    return;
+  } catch (localErr) {
+    console.warn(`⚠️ Local MongoDB Note (${localErr.message}). Trying MongoDB Atlas...`);
+  }
+
+  // 2. Fallback to MongoDB Atlas instance
   try {
     const conn = await mongoose.connect(mongoUri, {
+      family: 4,
       serverSelectionTimeoutMS: 5000,
     });
     isConnected = true;
     activeHost = conn.connection.host;
     activeDB = conn.connection.name;
-    console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
+    console.log(`✅ Atlas MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
     await seedAdminUser();
-    return;
   } catch (atlasErr) {
-    console.warn(`⚠️ Atlas Connection Note (${atlasErr.message}). Connecting to Local MongoDB instance...`);
-  }
-
-  // 2. Fallback to Local MongoDB instance
-  try {
-    const localUri = 'mongodb://127.0.0.1:27017/cardora';
-    const conn = await mongoose.connect(localUri, {
-      serverSelectionTimeoutMS: 4000,
-    });
-    isConnected = true;
-    activeHost = conn.connection.host;
-    activeDB = conn.connection.name;
-    console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host} (database: ${conn.connection.name})`);
-    await seedAdminUser();
-  } catch (localErr) {
-    console.error(`❌ Database Connection Error: ${localErr.message}`);
+    console.error(`❌ Database Connection Error: ${atlasErr.message}`);
     isConnected = false;
   }
 };

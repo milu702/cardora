@@ -64,34 +64,47 @@ const CardamomMarketplace = () => {
       try {
         const res = await apiService.getMarketplaceListings();
         if (res && res.success && Array.isArray(res.listings)) {
-          const mapped = res.listings.map((item) => ({
-            id: item._id || item.id,
-            _id: item._id,
-            title: item.title,
-            location: item.location,
-            district: item.location ? item.location.split(',').pop().trim() : 'Idukki',
-            area: item.area,
-            price: item.price,
-            priceRaw: Number(item.price ? item.price.replace(/[^0-9]/g, '') : 10000000),
-            altitude: item.altitude || '1,100m',
-            yield: item.yield || '420 kg / acre',
-            roi: item.roi || '24% Annual',
-            trustScore: '99.4%',
-            healthScore: `${item.healthScore || 94}%`,
-            soilPh: '6.2 (Optimal)',
-            plants: item.plants || 'Njallani Plants',
-            owner: item.ownerName || 'Verified Planter',
-            ownerEmail: item.ownerEmail,
-            ownerPhone: item.ownerPhone,
-            ownerAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.ownerName || 'Planter')}&background=1B5E20&color=ffffff`,
-            image: item.images && item.images.length > 0 ? item.images[0] : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
-            verified: true,
-            organic: true,
-            roadAccess: true,
-            listingType: item.type || 'sale',
-            description: item.description,
-            userId: item.user?._id || item.user,
-          }));
+          const mapped = res.listings.map((item) => {
+            const userObj = typeof item.user === 'object' && item.user ? item.user : null;
+            const ownerName = item.ownerName || userObj?.name || userObj?.username || 'Verified Planter';
+            const ownerEmail = item.ownerEmail || userObj?.email || '';
+            const ownerPhone = item.ownerPhone || userObj?.phone || '+91 98470 54321';
+            const ownerAvatar = userObj?.avatar || userObj?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(ownerName)}&background=1B5E20&color=ffffff`;
+
+            let locStr = item.location || 'Idukki, Kerala';
+            let districtStr = 'Idukki';
+            if (locStr.toLowerCase().includes('wayanad')) districtStr = 'Wayanad';
+            else if (locStr.toLowerCase().includes('idukki') || locStr.toLowerCase().includes('kattappana') || locStr.toLowerCase().includes('kattapana') || locStr.toLowerCase().includes('vandanmedu')) districtStr = 'Idukki';
+
+            return {
+              id: item._id || item.id,
+              _id: item._id,
+              title: item.title,
+              location: locStr,
+              district: districtStr,
+              area: item.area || '5.0 Acres',
+              price: item.price || '₹1.50 Cr',
+              priceRaw: Number(item.price ? item.price.replace(/[^0-9]/g, '') : 10000000),
+              altitude: item.altitude || '1,100m',
+              yield: item.yield || '420 kg / acre',
+              roi: item.roi || '24% Annual',
+              trustScore: '99.4%',
+              healthScore: typeof item.healthScore === 'number' ? `${item.healthScore}%` : (item.healthScore || '94%'),
+              soilPh: '6.2 (Optimal)',
+              plants: item.plants || 'Njallani Plants',
+              owner: ownerName,
+              ownerEmail: ownerEmail,
+              ownerPhone: ownerPhone,
+              ownerAvatar: ownerAvatar,
+              image: (item.images && item.images.length > 0 && item.images[0]) ? item.images[0] : (item.image || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'),
+              verified: true,
+              organic: true,
+              roadAccess: true,
+              listingType: item.type || item.listingType || 'sale',
+              description: item.description || item.title,
+              userId: userObj?._id || item.user,
+            };
+          });
           setDbPlantations(mapped);
         }
       } catch (err) {

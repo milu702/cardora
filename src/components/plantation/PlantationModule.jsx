@@ -32,27 +32,16 @@ const PlantationModule = ({ onToast }) => {
   const [areaFilter, setAreaFilter] = useState(''); // '' | 'small' | 'medium' | 'large'
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'oldest' | 'health_desc' | 'health_asc' | 'area_desc'
 
-  // Fetch plantations from API & local storage
+  // Fetch user-specific plantations strictly from API
   const fetchPlantations = async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('cardora_uploaded_plantations');
-      let localItems = [];
-      if (saved) {
-        try { localItems = JSON.parse(saved) || []; } catch (e) {}
-      }
-
       const res = await apiService.getPlantations();
       const apiItems = (res && res.success && Array.isArray(res.plantations)) ? res.plantations : [];
-
-      const map = new Map();
-      [...localItems, ...apiItems].forEach((p) => {
-        const id = p._id || p.id;
-        if (id && !map.has(id)) map.set(id, p);
-      });
-      setPlantations(Array.from(map.values()));
+      setPlantations(apiItems);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching user plantations:', err);
+      setPlantations([]);
     } finally {
       setLoading(false);
     }
@@ -62,53 +51,17 @@ const PlantationModule = ({ onToast }) => {
     fetchPlantations();
   }, []);
 
-
   // Save new or edited plantation
   const handleSavePlantation = async (data) => {
     try {
       if (editingPlantation) {
         const id = editingPlantation._id || editingPlantation.id;
         const res = await apiService.updatePlantation(id, data);
-        const updatedP = (res && res.plantation) ? res.plantation : { ...editingPlantation, ...data };
-        setPlantations((prev) => {
-          const updatedList = prev.map((p) => ((p._id || p.id) === id ? updatedP : p));
-          localStorage.setItem('cardora_uploaded_plantations', JSON.stringify(updatedList));
-          return updatedList;
-        });
+        await fetchPlantations();
         if (onToast) onToast('Plantation updated successfully');
       } else {
         const res = await apiService.createPlantation(data);
-        const newP = (res && res.plantation) ? res.plantation : {
-          _id: `pl_${Date.now()}`,
-          id: `pl_${Date.now()}`,
-          name: data.name || 'Cardamom Plantation',
-          ownerName: data.ownerName || 'Cardora Planter',
-          district: data.district || 'Idukki, Kerala',
-          village: data.village || 'Vandanmedu',
-          taluk: data.taluk || 'Udumbanchola',
-          area: Number(data.area) || 5.0,
-          altitude: Number(data.altitude) || 950,
-          variety: data.variety || 'Njallani',
-          image: data.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80',
-          healthScore: 95,
-          soil: {
-            soilType: data.soilType || 'Loamy Forest Soil',
-            ph: Number(data.ph) || 6.2,
-            moisture: Number(data.moisture) || 72,
-            npk: { n: Number(data.nitrogen) || 140, p: Number(data.phosphorus) || 45, k: Number(data.potassium) || 180 },
-          },
-          workers: { presentToday: 8, totalWorkers: 10 },
-          aiStatus: 'Optimal Drip Irrigation Active',
-          weatherStatus: 'Humid Mountain Mist',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        setPlantations((prev) => {
-          const updatedList = [newP, ...prev.filter((p) => (p._id || p.id) !== (newP._id || newP.id))];
-          localStorage.setItem('cardora_uploaded_plantations', JSON.stringify(updatedList));
-          return updatedList;
-        });
+        await fetchPlantations();
         setSearchQuery('');
         setSelectedDistrict('');
         setSelectedVariety('');
@@ -117,6 +70,7 @@ const PlantationModule = ({ onToast }) => {
         if (onToast) onToast('New Plantation registered in CARDORA Ecosystem');
       }
     } catch (err) {
+      await fetchPlantations();
       if (onToast) onToast('Plantation saved');
     }
   };

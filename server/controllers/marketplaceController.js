@@ -100,22 +100,25 @@ exports.createListing = async (req, res) => {
   }
 };
 
-// @desc    Get all listings
+// @desc    Get all listings directly from MongoDB
 // @route   GET /api/marketplace/listings
 // @access  Public
 exports.getListings = async (req, res) => {
   try {
-    const { search, type, minPrice, maxPrice } = req.query;
-    let query = { status: 'active' };
+    const { search, type } = req.query;
+    let query = {};
 
     if (search) {
       query.title = { $regex: search, $options: 'i' };
     }
-    if (type) {
+    if (type && type !== 'all') {
       query.type = type;
     }
 
-    const listings = await MarketplaceListing.find(query).sort({ createdAt: -1 });
+    const listings = await MarketplaceListing.find(query)
+      .populate('user', 'name username email phone avatar profileImage')
+      .sort({ createdAt: -1 });
+
     res.status(200).json({ success: true, count: listings.length, listings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

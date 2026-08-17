@@ -179,6 +179,7 @@ const AdminDashboard = () => {
         contractorsRes,
         verifRes,
         plantationsRes,
+        marketplaceRes,
       ] = await Promise.all([
         apiService.getAlertsData(),
         apiService.getPlantationMapData(),
@@ -189,6 +190,7 @@ const AdminDashboard = () => {
         apiService.getContractors(),
         apiService.getWorkforceAdminVerifications(),
         apiService.getAllPlantationsAdmin(),
+        apiService.getMarketplaceListings(),
       ]);
 
       if (alertsRes && alertsRes.success && alertsRes.alerts) setAlerts(alertsRes.alerts);
@@ -196,7 +198,27 @@ const AdminDashboard = () => {
       if (analyticsRes && analyticsRes.success && analyticsRes.analytics) setAnalytics(analyticsRes.analytics);
       if (activitiesRes && activitiesRes.success && activitiesRes.activities) setActivities(activitiesRes.activities);
 
-      if (plantationsRes && plantationsRes.success && Array.isArray(plantationsRes.plantations) && plantationsRes.plantations.length > 0) {
+      if (marketplaceRes && marketplaceRes.success && Array.isArray(marketplaceRes.listings) && marketplaceRes.listings.length > 0) {
+        const mappedListings = marketplaceRes.listings.map((item) => {
+          const userObj = typeof item.user === 'object' && item.user ? item.user : null;
+          const ownerName = item.ownerName || userObj?.name || userObj?.username || 'Verified Planter';
+          return {
+            id: item._id || item.id,
+            _id: item._id,
+            title: item.title,
+            location: item.location || 'Idukki, Kerala',
+            district: item.location ? item.location.split(',').pop().trim() : 'Idukki',
+            area: item.area || '5.0 Acres',
+            price: item.price || '₹1.50 Cr',
+            owner: ownerName,
+            status: (item.status || 'VERIFIED').toUpperCase(),
+            listingType: item.type || item.listingType || 'sale',
+            pattayamVerified: true,
+            image: (item.images && item.images.length > 0 && item.images[0]) ? item.images[0] : (item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=800'),
+          };
+        });
+        setAdminMarketplaceListings(mappedListings);
+      } else if (plantationsRes && plantationsRes.success && Array.isArray(plantationsRes.plantations) && plantationsRes.plantations.length > 0) {
         setAdminMarketplaceListings(plantationsRes.plantations);
       }
 
