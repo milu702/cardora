@@ -113,6 +113,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/plantations', require('./routes/plantationRoutes'));
 app.use('/api/community', require('./routes/communityRoutes'));
 app.use('/api/marketplace', require('./routes/marketplaceRoutes'));
+app.use('/api/auctions', require('./routes/auctionRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/recommendations', require('./routes/recommendationRoutes'));
@@ -126,10 +127,46 @@ app.use('/api/plantation-intelligence', require('./routes/plantationIntelligence
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const http = require('http');
+const { Server } = require('socket.io');
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Cardora MERN Backend Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
+
+// Initialize Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  },
+});
+
+// Attach Socket.IO instance to app for access in controllers
+app.set('io', io);
+
+// Socket.IO Connection Handler
+io.on('connection', (socket) => {
+  console.log(`🔌 Socket connected: ${socket.id}`);
+
+  // Join auction room
+  socket.on('join_auction', (auctionId) => {
+    socket.join(`auction:${auctionId}`);
+    console.log(`👤 Socket ${socket.id} joined room auction:${auctionId}`);
+  });
+
+  // Leave auction room
+  socket.on('leave_auction', (auctionId) => {
+    socket.leave(`auction:${auctionId}`);
+    console.log(`👋 Socket ${socket.id} left room auction:${auctionId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`🚀 Cardora MERN Backend & Socket.IO Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
 
 server.on('error', (err) => {

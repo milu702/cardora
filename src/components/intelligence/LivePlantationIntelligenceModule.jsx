@@ -31,7 +31,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 
 const LivePlantationIntelligenceModule = ({ onToast }) => {
-  const { user, darkMode } = useAuth();
+  const { user } = useAuth();
 
   // Plantations list for selector
   const [userPlantations, setUserPlantations] = useState([]);
@@ -48,7 +48,6 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
   // History State & Modal
   const [historyList, setHistoryList] = useState([]);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const [selectedHistoryReport, setSelectedHistoryReport] = useState(null);
 
   // Soil Input Modal State
   const [soilModalOpen, setSoilModalOpen] = useState(false);

@@ -19,7 +19,8 @@ import {
   Sun,
   CloudSun,
   MessageSquare,
-  ShieldCheck
+  ShieldCheck,
+  Gavel
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
@@ -66,6 +67,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
     : [
         ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
         { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
+        { name: 'Live Auctions', href: '/dashboard?tab=auctions', icon: Gavel },
         { name: 'Live Intelligence', href: '/dashboard?tab=intelligence', icon: Sparkles },
         { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
         { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },

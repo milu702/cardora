@@ -27,6 +27,7 @@ import CardamomMarketplace from '../components/marketplace/CardamomMarketplace';
 import MessagingModule from '../components/messaging/MessagingModule';
 import NotificationModule from '../components/notifications/NotificationModule';
 import LivePlantationIntelligenceModule from '../components/intelligence/LivePlantationIntelligenceModule';
+import AuctionModule from '../components/auction/AuctionModule';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
 import { KERALA_DISTRICTS } from '../utils/districts';
 
@@ -1621,6 +1622,13 @@ const Dashboard = () => {
           {activeTab === 'notifications' && (
             <div className="w-full">
               <NotificationModule />
+            </div>
+          )}
+
+          {/* ===== TAB: CARDORA LIVE AUCTION MODULE ===== */}
+          {activeTab === 'auctions' && (
+            <div className="w-full">
+              <AuctionModule user={user} onToast={showToast} />
             </div>
           )}
 

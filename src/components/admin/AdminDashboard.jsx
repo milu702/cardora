@@ -51,6 +51,7 @@ import {
   PieChart,
   BarChart2,
   List,
+  Gavel,
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -58,6 +59,7 @@ import PlantationMap from './PlantationMap';
 import AdminAnalyticsCharts from './AdminAnalyticsCharts';
 import DistrictWeatherUsers from './DistrictWeatherUsers';
 import AdminPlantationIntelligenceView from './AdminPlantationIntelligenceView';
+import AdminAuctionsTab from '../auction/AdminAuctionsTab';
 
 const AdminDashboard = () => {
   const { user, showToast, darkMode } = useAuth();
@@ -716,6 +718,7 @@ const AdminDashboard = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {[
           { id: 'all', label: 'Executive Dashboard', icon: Shield },
+          { id: 'auctions', label: 'Live Auctions Oversight', icon: Gavel, badge: 'Live Bidding' },
           { id: 'intelligence', label: 'Plantation Intelligence', icon: Sparkles, badge: 'Live Reports' },
           { id: 'district-weather', label: 'Districts Weather & Users', icon: CloudSun, badge: '18 Belts' },
           { id: 'charts', label: 'Analytics & Reports', icon: BarChart3 },
@@ -1294,6 +1297,13 @@ const AdminDashboard = () => {
 
           </div>
         </div>
+      ) : adminViewMode === 'auctions' ? (
+        <AdminAuctionsTab
+          onToast={showToast}
+          onSelectAuction={(auction) => {
+            navigate(`/dashboard?tab=auctions&id=${auction._id}`);
+          }}
+        />
       ) : adminViewMode === 'intelligence' ? (
         <AdminPlantationIntelligenceView onToast={showToast} />
       ) : adminViewMode === 'district-weather' ? (
