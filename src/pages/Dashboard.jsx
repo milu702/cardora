@@ -5,9 +5,9 @@ import {
   Home, Leaf, MapPin, Users, User, Settings, 
   Search, Heart, MessageSquare, Share2, 
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
-  Camera, Lock, Key, Bell, Upload, Globe, CornerDownRight, Shield, CloudSun,
-  Droplets, TrendingUp, BarChart3, Calendar, ArrowUpRight, Activity, ChevronRight,
-  Clock, Sliders, Sun, Menu, ChevronUp, ChevronDown, UserCheck, ShieldCheck, FileText
+  Camera, Lock, Key, Bell, Upload, CornerDownRight, Shield, CloudSun,
+  Droplets, TrendingUp, BarChart3, Calendar, ChevronRight,
+  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -47,7 +47,6 @@ const Dashboard = () => {
     setSearchParams({ tab: tabName });
   };
 
-  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [selectedPublicUser, setSelectedPublicUser] = useState(null);
   const [chatModalOpen, setChatModalOpen] = useState(false);
@@ -244,13 +243,6 @@ const Dashboard = () => {
   }, [activeTab]);
 
 
-  const handleLoadSamplePlantations = () => {
-    setPlantations([
-      { id: 1, name: 'Vandanmedu Green Estate', location: 'Idukki, Kerala', area: 12, plants: 4200, variety: 'Malabar', moisture: 72, ph: 6.2, health: 94, history: 'Irrigated 2 days ago' },
-      { id: 2, name: 'Munnar High-Altitude Plot', location: 'Munnar, Kerala', area: 8, plants: 2800, variety: 'Vazhukka', moisture: 68, ph: 5.9, health: 88, history: 'Fertilized organic NPK last week' },
-    ]);
-    showToast('Sample plantation data loaded!');
-  };
 
   // Dynamic Telemetry Metrics
   const avgMoisture = plantations.length > 0
@@ -292,7 +284,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (currentUserIdVal) {
       fetchDashboardConversations();
-      const interval = setInterval(fetchDashboardConversations, 4000);
+      const interval = setInterval(fetchDashboardConversations, 15000);
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -384,6 +376,7 @@ const Dashboard = () => {
   const [newPostText, setNewPostText] = useState('');
   const [newPostImage, setNewPostImage] = useState('');
   const [newPostCategory, setNewPostCategory] = useState('Plantation Update');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
   const [postError, setPostError] = useState('');
 
   // Default community posts from other cardamom planters in the ecosystem
@@ -849,11 +842,6 @@ const Dashboard = () => {
     showToast('Comment updated in MongoDB Atlas!');
   };
 
-  // ===== 3. MARKETPLACE PLOTS STATE =====
-  const [plots] = useState([
-    { id: 1, title: '5-Acre Prime Organic Cardamom Plot for Lease', location: 'Santhanpara, Idukki', area: '5 Acres', price: '₹2,50,000 / year', roi: '22%', health: 92, image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=600', owner: 'Suresh Menon' },
-    { id: 2, title: 'Shade-Grown High Yield Cardamom Garden', location: 'Kattappana, Idukki', area: '8 Acres', price: '₹4,00,000 / year', roi: '26%', health: 96, image: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=600', owner: 'Devika Raj' }
-  ]);
 
 
 
@@ -1191,12 +1179,12 @@ const Dashboard = () => {
                       <Leaf className="w-4 h-4" />
                     </span>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      Active
+                      {plantations.length > 0 ? 'Active' : 'No Plots'}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {plantations.length || 2}
+                      {plantations.length}
                     </div>
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
                       {lang === 'ml' ? 'സജീവ തോട്ടങ്ങൾ' : 'Active Plantations'}
@@ -1211,12 +1199,12 @@ const Dashboard = () => {
                       <Droplets className="w-4 h-4" />
                     </span>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                      Optimal
+                      {plantations.length > 0 ? 'Optimal' : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {avgMoisture > 0 ? `${avgMoisture}%` : '72%'}
+                      {plantations.length > 0 ? `${avgMoisture}%` : '0%'}
                     </div>
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
                       {lang === 'ml' ? 'മണ്ണിന്റെ ഈർപ്പം' : 'Soil Moisture'}
@@ -1231,12 +1219,12 @@ const Dashboard = () => {
                       <Sparkles className="w-4 h-4" />
                     </span>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                      Healthy
+                      {plantations.length > 0 ? 'Healthy' : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {avgHealth > 0 ? `${avgHealth}%` : '94%'}
+                      {plantations.length > 0 ? `${avgHealth}%` : '0%'}
                     </div>
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
                       {lang === 'ml' ? 'തോട്ടം ആരോഗ്യം' : 'Plantation Health'}
@@ -1251,12 +1239,12 @@ const Dashboard = () => {
                       <TrendingUp className="w-4 h-4" />
                     </span>
                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      Est. Harvest
+                      {plantations.length > 0 ? 'Est. Harvest' : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {predictedYield > 0 ? `${predictedYield} kg` : '260 kg'}
+                      {plantations.length > 0 ? `${predictedYield} kg` : '0 kg'}
                     </div>
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
                       {lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield/Acre'}
@@ -1638,408 +1626,718 @@ const Dashboard = () => {
 
           {/* ===== TAB 4: COMMUNITY ===== */}
           {activeTab === 'community' && (
-            <div className="space-y-6 max-w-2xl mx-auto">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-black text-[#17331F] font-poppins">Planters Community Feed</h2>
+            <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4">
+              {/* Header Title & DB Sync Banner */}
+              <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="space-y-2 relative z-10">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black tracking-wider uppercase border border-emerald-400/30 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Planter Social Hub
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 text-emerald-100 text-xs font-bold backdrop-blur-md">
+                      🌿 1,420+ Planters Online
+                    </span>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-black font-poppins tracking-tight text-white">
+                    Cardamom Planters Community Feed
+                  </h2>
+                  <p className="text-emerald-100/90 text-sm max-w-xl font-medium">
+                    Connect with estate owners, share live harvest yields, discover organic spice tips, and ask farming experts in real time.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 relative z-10">
                   <button
                     onClick={() => {
                       fetchPosts();
-                      showToast('🔄 Fetched latest community posts directly from MongoDB DB!');
+                      showToast('🔄 Live sync complete! Synced directly with Cardora DB.');
                     }}
-                    className="px-3 py-1.5 rounded-full bg-[#DDEFD9] hover:bg-[#1F5E3B] hover:text-white text-[#1F5E3B] text-xs font-extrabold transition-all border border-[#5C8D4E]/30 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-5 py-3 rounded-2xl bg-white text-[#17331F] hover:bg-emerald-50 text-xs font-black transition-all border border-white/20 flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
                     title="Fetch live posts directly from MongoDB Database"
                   >
-                    <span>🔄 Refresh DB</span>
+                    <RefreshCw className="w-4 h-4 text-[#1F5E3B]" />
+                    <span>Sync Live DB</span>
                   </button>
                 </div>
-                {communitySearchQuery && (
-                  <span className="px-3 py-1 rounded-full bg-[#DDEFD9] text-[#1F5E3B] text-xs font-bold w-fit">
-                    Filtered by: "{communitySearchQuery}"
+              </div>
+
+              {/* Main Search & Category Filter Navigation Bar */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+                {/* Search Bar */}
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="flex-1 w-full relative">
+                    <Search className="w-5 h-5 text-[#1F5E3B] absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={communitySearchQuery}
+                      onChange={(e) => setCommunitySearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && communitySearchQuery.trim()) {
+                          showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
+                        }
+                      }}
+                      placeholder="Search planter name (e.g. Rajesh, Ananya, Suresh), district, or post topics..."
+                      className="w-full pl-12 pr-4 py-3.5 text-sm sm:text-base rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 font-bold focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 transition-all placeholder:text-gray-400 placeholder:font-normal"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      onClick={() => {
+                        if (communitySearchQuery.trim()) {
+                          showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
+                        }
+                      }}
+                      className="flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 cursor-pointer"
+                    >
+                      <Search className="w-4 h-4" />
+                      <span>Search Community</span>
+                    </button>
+                    {communitySearchQuery && (
+                      <button
+                        onClick={() => {
+                          setCommunitySearchQuery('');
+                          setSearchParams({ tab: 'community' });
+                        }}
+                        className="px-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 text-gray-700 dark:text-slate-300 text-sm font-bold transition-colors cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category Pills Filter Row */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-2 border-t border-[#D7E6D5]/60 dark:border-slate-800">
+                  <span className="text-xs font-black text-gray-500 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
+                    <Filter className="w-3.5 h-3.5 text-[#1F5E3B]" />
+                    Filter Feed:
                   </span>
-                )}
-              </div>
-
-              {/* Planters & Posts Search Bar with Search Button */}
-              <div className="bg-white p-3.5 rounded-[20px] border border-[#D7E6D5] shadow-soft flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <Search className="w-4 h-4 text-[#5C8D4E] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={communitySearchQuery}
-                    onChange={(e) => setCommunitySearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && communitySearchQuery.trim()) {
-                        showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
-                      }
-                    }}
-                    placeholder="Search planter name (e.g. Rajesh, Ananya, Suresh, Milu)..."
-                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] font-bold focus:outline-none focus:border-[#1F5E3B]"
-                  />
+                  {[
+                    { id: 'All', label: 'All Updates', icon: '🌐' },
+                    { id: 'Plantation Update', label: 'Plantation Updates', icon: '🌿' },
+                    { id: 'Farming Tip', label: 'Organic Tips', icon: '💡' },
+                    { id: 'Expert Advice', label: 'Expert Advice', icon: '🎓' },
+                    { id: 'Question', label: 'Farmer Questions', icon: '❓' },
+                  ].map((cat) => {
+                    const isActive = selectedCategoryFilter === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategoryFilter(cat.id)}
+                        className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0 ${
+                          isActive
+                            ? 'bg-[#1F5E3B] text-white shadow-md shadow-[#1F5E3B]/20 scale-105'
+                            : 'bg-[#F8FAF7] dark:bg-slate-800/60 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700'
+                        }`}
+                      >
+                        <span>{cat.icon}</span>
+                        <span>{cat.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <button
-                  onClick={() => {
-                    if (communitySearchQuery.trim()) {
-                      showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs font-black transition-colors shadow-sm flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span>Search Planter</span>
-                </button>
-                {communitySearchQuery && (
-                  <button
-                    onClick={() => {
-                      setCommunitySearchQuery('');
-                      setSearchParams({ tab: 'community' });
-                    }}
-                    className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors"
-                  >
-                    Clear
-                  </button>
-                )}
               </div>
 
-              {/* Matching Planter Profiles Card (Live Search Results) */}
-              {communitySearchQuery.trim() && (
-                <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-5 shadow-soft space-y-3">
-                  <h3 className="text-xs font-black text-[#17331F] flex items-center justify-between">
-                    <span>Matching Planter Profiles ({searchedPlanters.length})</span>
-                    <span className="text-[10px] text-[#5C8D4E] font-bold">MongoDB Atlas Live Search</span>
-                  </h3>
+              {/* Responsive Main Layout: 2 Columns on Desktop (Feed 8 cols, Sidebar 4 cols) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                {/* LEFT MAIN FEED COLUMN (col-span-8) */}
+                <div className="lg:col-span-8 space-y-6">
+                  
+                  {/* Matching Planter Profiles Banner (Live Search Results) */}
+                  {communitySearchQuery.trim() && (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-black text-[#17331F] dark:text-emerald-400 flex items-center gap-2">
+                          <Users className="w-5 h-5 text-[#1F5E3B]" />
+                          <span>Matching Planter Profiles ({searchedPlanters.length})</span>
+                        </h3>
+                        <span className="px-3 py-1 rounded-full bg-emerald-50 text-[#1F5E3B] text-xs font-bold border border-emerald-200">
+                          Live Planter Search
+                        </span>
+                      </div>
 
-                  {searchedPlanters.length === 0 ? (
-                    <p className="text-xs text-[#4A5568] py-1">No planter accounts found matching "{communitySearchQuery}".</p>
+                      {searchedPlanters.length === 0 ? (
+                        <p className="text-sm text-gray-500 py-2">No planter accounts found matching "{communitySearchQuery}".</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {searchedPlanters.map((planter) => (
+                            <div 
+                              key={planter._id || planter.id} 
+                              onClick={() => setSelectedPublicUser({
+                                author: planter.name,
+                                username: planter.username,
+                                avatar: planter.avatar || planter.profileImage || planter.profilePhoto,
+                                role: planter.role,
+                                location: planter.location || planter.district,
+                                district: planter.district || planter.location,
+                                bio: planter.bio,
+                              })}
+                              className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/70 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all shadow-xs hover:shadow-md"
+                            >
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <img 
+                                  src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`} 
+                                  alt="" 
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0" 
+                                />
+                                <div className="overflow-hidden">
+                                  <h4 className="text-sm font-extrabold text-[#17331F] dark:text-slate-100 flex items-center gap-1.5 truncate">
+                                    <span className="truncate">{planter.name}</span>
+                                    <CheckCircle className="w-4 h-4 text-[#1F5E3B] flex-shrink-0" />
+                                  </h4>
+                                  <p className="text-xs text-[#5C8D4E] font-bold truncate">@{planter.username || 'planter'} • {planter.role || 'Farmer'}</p>
+                                </div>
+                              </div>
+                              <button className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0 cursor-pointer">
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Create New Post Card */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'P')}&background=1F5E3B&color=ffffff`} 
+                        alt="" 
+                        className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0" 
+                      />
+                      <div>
+                        <h3 className="text-base font-black text-[#17331F] dark:text-slate-100">Publish a Community Post</h3>
+                        <p className="text-xs text-gray-500 font-medium">Share updates, ask questions, or recommend farming practices</p>
+                      </div>
+                    </div>
+
+                    <textarea
+                      rows="4"
+                      value={newPostText}
+                      onChange={(e) => {
+                        setNewPostText(e.target.value);
+                        if (postError) setPostError('');
+                      }}
+                      placeholder="Write your cardamom plantation update, ask a question, or share an organic farming tip..."
+                      className={`w-full p-4 rounded-2xl text-sm sm:text-base leading-relaxed focus:outline-none resize-none border font-medium ${
+                        postError ? 'border-red-400 bg-red-50/50' : 'border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 text-[#17331F] dark:text-slate-100'
+                      }`}
+                    />
+
+                    {/* Image Preview Box if set */}
+                    {newPostImage && (
+                      <div className="relative rounded-2xl overflow-hidden border border-[#D7E6D5] max-h-60 group">
+                        <img src={newPostImage} alt="Post attachment preview" className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => setNewPostImage('')}
+                          className="absolute top-3 right-3 p-2 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold transition-transform hover:scale-110 cursor-pointer"
+                          title="Remove Image"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                        {/* Category Dropdown */}
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-[#1F5E3B]" />
+                          <select
+                            value={newPostCategory}
+                            onChange={(e) => setNewPostCategory(e.target.value)}
+                            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B]"
+                          >
+                            <option value="Plantation Update">🌿 Plantation Update</option>
+                            <option value="Farming Tip">💡 Organic Tip</option>
+                            <option value="Question">❓ Farmer Question</option>
+                            <option value="Expert Advice">🎓 Expert Advice</option>
+                          </select>
+                        </div>
+
+                        {/* Image Upload Input */}
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="text"
+                            value={newPostImage}
+                            onChange={(e) => setNewPostImage(e.target.value)}
+                            placeholder="Paste image URL (optional)..."
+                            className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B]"
+                          />
+                          <input
+                            type="file"
+                            id="post-photo-upload-main"
+                            accept="image/*"
+                            onChange={handlePostFileChange}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="post-photo-upload-main"
+                            className="cursor-pointer px-3.5 py-2 rounded-xl bg-[#DDEFD9] dark:bg-emerald-950/60 border border-[#5C8D4E]/40 text-[#1F5E3B] dark:text-emerald-300 text-xs font-extrabold hover:bg-[#1F5E3B] hover:text-white transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
+                          >
+                            <Camera className="w-4 h-4" />
+                            <span>Upload Image</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleAddPost}
+                        className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#1F5E3B] to-[#17331F] hover:from-[#17331F] hover:to-[#0f2415] text-white text-sm font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer active:scale-95"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Publish Post</span>
+                      </button>
+                    </div>
+
+                    {postError && (
+                      <p className="text-xs text-red-600 font-bold flex items-center gap-1.5 pt-1">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{postError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Feed Posts List */}
+                  {feedPosts.filter((post) => {
+                    // Category Filter
+                    if (selectedCategoryFilter !== 'All') {
+                      const catMatch = (post.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim() ||
+                        (selectedCategoryFilter === 'Farming Tip' && (post.category || '').toLowerCase().includes('tip')) ||
+                        (selectedCategoryFilter === 'Question' && (post.category || '').toLowerCase().includes('question'));
+                      if (!catMatch) return false;
+                    }
+                    // Search Query Filter
+                    if (!communitySearchQuery.trim()) return true;
+                    const q = communitySearchQuery.toLowerCase().trim();
+                    return (
+                      (post.author && post.author.toLowerCase().includes(q)) ||
+                      (post.username && post.username.toLowerCase().includes(q)) ||
+                      (post.content && post.content.toLowerCase().includes(q)) ||
+                      (post.description && post.description.toLowerCase().includes(q)) ||
+                      (post.category && post.category.toLowerCase().includes(q))
+                    );
+                  }).length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-12 text-center space-y-3">
+                      <div className="w-16 h-16 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto text-2xl">
+                        🍃
+                      </div>
+                      <h4 className="text-lg font-black text-[#17331F] dark:text-slate-100">No community posts match your filter.</h4>
+                      <p className="text-sm text-gray-500 max-w-md mx-auto">Try clearing search filters or selecting another category above to view updates from other planters.</p>
+                      <button
+                        onClick={() => {
+                          setCommunitySearchQuery('');
+                          setSelectedCategoryFilter('All');
+                        }}
+                        className="px-5 py-2.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-extrabold hover:bg-[#17331F] transition-colors cursor-pointer"
+                      >
+                        Reset All Filters
+                      </button>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                      {searchedPlanters.map((planter) => (
+                    feedPosts.filter((post) => {
+                      if (selectedCategoryFilter !== 'All') {
+                        const catMatch = (post.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim() ||
+                          (selectedCategoryFilter === 'Farming Tip' && (post.category || '').toLowerCase().includes('tip')) ||
+                          (selectedCategoryFilter === 'Question' && (post.category || '').toLowerCase().includes('question'));
+                        if (!catMatch) return false;
+                      }
+                      if (!communitySearchQuery.trim()) return true;
+                      const q = communitySearchQuery.toLowerCase().trim();
+                      return (
+                        (post.author && post.author.toLowerCase().includes(q)) ||
+                        (post.username && post.username.toLowerCase().includes(q)) ||
+                        (post.content && post.content.toLowerCase().includes(q)) ||
+                        (post.description && post.description.toLowerCase().includes(q)) ||
+                        (post.category && post.category.toLowerCase().includes(q))
+                      );
+                    }).map((post) => (
+                      <div key={post.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 sm:p-7 shadow-md space-y-4 hover:shadow-lg transition-all">
+                        {/* Author Header Row */}
+                        <div className="flex items-center justify-between gap-4">
+                          <div 
+                            onClick={() => setSelectedPublicUser(post)} 
+                            className="flex items-center gap-3.5 cursor-pointer group"
+                            title="Click to view planter profile"
+                          >
+                            <img 
+                              src={post.avatar} 
+                              alt="" 
+                              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform shadow-xs flex-shrink-0" 
+                            />
+                            <div>
+                              <h4 className="text-sm sm:text-base font-extrabold text-[#17331F] dark:text-slate-100 group-hover:text-[#1F5E3B] flex items-center gap-2">
+                                <span>{post.author}</span>
+                                <CheckCircle className="w-4 h-4 text-[#1F5E3B]" />
+                              </h4>
+                              <p className="text-xs text-[#5C8D4E] font-semibold flex items-center gap-2 mt-0.5">
+                                <span>@{post.username || 'planter'}</span>
+                                <span>•</span>
+                                <span className="text-gray-400 font-normal">{post.time}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3.5 py-1 rounded-full text-xs font-black tracking-wide border ${
+                              post.category === 'Expert Advice'
+                                ? 'bg-purple-100 text-purple-800 border-purple-300'
+                                : post.category === 'Farming Tip'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : post.category === 'Question'
+                                ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
+                            }`}>
+                              {post.category}
+                            </span>
+
+                            {((user?.role || '').toLowerCase() === 'admin' || user?.username === post.username || user?.fullName === post.author) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePost(post.id);
+                                }}
+                                className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete Post (Admin / Owner)"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Post Description Body Text */}
+                        <p className="text-sm sm:text-base text-[#17331F] dark:text-slate-200 leading-relaxed font-medium whitespace-pre-line">
+                          {post.description || post.content}
+                        </p>
+
+                        {/* Attached Image Preview */}
+                        {post.image && (
+                          <div className="rounded-2xl overflow-hidden border border-[#D7E6D5] dark:border-slate-800 max-h-96 w-full shadow-xs">
+                            <img src={post.image} alt="Post media asset" className="w-full h-full object-cover hover:scale-101 transition-transform duration-300" />
+                          </div>
+                        )}
+
+                        {/* Interaction Bar: Heart, Comment, Share */}
+                        <div className="flex items-center justify-between pt-4 border-t border-[#D7E6D5]/70 dark:border-slate-800 text-xs sm:text-sm font-extrabold">
+                          <div className="flex items-center gap-2 sm:gap-4">
+                            <button 
+                              onClick={() => handleLikePost(post.id)} 
+                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${
+                                post.liked 
+                                  ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200' 
+                                  : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-transparent'
+                              }`}
+                            >
+                              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.liked ? 'fill-red-500 text-red-500' : ''}`} />
+                              <span>{post.likes} Likes</span>
+                            </button>
+
+                            <button 
+                              onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)} 
+                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${
+                                activeCommentPostId === post.id 
+                                  ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30' 
+                                  : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-[#DDEFD9] hover:text-[#1F5E3B] border border-transparent'
+                              }`}
+                            >
+                              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-[#1F5E3B]" />
+                              <span>{post.comments} Comments</span>
+                            </button>
+                          </div>
+
+                          <button 
+                            onClick={() => showToast('Post link copied to clipboard!')} 
+                            className="px-4 py-2 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:text-[#1F5E3B] hover:bg-[#DDEFD9] transition-all flex items-center gap-2 border border-transparent cursor-pointer"
+                          >
+                            <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="hidden sm:inline">Share</span>
+                          </button>
+                        </div>
+
+                        {/* Interactive Comment Input & Threaded Comments Drawer */}
+                        {activeCommentPostId === post.id && (
+                          <div className="mt-4 pt-4 border-t border-[#D7E6D5] dark:border-slate-800 space-y-4">
+                            {/* Comment Input Box */}
+                            <div className="flex gap-2">
+                              <input 
+                                type="text"
+                                value={commentInputText}
+                                onChange={(e) => setCommentInputText(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post.id); }}
+                                placeholder="Add a comment to this discussion..."
+                                className="flex-1 px-4 py-3 rounded-2xl text-xs sm:text-sm border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20"
+                              />
+                              <button 
+                                onClick={() => handleAddComment(post.id)}
+                                className="px-5 py-3 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs sm:text-sm font-black transition-colors shadow-sm cursor-pointer"
+                              >
+                                Comment
+                              </button>
+                            </div>
+
+                            {/* Comments List Thread */}
+                            {commentsMap[post.id] && commentsMap[post.id].length > 0 && (
+                              <div className="space-y-3 pt-2">
+                                {commentsMap[post.id].map((c) => {
+                                  const currentUserName = user?.fullName || user?.name || user?.username || '';
+                                  const isPostAuthor = currentUserName.toLowerCase().trim() === (post.author || post.username || '').toLowerCase().trim();
+                                  return (
+                                    <div key={c.id} className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 space-y-2">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex gap-3 items-start flex-1">
+                                          <img src={c.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0 mt-0.5" />
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="font-extrabold text-[#17331F] dark:text-slate-100 text-xs sm:text-sm">{c.author}</span>
+                                              {c.author === post.author && (
+                                                <span className="px-2 py-0.5 rounded bg-[#1F5E3B] text-white text-[10px] font-black tracking-wide uppercase">
+                                                  POST OWNER
+                                                </span>
+                                              )}
+                                              <span className="text-xs text-gray-400 font-normal">{c.time}</span>
+                                            </div>
+
+                                            {editingCommentId === c.id ? (
+                                              <div className="flex items-center gap-2 mt-2">
+                                                <input 
+                                                  type="text"
+                                                  value={editingCommentText}
+                                                  onChange={(e) => setEditingCommentText(e.target.value)}
+                                                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#1F5E3B] text-xs sm:text-sm bg-white dark:bg-slate-900 focus:outline-none"
+                                                />
+                                                <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-3 py-1.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-bold hover:bg-[#17331F] cursor-pointer">
+                                                  Save
+                                                </button>
+                                                <button onClick={() => setEditingCommentId(null)} className="px-3 py-1.5 rounded-xl bg-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-300 cursor-pointer">
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            ) : (
+                                              <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-300 mt-1 font-medium leading-relaxed">{c.text}</p>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          <button 
+                                            onClick={() => {
+                                              setActiveReplyCommentId(activeReplyCommentId === c.id ? null : c.id);
+                                              setReplyInputText('');
+                                            }}
+                                            className="text-xs font-extrabold text-[#1F5E3B] hover:bg-[#DDEFD9] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                          >
+                                            <CornerDownRight className="w-3.5 h-3.5" />
+                                            <span>Reply</span>
+                                          </button>
+
+                                          {editingCommentId !== c.id && (
+                                            <button 
+                                              onClick={() => {
+                                                setEditingCommentId(c.id);
+                                                setEditingCommentText(c.text);
+                                              }} 
+                                              className="text-xs font-bold text-gray-400 hover:text-[#1F5E3B] px-1 py-1 cursor-pointer"
+                                            >
+                                              <Edit className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Inline Reply Input */}
+                                      {activeReplyCommentId === c.id && (
+                                        <div className="mt-3 pl-8 flex gap-2 items-center">
+                                          <input
+                                            type="text"
+                                            value={replyInputText}
+                                            onChange={(e) => setReplyInputText(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(post.id, c.id); }}
+                                            placeholder={isPostAuthor ? "Reply as Post Owner..." : `Replying to @${c.author}...`}
+                                            className="flex-1 px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[#1F5E3B] bg-white dark:bg-slate-900 focus:outline-none"
+                                            autoFocus
+                                          />
+                                          <button
+                                            onClick={() => handleSendReply(post.id, c.id)}
+                                            className="px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs font-extrabold transition-colors whitespace-nowrap cursor-pointer"
+                                          >
+                                            Send Reply
+                                          </button>
+                                        </div>
+                                      )}
+
+                                      {/* Nested Replies List */}
+                                      {c.replies && c.replies.length > 0 && (
+                                        <div className="pl-8 space-y-2 mt-3 pt-3 border-t border-[#D7E6D5]/60 dark:border-slate-700">
+                                          {c.replies.map((r) => (
+                                            <div key={r.id} className="p-3 rounded-xl bg-[#EAF3E8] dark:bg-slate-800 border-l-4 border-[#1F5E3B] text-xs sm:text-sm flex items-start gap-3">
+                                              <img src={r.avatar} alt="" className="w-7 h-7 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
+                                              <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="font-extrabold text-[#17331F] dark:text-slate-100">{r.author}</span>
+                                                  {(r.isPostOwner || r.author === post.author) && (
+                                                    <span className="px-2 py-0.5 rounded bg-[#C9A227] text-white text-[9px] font-black uppercase tracking-wider">
+                                                      👑 POST OWNER REPLY
+                                                    </span>
+                                                  )}
+                                                  <span className="text-[10px] text-[#5C8D4E] font-medium ml-auto">{r.time}</span>
+                                                </div>
+                                                <p className="text-[#334155] dark:text-slate-300 text-xs sm:text-sm mt-1 font-medium">{r.text}</p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* RIGHT SIDEBAR COLUMN (col-span-4) */}
+                <div className="lg:col-span-4 space-y-6">
+                  {/* Cardora Community Pulse Widget */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                    <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-[#1F5E3B]" />
+                      <span>Community Pulse Metrics</span>
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-center">
+                        <div className="w-10 h-10 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto mb-2">
+                          <Users className="w-5 h-5" />
+                        </div>
+                        <p className="text-xl font-black text-[#17331F] dark:text-slate-100">1,420</p>
+                        <p className="text-xs text-gray-500 font-bold">Active Planters</p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-center">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-[#1F5E3B] flex items-center justify-center mx-auto mb-2">
+                          <MessageSquare className="w-5 h-5" />
+                        </div>
+                        <p className="text-xl font-black text-[#17331F] dark:text-slate-100">{feedPosts.length}</p>
+                        <p className="text-xs text-gray-500 font-bold">Live Feed Updates</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1F5E3B] to-[#17331F] text-white space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">Top Cardamom Hubs</span>
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <p className="text-xs text-emerald-100 font-medium">
+                        Idukki • Vandanmedu • Kattappana • Kumily • Munnar
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Trending Spice Topics Widget */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                    <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-[#1F5E3B]" />
+                      <span>Trending Spice Topics</span>
+                    </h3>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {[
+                        { tag: '#Njallani777', count: '142 posts' },
+                        { tag: '#OrganicNeemCake', count: '89 posts' },
+                        { tag: '#MonsoonCare', count: '64 posts' },
+                        { tag: '#CardamomAuctions', count: '110 posts' },
+                        { tag: '#CapsuleGrade8mm', count: '75 posts' },
+                        { tag: '#DripFertigation', count: '53 posts' },
+                      ].map((item) => (
+                        <button
+                          key={item.tag}
+                          onClick={() => {
+                            setCommunitySearchQuery(item.tag.replace('#', ''));
+                            showToast(`Filtered feed by topic: ${item.tag}`);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-[#F8FAF7] dark:bg-slate-800 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span className="text-[#1F5E3B] font-black">{item.tag}</span>
+                          <span className="text-[10px] text-gray-400 font-normal">({item.count})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Featured Cardamom Experts & Planters */}
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
+                        <Award className="w-5 h-5 text-[#1F5E3B]" />
+                        <span>Featured Planters</span>
+                      </h3>
+                      <span className="text-xs text-[#5C8D4E] font-bold">Verified</span>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      {[
+                        {
+                          name: 'Rajesh Nair',
+                          username: 'rajesh_nair',
+                          role: 'High Altitude Planter',
+                          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+                          location: 'Kattappana, Idukki',
+                        },
+                        {
+                          name: 'Dr. Suresh Kumar',
+                          username: 'suresh_agro',
+                          role: 'Agronomy Specialist',
+                          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+                          location: 'Spices Board Advisory',
+                        },
+                        {
+                          name: 'Ananya Ramesh',
+                          username: 'ananya_planter',
+                          role: 'Organic Spice Grower',
+                          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+                          location: 'Munnar Estate',
+                        },
+                      ].map((planter) => (
                         <div 
-                          key={planter._id || planter.id} 
+                          key={planter.username}
                           onClick={() => setSelectedPublicUser({
                             author: planter.name,
                             username: planter.username,
-                            avatar: planter.avatar || planter.profileImage || planter.profilePhoto,
+                            avatar: planter.avatar,
                             role: planter.role,
-                            location: planter.location || planter.district,
-                            district: planter.district || planter.location,
-                            bio: planter.bio,
+                            location: planter.location,
                           })}
-                          className="p-3 rounded-xl bg-[#F8FAF7] hover:bg-[#DDEFD9] border border-[#D7E6D5] flex items-center justify-between cursor-pointer group transition-colors shadow-sm"
+                          className="p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all"
                         >
-                          <div className="flex items-center gap-2.5 overflow-hidden">
-                            <img 
-                              src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`} 
-                              alt="" 
-                              className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0" 
-                            />
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <img src={planter.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B] flex-shrink-0" />
                             <div className="overflow-hidden">
-                              <h4 className="text-xs font-extrabold text-[#17331F] flex items-center gap-1 truncate">
-                                <span className="truncate">{planter.name}</span>
-                                <CheckCircle className="w-3 h-3 text-[#1F5E3B] flex-shrink-0" />
+                              <h4 className="text-xs sm:text-sm font-extrabold text-[#17331F] dark:text-slate-100 truncate group-hover:text-[#1F5E3B]">
+                                {planter.name}
                               </h4>
-                              <p className="text-[10px] text-[#5C8D4E] font-bold truncate">@{planter.username || 'planter'} • {planter.role || 'Farmer'}</p>
+                              <p className="text-[11px] text-gray-500 font-medium truncate">{planter.role}</p>
                             </div>
                           </div>
-                          <button className="px-2.5 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0">
-                            View Profile
+                          <button className="px-3 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0 cursor-pointer">
+                            Profile
                           </button>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
 
-              {/* Create Post Card */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-5 shadow-soft space-y-3">
-                <h3 className="text-xs font-black text-[#17331F]">Create a New Post</h3>
-                <textarea
-                  rows="3"
-                  value={newPostText}
-                  onChange={(e) => {
-                    setNewPostText(e.target.value);
-                    if (postError) setPostError('');
-                  }}
-                  placeholder="Add post description..."
-                  className={`w-full p-3 rounded-xl text-xs focus:outline-none resize-none border ${postError ? 'border-red-400 bg-red-50/50' : 'border-[#D7E6D5] focus:border-[#1F5E3B]'}`}
-                />
-
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <input
-                    type="text"
-                    value={newPostImage}
-                    onChange={(e) => setNewPostImage(e.target.value)}
-                    placeholder="Image URL (optional)..."
-                    className="flex-1 w-full px-3 py-2 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                  />
-                  <input
-                    type="file"
-                    id="post-photo-upload"
-                    accept="image/*"
-                    onChange={handlePostFileChange}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="post-photo-upload"
-                    className="cursor-pointer px-3 py-2 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-bold hover:bg-[#5C8D4E] hover:text-white transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
-                  >
-                    <Camera className="w-4 h-4" />
-                    <span>Upload Image</span>
-                  </label>
                 </div>
 
-                {postError && (
-                  <p className="text-[11px] text-red-600 font-bold flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>{postError}</span>
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between pt-1">
-                  <select
-                    value={newPostCategory}
-                    onChange={(e) => setNewPostCategory(e.target.value)}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#D7E6D5] bg-[#F8FAF7]"
-                  >
-                    <option value="Plantation Update">Plantation Update</option>
-                    <option value="Question">Farmer Question</option>
-                    <option value="Farming Tip">Organic Tip</option>
-                  </select>
-
-                  <Button variant="primary" size="sm" onClick={handleAddPost}>
-                    Publish Post
-                  </Button>
-                </div>
               </div>
-
-              {/* Feed Posts */}
-              {feedPosts.filter((post) => {
-                if (!communitySearchQuery.trim()) return true;
-                const q = communitySearchQuery.toLowerCase().trim();
-                return (
-                  (post.author && post.author.toLowerCase().includes(q)) ||
-                  (post.username && post.username.toLowerCase().includes(q)) ||
-                  (post.content && post.content.toLowerCase().includes(q)) ||
-                  (post.description && post.description.toLowerCase().includes(q)) ||
-                  (post.category && post.category.toLowerCase().includes(q))
-                );
-              }).length === 0 ? (
-                <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-8 text-center">
-                  <p className="text-sm font-bold text-[#17331F]">No matching planter posts found.</p>
-                  <p className="text-xs text-[#4A5568] mt-1">Try searching for another planter name or clear the search filter.</p>
-                </div>
-              ) : (
-                feedPosts.filter((post) => {
-                  if (!communitySearchQuery.trim()) return true;
-                  const q = communitySearchQuery.toLowerCase().trim();
-                  return (
-                    (post.author && post.author.toLowerCase().includes(q)) ||
-                    (post.username && post.username.toLowerCase().includes(q)) ||
-                    (post.content && post.content.toLowerCase().includes(q)) ||
-                    (post.description && post.description.toLowerCase().includes(q)) ||
-                    (post.category && post.category.toLowerCase().includes(q))
-                  );
-                }).map((post) => (
-                  <Card key={post.id} className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <div 
-                        onClick={() => setSelectedPublicUser(post)} 
-                        className="flex items-center gap-3 cursor-pointer group"
-                        title="Click to view planter profile"
-                      >
-                        <img src={post.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform" />
-                        <div>
-                          <h4 className="text-xs font-extrabold text-[#17331F] group-hover:text-[#1F5E3B] flex items-center gap-1">
-                            <span>{post.author}</span>
-                            <span className="text-[10px] font-normal text-[#5C8D4E]">(@{post.username || 'planter'})</span>
-                          </h4>
-                          <span className="text-[10px] text-[#4A5568]">{post.time}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-[#DDEFD9] text-[#1F5E3B]">
-                          {post.category}
-                        </span>
-                        {((user?.role || '').toLowerCase() === 'admin' || user?.username === post.username || user?.fullName === post.author) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeletePost(post.id);
-                            }}
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                            title="Delete Post (Admin / Owner)"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-[#4A5568] leading-relaxed mb-3">{post.description || post.content}</p>
-
-                    {post.image && (
-                      <div className="mb-4 rounded-xl overflow-hidden border border-[#D7E6D5] max-h-80">
-                        <img src={post.image} alt="Post asset" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-3 border-t border-[#D7E6D5] text-xs font-bold">
-                      <button onClick={() => handleLikePost(post.id)} className={`flex items-center gap-1.5 ${post.liked ? 'text-red-500' : 'text-[#4A5568]'}`}>
-                        <Heart className="w-4 h-4" />
-                        <span>{post.likes}</span>
-                      </button>
-                      <button 
-                        onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)} 
-                        className={`flex items-center gap-1.5 ${activeCommentPostId === post.id ? 'text-[#1F5E3B]' : 'text-[#4A5568]'} hover:text-[#1F5E3B]`}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        <span>{post.comments}</span>
-                      </button>
-                      <button onClick={() => showToast('Post link copied!')} className="flex items-center gap-1.5 text-[#4A5568] hover:text-[#1F5E3B]">
-                        <Share2 className="w-4 h-4" />
-                        <span>Share</span>
-                      </button>
-                    </div>
-
-                    {/* Interactive Comment Input & Comments List */}
-                    {activeCommentPostId === post.id && (
-                      <div className="mt-3 pt-3 border-t border-[#D7E6D5] space-y-3">
-                        <div className="flex gap-2">
-                          <input 
-                            type="text"
-                            value={commentInputText}
-                            onChange={(e) => setCommentInputText(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post.id); }}
-                            placeholder="Write a comment..."
-                            className="flex-1 px-3 py-1.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                          />
-                          <Button variant="primary" size="sm" onClick={() => handleAddComment(post.id)}>
-                            Comment
-                          </Button>
-                        </div>
-
-                        {/* Comments List */}
-                        {commentsMap[post.id] && commentsMap[post.id].length > 0 && (
-                          <div className="space-y-3 pt-2">
-                            {commentsMap[post.id].map((c) => {
-                              const currentUserName = user?.fullName || user?.name || user?.username || '';
-                              const isPostAuthor = currentUserName.toLowerCase().trim() === (post.author || post.username || '').toLowerCase().trim();
-                              return (
-                                <div key={c.id} className="p-3 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5] text-xs space-y-2">
-                                  <div className="flex justify-between items-start">
-                                    <div className="flex gap-2.5 items-start flex-1">
-                                      <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="font-extrabold text-[#17331F]">{c.author}</span>
-                                          {c.author === post.author && (
-                                            <span className="px-1.5 py-0.5 rounded bg-[#1F5E3B] text-white text-[9px] font-black tracking-wide">
-                                              POST OWNER
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        {editingCommentId === c.id ? (
-                                          <div className="flex items-center gap-2 mt-1">
-                                            <input 
-                                              type="text"
-                                              value={editingCommentText}
-                                              onChange={(e) => setEditingCommentText(e.target.value)}
-                                              className="flex-1 px-2.5 py-1 rounded-lg border border-[#1F5E3B] text-xs bg-white focus:outline-none"
-                                            />
-                                            <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-2.5 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-bold hover:bg-[#17331F]">
-                                              Save
-                                            </button>
-                                            <button onClick={() => setEditingCommentId(null)} className="px-2.5 py-1 rounded-lg bg-gray-200 text-gray-700 text-[10px] font-bold hover:bg-gray-300">
-                                              Cancel
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <p className="text-[#4A5568] mt-0.5 font-medium">{c.text}</p>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-2">
-                                      <button 
-                                        onClick={() => {
-                                          setActiveReplyCommentId(activeReplyCommentId === c.id ? null : c.id);
-                                          setReplyInputText('');
-                                        }}
-                                        className="text-[10px] font-extrabold text-[#1F5E3B] hover:bg-[#DDEFD9] px-2 py-1 rounded-md transition-colors flex items-center gap-1"
-                                      >
-                                        <CornerDownRight className="w-3 h-3" />
-                                        <span>Reply</span>
-                                      </button>
-
-                                      {editingCommentId !== c.id && (
-                                        <button 
-                                          onClick={() => {
-                                            setEditingCommentId(c.id);
-                                            setEditingCommentText(c.text);
-                                          }} 
-                                          className="text-[10px] font-bold text-gray-400 hover:text-[#1F5E3B] px-1 py-1"
-                                        >
-                                          <Edit className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Inline Reply Input Box */}
-                                  {activeReplyCommentId === c.id && (
-                                    <div className="mt-2 pl-6 flex gap-2 items-center">
-                                      <input
-                                        type="text"
-                                        value={replyInputText}
-                                        onChange={(e) => setReplyInputText(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(post.id, c.id); }}
-                                        placeholder={isPostAuthor ? "Reply as Post Owner..." : `Replying to @${c.author}...`}
-                                        className="flex-1 px-3 py-1.5 rounded-xl text-xs border border-[#1F5E3B] bg-white focus:outline-none"
-                                        autoFocus
-                                      />
-                                      <button
-                                        onClick={() => handleSendReply(post.id, c.id)}
-                                        className="px-3 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-[10px] font-bold transition-colors"
-                                      >
-                                        Send Reply
-                                      </button>
-                                    </div>
-                                  )}
-
-                                  {/* Nested Replies List */}
-                                  {c.replies && c.replies.length > 0 && (
-                                    <div className="pl-6 space-y-2 mt-2 pt-2 border-t border-[#D7E6D5]/60">
-                                      {c.replies.map((r) => (
-                                        <div key={r.id} className="p-2 rounded-xl bg-[#EAF3E8] border-l-3 border-[#1F5E3B] text-xs flex items-start gap-2">
-                                          <img src={r.avatar} alt="" className="w-5 h-5 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-1.5">
-                                              <span className="font-black text-[#17331F] text-[11px]">{r.author}</span>
-                                              {(r.isPostOwner || r.author === post.author) && (
-                                                <span className="px-1.5 py-0.2 rounded bg-[#C9A227] text-white text-[8px] font-black uppercase tracking-wider">
-                                                  👑 POST OWNER REPLY
-                                                </span>
-                                              )}
-                                              <span className="text-[9px] text-[#5C8D4E] font-medium ml-auto">{r.time}</span>
-                                            </div>
-                                            <p className="text-[#334155] text-[11px] mt-0.5 font-medium">{r.text}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Card>
-                ))
-              )}
             </div>
           )}
 

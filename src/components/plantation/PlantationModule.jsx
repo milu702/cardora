@@ -57,21 +57,28 @@ const PlantationModule = ({ onToast }) => {
       if (editingPlantation) {
         const id = editingPlantation._id || editingPlantation.id;
         const res = await apiService.updatePlantation(id, data);
-        await fetchPlantations();
-        if (onToast) onToast('Plantation updated successfully');
+        if (res && res.success) {
+          await fetchPlantations();
+          if (onToast) onToast('Plantation updated successfully');
+        } else {
+          if (onToast) onToast(res?.message || 'Failed to update plantation');
+        }
       } else {
         const res = await apiService.createPlantation(data);
-        await fetchPlantations();
-        setSearchQuery('');
-        setSelectedDistrict('');
-        setSelectedVariety('');
-        setHealthFilter('');
-        setAreaFilter('');
-        if (onToast) onToast('New Plantation registered in CARDORA Ecosystem');
+        if (res && res.success) {
+          await fetchPlantations();
+          setSearchQuery('');
+          setSelectedDistrict('');
+          setSelectedVariety('');
+          setHealthFilter('');
+          setAreaFilter('');
+          if (onToast) onToast('New Plantation registered in CARDORA Ecosystem');
+        } else {
+          if (onToast) onToast(res?.message || 'Failed to register plantation');
+        }
       }
     } catch (err) {
-      await fetchPlantations();
-      if (onToast) onToast('Plantation saved');
+      if (onToast) onToast(err?.message || 'Error saving plantation');
     }
   };
 

@@ -36,6 +36,31 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+const zlib = require('zlib');
+
+// Built-in Gzip Response Compression Middleware (Accelerates Presentation Response Speeds)
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (!acceptEncoding.includes('gzip') || req.method === 'HEAD') return next();
+
+  const originalSend = res.send;
+  res.send = function (body) {
+    if (typeof body === 'string' && body.length > 1024) {
+      zlib.gzip(body, (err, buffer) => {
+        if (!err) {
+          res.setHeader('Content-Encoding', 'gzip');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          return res.end(buffer);
+        }
+        originalSend.call(this, body);
+      });
+    } else {
+      originalSend.call(this, body);
+    }
+  };
+  next();
+});
+
 // Express Middleware - Enable full CORS for local development
 app.use(cors({
   origin: true,
@@ -117,4 +142,12 @@ server.on('error', (err) => {
   } else {
     console.error('Server error:', err);
   }
+});
+
+process.on('unhandledRejection', (err) => {
+  console.warn('⚠️ Process unhandledRejection notice:', err?.message || err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.warn('⚠️ Process uncaughtException notice:', err?.message || err);
 });

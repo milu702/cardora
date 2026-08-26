@@ -87,7 +87,7 @@ const MessagingModule = ({ initialTargetUser = null, onToast }) => {
     }
   }, [initialTargetUser]);
 
-  // Polling Auto-Sync Every 6 Seconds
+  // Polling Auto-Sync Every 12 Seconds
   useEffect(() => {
     const activePartnerId = extractUserId(activePartner);
     const interval = setInterval(() => {
@@ -99,7 +99,7 @@ const MessagingModule = ({ initialTargetUser = null, onToast }) => {
           }
         }).catch(() => {});
       }
-    }, 6000);
+    }, 12000);
 
     return () => clearInterval(interval);
   }, [activePartner]);

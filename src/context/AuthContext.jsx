@@ -213,7 +213,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (currentUserId) {
       fetchUserNotifications();
-      const interval = setInterval(fetchUserNotifications, 3000);
+      const interval = setInterval(fetchUserNotifications, 15000);
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

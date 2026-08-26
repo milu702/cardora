@@ -302,6 +302,9 @@ const analyzeCardamomAdvisory = (currentWeather, forecastList = [], locationName
 };
 
 
+const inMemoryWeatherCache = new Map();
+const MEMORY_CACHE_TTL_MS = 10 * 60 * 1000;
+
 /**
  * Fetch Current Weather & 5-Day Forecast from OpenWeatherMap API with MongoDB Caching & Fallback
  */
@@ -310,13 +313,19 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
   const cleanDistrict = (district || 'Idukki').split(',')[0].trim();
   const locationKey = lat && lon ? `coords_${parseFloat(lat).toFixed(2)}_${parseFloat(lon).toFixed(2)}` : `dist_${cleanDistrict.toLowerCase()}`;
 
+  // 0. Check Fast In-Memory Cache (10 minutes)
+  const memCached = inMemoryWeatherCache.get(locationKey);
+  if (memCached && (Date.now() - memCached.timestamp < MEMORY_CACHE_TTL_MS)) {
+    return memCached.data;
+  }
+
   // 1. Check MongoDB Cache (Cache validity: 45 minutes)
   try {
     const cached = await WeatherCache.findOne({ locationKey });
     if (cached && cached.fetchedAt) {
       const ageInMinutes = (Date.now() - new Date(cached.fetchedAt).getTime()) / (1000 * 60);
       if (ageInMinutes < 45) {
-        return {
+        const payload = {
           success: true,
           source: 'cache',
           district: cached.district,
@@ -333,6 +342,8 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
           warningMessage: '',
           fetchedAt: cached.fetchedAt,
         };
+        inMemoryWeatherCache.set(locationKey, { timestamp: Date.now(), data: payload });
+        return payload;
       }
     }
   } catch (dbErr) {
@@ -456,6 +467,8 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
       warningMessage: '',
       fetchedAt: new Date(),
     };
+
+    inMemoryWeatherCache.set(locationKey, { timestamp: Date.now(), data: responsePayload });
 
     // Save to MongoDB Cache asynchronously
     WeatherCache.findOneAndUpdate(

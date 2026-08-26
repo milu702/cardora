@@ -29,8 +29,9 @@ exports.createPlantation = async (req, res) => {
       irrigation, sensorId, gpsEnabled
     } = req.body;
 
-    if (!name || !area) {
-      return res.status(400).json({ success: false, message: 'Plantation name and area are required' });
+    const parsedArea = Number(area);
+    if (!name || isNaN(parsedArea) || parsedArea <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid plantation name and area (in acres) are required' });
     }
 
     const calculatedMoisture = Number(moisture) || 72;
@@ -166,17 +167,12 @@ exports.getPlantations = async (req, res) => {
           { assignedSupervisors: currentUserId },
           { assignedSupervisors: uIdStr },
           { owner: currentUserId },
-          { ownerName: new RegExp(req.user?.name || req.user?.fullName || '', 'i') },
+          { owner: uIdStr },
         ]
       };
     }
 
-    let plantations = await Plantation.find(query).sort({ createdAt: -1 });
-
-    // Fallback: If no plantations found for this specific query, fetch all plantations from MongoDB Atlas
-    if (!plantations || plantations.length === 0) {
-      plantations = await Plantation.find().sort({ createdAt: -1 });
-    }
+    const plantations = await Plantation.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, count: plantations.length, plantations });
   } catch (error) {

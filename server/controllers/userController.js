@@ -174,7 +174,7 @@ exports.getPublicProfile = async (req, res) => {
         ] 
       }).sort({ createdAt: -1 }),
       Plantation.find({ 
-        $or: [{ owner: user._id }, { ownerName: user.name }, { location: user.location }] 
+        $or: [{ user: user._id }, { user: user._id.toString() }, { owner: user._id }, { owner: user._id.toString() }] 
       }).sort({ createdAt: -1 }),
     ]);
 

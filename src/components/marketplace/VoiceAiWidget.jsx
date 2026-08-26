@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Volume2, VolumeX, Sparkles, X, Bot, Check, Globe, Send, Loader2, Trash2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Sparkles, X, Bot, Globe, Send, Loader2, Trash2 } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 const VoiceAiWidget = ({ lang, toggleLang, onCommand }) => {
@@ -9,7 +9,6 @@ const VoiceAiWidget = ({ lang, toggleLang, onCommand }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
   const [textInput, setTextInput] = useState('');
-  const [transcript, setTranscript] = useState('');
   const chatEndRef = useRef(null);
   
   const [chatHistory, setChatHistory] = useState(() => {
@@ -54,37 +53,51 @@ const VoiceAiWidget = ({ lang, toggleLang, onCommand }) => {
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert(lang === 'ml' ? 'നിങ്ങളുടെ ബ്രൗസർ വോയ്സ് സേർച്ച് പിന്തുണയ്ക്കുന്നില്ല.' : 'Your browser does not support Speech Recognition.');
+      alert(lang === 'ml' ? 'നിങ്ങളുടെ ബ്രൗസർ വോയ്സ് സേർച്ച് പിന്തുണയ്ക്കുന്നില്ല.' : 'Your browser does not support Speech Recognition. Please use Chrome or Edge.');
       return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.lang = lang === 'ml' ? 'ml-IN' : 'en-US';
-    recognition.interimResults = false;
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    let finalCapturedText = '';
 
     recognition.onstart = () => {
       setIsListening(true);
-      setTranscript('');
+      setTextInput('');
     };
 
     recognition.onresult = (event) => {
-      const current = event.resultIndex;
-      const text = event.results[current][0].transcript;
-      setTranscript(text);
-      setIsListening(false);
-      handleVoiceCommand(text);
+      let currentText = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcriptChunk = event.results[i][0].transcript;
+        currentText += transcriptChunk;
+      }
+      if (currentText && currentText.trim()) {
+        finalCapturedText = currentText.trim();
+        setTextInput(finalCapturedText);
+      }
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech error:', event.error);
+      console.warn('Speech error:', event.error);
       setIsListening(false);
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      if (finalCapturedText && finalCapturedText.trim()) {
+        handleVoiceCommand(finalCapturedText.trim());
+      }
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (e) {
+      setIsListening(false);
+    }
   };
 
   const speakText = (text) => {
@@ -148,8 +161,8 @@ const VoiceAiWidget = ({ lang, toggleLang, onCommand }) => {
       const replyText = (res && res.success && res.reply)
         ? res.reply
         : (lang === 'ml' 
-            ? `"${cmd}" എന്നതിൽ കാർഡോറ ഏലത്തോട്ട വിശകലനം വിജയകരമായി നടത്തി.` 
-            : `Processed query "${cmd}": Cardora Agronomist advice updated.`);
+            ? `നമസ്കാരം! "${cmd}" എന്ന ചോദ്യത്തിന് കാർഡോറ ഏലത്തോട്ട വിശകലനം പൂർത്തിയായി.` 
+            : `CARDORA AI processed your query "${cmd}": Farm advice updated successfully.`);
 
       const aiMsg = {
         id: Date.now() + 1,
@@ -162,6 +175,17 @@ const VoiceAiWidget = ({ lang, toggleLang, onCommand }) => {
       speakText(replyText);
     } catch (err) {
       console.warn('AI Chat Error:', err);
+      const fallbackText = lang === 'ml'
+        ? `നമസ്കാരം! "${cmd}" എന്നതിനെക്കുറിച്ച് കാർഡോറ വോയ്സ് എഐ വിശദമായ വിവരങ്ങൾ നൽകുന്നു.`
+        : `CARDORA AI processed your query "${cmd}". How else can I assist your farm today?`;
+      const aiMsg = {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: fallbackText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatHistory((prev) => [...prev, aiMsg]);
+      speakText(fallbackText);
     } finally {
       setLoadingAi(false);
     }
@@ -317,7 +341,6 @@ const VoiceAiWidget = ({ lang, toggleLang, onCommand }) => {
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (textInput.trim()) {
-                    setTranscript(textInput);
                     handleVoiceCommand(textInput);
                     setTextInput('');
                   }

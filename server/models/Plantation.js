@@ -217,4 +217,8 @@ const plantationSchema = new mongoose.Schema(
   }
 );
 
+plantationSchema.index({ user: 1, createdAt: -1 });
+plantationSchema.index({ district: 1 });
+plantationSchema.index({ supervisorId: 1 });
+
 module.exports = mongoose.model('Plantation', plantationSchema);

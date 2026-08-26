@@ -28,6 +28,7 @@ import {
   MapPin,
   Clock
 } from 'lucide-react';
+import { apiService } from './services/api';
 
 // Language translations
 const translations = {
@@ -279,10 +280,23 @@ export default function Homepage() {
         setIsListening(false);
       };
 
-      recognition.onresult = (event) => {
+      recognition.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
-        console.log('Transcript:', transcript);
-        // Handle voice commands here
+        if (transcript && transcript.trim()) {
+          try {
+            const res = await apiService.askAiChat(transcript, language);
+            const reply = (res && res.success && res.reply) ? res.reply : 'Voice command processed by CARDORA AI.';
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.cancel();
+              const utterance = new SpeechSynthesisUtterance(reply.replace(/[*#]/g, ''));
+              utterance.lang = language === 'ml' ? 'ml-IN' : 'en-US';
+              utterance.rate = 0.95;
+              window.speechSynthesis.speak(utterance);
+            }
+          } catch (e) {
+            console.warn('Voice AI API error:', e);
+          }
+        }
       };
 
       recognition.start();

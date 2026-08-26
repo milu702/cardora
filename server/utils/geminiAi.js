@@ -36,13 +36,12 @@ async function askGemini(prompt, systemInstruction = '', model = 'gemini-3.6-fla
 
   // Model cascade list prioritizing active, supported Gemini API models
   const candidateModels = [
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro-latest',
-    'gemini-2.0-flash-exp',
-    'gemini-1.5-flash-001',
-    'gemini-1.5-flash-002',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
     'gemini-1.5-flash',
-    'gemini-1.5-pro'
+    'gemini-1.5-pro',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro-latest'
   ];
   // Filter duplicates while preserving order
   const modelsToTry = [...new Set(candidateModels.filter(Boolean))];
@@ -197,12 +196,22 @@ function fallbackAgronomist(prompt) {
       `Cardora AI Security automatically scans and verifies document integrity with 256-Bit SSL encryption.`;
   }
 
-  // 9. General Question Fallback Engine (Specific to user query)
-  return `💡 **CARDORA AI Response for "${prompt}"**:\n\n` +
-    `Cardora AI has analyzed your query. Here are the key details:\n\n` +
-    `• **Question Focus**: ${prompt}\n` +
-    `• **Key Insight**: Cardora AI provides expert assistance for cardamom farming, crop health, high-yielding varieties (Njallani, Vazhukka), pest control, market auction rates, and land verification.\n` +
-    `• **Helpful Tip**: Try asking specifically about *"types of cardamom"*, *"cardamom health"*, *"azhukal treatment"*, or *"today market price"* for instant, detailed guides!`;
+  // 9. Malayalam Language Detection & Intelligent Answers
+  const isMalayalam = /[\u0D00-\u0D7F]/.test(prompt) || q.includes('എന്താണ്') || q.includes('എങ്ങനെ') || q.includes('ഏത്') || q.includes('ആണ്');
+  if (isMalayalam) {
+    return `🤖 **കാർഡോറ എഐ മറുപടി**: "${prompt}" എന്ന വിഷയത്തെക്കുറിച്ചുള്ള വിശകലനം:\n\n` +
+      `• **പ്രധാന വശം**: ഏലം കൃഷിയിൽ ശരിയായ പരിചരണവും കൃത്യസമയത്തുള്ള തടമെടുപ്പും ഉൽപ്പാദനം വർദ്ധിപ്പിക്കും.\n` +
+      `• **ശുപാർശ**: കൃഷിയിടത്തിലെ മണ്ണിലെ ഈർപ്പം 70-80% നിലനിർത്തുകയും നല്ല നീർവാർച്ച ഉറപ്പാക്കുകയും ചെയ്യുക.\n` +
+      `• **വിപണി വിവരം**: ഇടുക്കി, വന്ദൻമേട് ലേല കേന്ദ്രങ്ങളിൽ ഏലക്കയ്ക്ക് മികച്ച ആവശ്യക്കാരുണ്ട്. കൂടുതൽ വിവരങ്ങൾക്ക് എന്നോട് നേരിട്ട് ചോദിക്കാവുന്നതാണ്.`;
+  }
+
+  // 10. General Knowledge, Farming & Dynamic Query Engine
+  const cleanPrompt = (prompt || '').trim();
+  return `🤖 **CARDORA AI Insight for "${cleanPrompt}"**:\n\n` +
+    `Thank you for asking about **"${cleanPrompt}"**.\n\n` +
+    `• **Agronomic & Ecosystem Analysis**: Cardora AI has evaluated your query. For optimal cardamom plantation management, ensure proper shade regulation (50-60% light filtration), steady micro-drip irrigation, and routine tiller health monitoring.\n` +
+    `• **Expert Action Plan**: If your inquiry relates to crop disease, soil health, or market trading, you can request specific recommendations on NPK fertilization, Azhukal/Thrips remediation, or current Spice Board auction rates.\n\n` +
+    `Feel free to ask follow-up questions in English or Malayalam!`;
 }
 
 module.exports = {

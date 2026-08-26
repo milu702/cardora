@@ -112,35 +112,26 @@ const AddPlantationModal = ({ isOpen, onClose, onSave, editingPlantation = null 
   const validateField = (fieldName, fieldValue) => {
     let err = '';
     const val = String(fieldValue || '').trim();
-    const letterOnlyRegex = /^[A-Za-z\s]+$/;
 
     switch (fieldName) {
       case 'name':
         if (!val) {
           err = 'Plantation Name is required.';
-        } else if (val.length < 3) {
-          err = 'Plantation Name must be at least 3 letters.';
-        } else if (!letterOnlyRegex.test(val)) {
-          err = 'Plantation Name must contain only letters and spaces (no numbers or special characters).';
+        } else if (val.length < 2) {
+          err = 'Plantation Name must be at least 2 characters.';
         }
         break;
 
       case 'ownerName':
-        if (val && !letterOnlyRegex.test(val)) {
-          err = 'Owner Name must contain only letters and spaces.';
-        }
+        // Optional or standard text
         break;
 
       case 'taluk':
-        if (val && !letterOnlyRegex.test(val)) {
-          err = 'Taluk must contain only letters and spaces.';
-        }
+        // Optional or standard text
         break;
 
       case 'village':
-        if (val && !letterOnlyRegex.test(val)) {
-          err = 'Village must contain only letters and spaces.';
-        }
+        // Optional or standard text
         break;
 
       case 'pincode':
