@@ -42,36 +42,37 @@ const PlantationMap = ({ mapPoints = [], onSelectPlantation }) => {
     <div className="space-y-4 font-sans">
       
       {/* ===== 1. MAP COMMAND CONTROL HEADER ===== */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 p-6 rounded-3xl bg-white/95 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-xl backdrop-blur-md">
         
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold shadow-inner shrink-0">
-            <Compass size={22} className="animate-spin-slow" />
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-bold shadow-md shrink-0">
+            <Compass size={24} className="animate-spin-slow" />
           </div>
           <div>
-            <h4 className="font-black text-base text-[#1F2937] dark:text-white flex items-center gap-2">
+            <h4 className="font-black text-lg text-slate-900 dark:text-white flex items-center gap-3 font-poppins">
               <span>GIS Plantation Command Center</span>
-              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-[#1F5E3B] dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
-                ● Live GPS Active ({displayPoints.length})
+              <span className="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live GPS Active ({displayPoints.length} Estates)
               </span>
             </h4>
-            <p className="text-xs text-[#6B7280] dark:text-slate-400 font-medium mt-0.5">
-              Geographic Information System tracking real cardamom estates across Western Ghats
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              Geographic Information System tracking real cardamom estates across Western Ghats belts
             </p>
           </div>
         </div>
 
         {/* SEARCH & FILTERS */}
-        <div className="flex items-center gap-2.5 flex-wrap w-full lg:w-auto">
+        <div className="flex items-center gap-3 flex-wrap w-full lg:w-auto">
           {/* Search Box */}
-          <div className="relative flex-1 sm:w-56">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <div className="relative flex-1 sm:w-60">
+            <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-3.5 top-3" />
             <input
               type="text"
-              placeholder="Search estate, farmer..."
+              placeholder="Search estate, farmer, district..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#1F5E3B]"
+              className="w-full pl-10 pr-3 py-2 rounded-2xl text-xs font-bold bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
             />
           </div>
 
@@ -79,7 +80,7 @@ const PlantationMap = ({ mapPoints = [], onSelectPlantation }) => {
           <select
             value={districtFilter}
             onChange={(e) => setDistrictFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+            className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
           >
             <option value="ALL">All Districts</option>
             {districtsList.map((d) => (
@@ -91,43 +92,42 @@ const PlantationMap = ({ mapPoints = [], onSelectPlantation }) => {
           <select
             value={healthFilter}
             onChange={(e) => setHealthFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+            className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
           >
-            <option value="ALL">All Health</option>
+            <option value="ALL">All Health Scores</option>
             <option value="HEALTHY">🟢 Healthy (≥80%)</option>
             <option value="MODERATE">🟡 Moderate (60-79%)</option>
             <option value="CRITICAL">🔴 Critical (&lt;60%)</option>
           </select>
 
           {/* Map Layer Mode Switcher */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center bg-slate-900/90 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
             <button
               onClick={() => setMapMode('topo')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all ${
-                mapMode === 'topo' ? 'bg-[#1F5E3B] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                mapMode === 'topo' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
               Topo
             </button>
             <button
               onClick={() => setMapMode('satellite')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all ${
-                mapMode === 'satellite' ? 'bg-[#1F5E3B] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                mapMode === 'satellite' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
               Satellite
             </button>
             <button
               onClick={() => setMapMode('dark')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all ${
-                mapMode === 'dark' ? 'bg-[#1F5E3B] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                mapMode === 'dark' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
               GIS Matrix
             </button>
           </div>
         </div>
-
       </div>
 
       {/* ===== 2. INTERACTIVE GIS CANVAS MAP DISPLAY ===== */}

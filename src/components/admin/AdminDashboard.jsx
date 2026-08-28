@@ -676,47 +676,57 @@ const AdminDashboard = () => {
     <div className="space-y-6 bg-[#F8FAF7] dark:bg-slate-950 min-h-screen p-4 sm:p-6 lg:p-8 font-sans text-slate-800 dark:text-slate-100 w-full max-w-full mx-auto transition-colors">
       
       {/* ========================================================================= */}
-      {/* SECTION 5: HERO / OVERVIEW WELCOME BANNER */}
+      {/* EXECUTIVE COMMAND HERO CONTROL BANNER */}
       {/* ========================================================================= */}
-      <div className={`p-5 sm:p-6 rounded-2xl border transition-all ${
-        darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-      } flex flex-col md:flex-row md:items-center justify-between gap-4`}>
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#1F5E3B] text-white flex items-center justify-center font-bold shadow-xs shrink-0">
-            <Shield size={24} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight font-poppins">
-                System Admin Command Control Panel 🛡️
-              </h1>
-              <span className="text-[11px] font-bold text-[#1F5E3B] dark:text-emerald-400 bg-[#EAF3E8] dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-[#1F5E3B]/20">
-                Live MongoDB Atlas Synced 🟢
+      <div className="bg-gradient-to-r from-[#071F11] via-[#0F381F] to-[#174D2B] text-white rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden border border-emerald-500/20">
+        <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 -top-20 w-60 h-60 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black tracking-wider uppercase border border-emerald-400/30 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live MongoDB Atlas Synced
+              </span>
+              <span className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-bold border border-white/10 flex items-center gap-1.5">
+                <Radio size={12} className="text-emerald-400 animate-spin" />
+                GIS Telemetry Active
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-              Enterprise control panel tracking registered users, plantations, GIS map telemetry, marketplace listings & workforce across districts.
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-poppins text-white flex items-center gap-3">
+              Executive Command Center 🛡️
+            </h1>
+            <p className="text-xs sm:text-sm text-emerald-100/80 font-medium max-w-2xl leading-relaxed">
+              Real-time administrative telemetry oversight for registered cardamom growers, verified plantations, GIS spatial mapping, live auctions, and workforce operations across Western Ghats belts.
             </p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 self-end md:self-auto">
-          <span className="text-xs text-slate-400 font-semibold flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700">
-            <Clock size={13} className="text-[#1F5E3B]" /> Last updated: Just now
-          </span>
+          <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={handleExportCSV}
+              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs backdrop-blur-md border border-white/15 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Download size={14} />
+              <span>Export CSV</span>
+            </button>
 
-          <button
-            onClick={() => setQuickAddUserOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#16442b] text-white font-bold text-xs shadow-xs transition-all"
-          >
-            <UserPlus size={14} />
-            <span>Add User</span>
-          </button>
+            <button
+              onClick={() => setQuickAddUserOpen(true)}
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <UserPlus size={15} />
+              <span>Add New User</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* SUB-VIEW NAVIGATION SWITCHER TABS */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* ========================================================================= */}
+      {/* SUB-VIEW NAVIGATION SWITCHER TABS (GLASS PILL CONTROLS) */}
+      {/* ========================================================================= */}
+      <div className="bg-slate-900/90 dark:bg-slate-900 border border-slate-800 p-2 rounded-2xl shadow-xl flex items-center gap-1.5 overflow-x-auto scrollbar-none backdrop-blur-md">
         {[
           { id: 'all', label: 'Executive Dashboard', icon: Shield },
           { id: 'auctions', label: 'Live Auctions Oversight', icon: Gavel, badge: 'Live Bidding' },
@@ -736,20 +746,22 @@ const AdminDashboard = () => {
             <button
               key={view.id}
               onClick={() => setSearchParams({ tab: 'admin', view: view.id })}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all border whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-xs transition-all whitespace-nowrap cursor-pointer ${
                 isActive
-                  ? 'bg-[#1F5E3B] text-white border-[#1F5E3B] shadow-xs'
-                  : darkMode
-                  ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
-                  : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-950/40 scale-102 font-black'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
               }`}
             >
-              <VIcon size={14} />
+              <VIcon size={14} className={isActive ? 'text-emerald-200' : 'text-slate-400'} />
               <span>{view.label}</span>
               {view.badge !== undefined && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400'
-                }`}>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                    isActive
+                      ? 'bg-white/20 text-white border border-white/20'
+                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}
+                >
                   {view.badge}
                 </span>
               )}
@@ -766,41 +778,81 @@ const AdminDashboard = () => {
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
-              { label: 'Total Farmers', value: users.filter((u) => (u.role || '').toLowerCase().includes('farmer')).length || '1,248', change: '+12.4% this month', icon: UserCheck, isUp: true },
-              { label: 'Active Plantations', value: mapPoints.length || '386', change: '+8.2% this month', icon: Building, isUp: true },
-              { label: 'Supervisors', value: contractorsList.length || '42', change: '+4 this month', icon: ShieldCheck, isUp: true },
-              { label: 'Workforce', value: '1,864', change: '+6.7% this month', icon: Users, isUp: true },
-              { label: 'Pending Requests', value: (unverifiedContractors.length + alerts.length) || '28', change: 'Requires attention', icon: Clock, isUp: false, isWarning: true },
-              { label: 'System Activity', value: '99.4%', change: 'Healthy & Operational', icon: Activity, isUp: true, isAccent: true },
+              {
+                label: 'Total Farmers',
+                value: users.filter((u) => (u.role || '').toLowerCase().includes('farmer')).length || '1,248',
+                change: '+12.4% this month',
+                icon: UserCheck,
+                gradient: 'from-emerald-500 to-teal-700',
+                isUp: true,
+              },
+              {
+                label: 'Active Plantations',
+                value: mapPoints.length || '386',
+                change: '+8.2% this month',
+                icon: Building,
+                gradient: 'from-green-600 to-emerald-800',
+                isUp: true,
+              },
+              {
+                label: 'Supervisors',
+                value: contractorsList.length || '42',
+                change: '+4 this month',
+                icon: ShieldCheck,
+                gradient: 'from-cyan-600 to-blue-700',
+                isUp: true,
+              },
+              {
+                label: 'Workforce',
+                value: '1,864',
+                change: '+6.7% this month',
+                icon: Users,
+                gradient: 'from-purple-600 to-indigo-800',
+                isUp: true,
+              },
+              {
+                label: 'Pending Requests',
+                value: (unverifiedContractors.length + alerts.length) || '28',
+                change: 'Requires attention',
+                icon: Clock,
+                gradient: 'from-amber-500 to-orange-600',
+                isUp: false,
+                isWarning: true,
+              },
+              {
+                label: 'System Activity',
+                value: '99.4%',
+                change: 'Healthy & Operational',
+                icon: Activity,
+                gradient: 'from-[#1F5E3B] to-emerald-600',
+                isUp: true,
+                isAccent: true,
+              },
             ].map((kpi, idx) => {
               const KIcon = kpi.icon;
               return (
                 <div
                   key={idx}
-                  className={`p-4 rounded-xl border transition-all ${
-                    darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs hover:border-[#1F5E3B]/40'
-                  }`}
+                  className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-lg hover:shadow-xl hover:border-emerald-500/30 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{kpi.label}</span>
-                    <div className="p-2 rounded-lg bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400">
+                    <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{kpi.label}</span>
+                    <div className={`p-2.5 rounded-xl bg-gradient-to-br ${kpi.gradient} text-white shadow-md group-hover:scale-110 transition-transform`}>
                       <KIcon size={16} />
                     </div>
                   </div>
 
-                  <div className="mt-2">
-                    <span className="text-2xl font-black text-slate-900 dark:text-white font-poppins">
+                  <div className="mt-3">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins tracking-tight">
                       {loading ? '...' : kpi.value}
                     </span>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <span className={`font-bold flex items-center gap-1 ${
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px]">
+                    <span className={`font-extrabold flex items-center gap-1.5 ${
                       kpi.isWarning
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : kpi.isUp
-                        ? 'text-[#1F5E3B] dark:text-emerald-400'
-                        : 'text-slate-500'
+                        ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800'
+                        : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800'
                     }`}>
                       {kpi.isUp ? <TrendingUp size={12} /> : <Clock size={12} />}
                       {kpi.change}
@@ -822,9 +874,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* LEFT (Large Card - 2/3 Width): Platform Activity Chart */}
-            <div className={`lg:col-span-2 p-6 rounded-2xl border ${
-              darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-            } space-y-4`}>
+            <div className="lg:col-span-2 p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -922,12 +972,10 @@ const AdminDashboard = () => {
             </div>
 
             {/* RIGHT (Smaller Card - 1/3 Width): Plantation Health Overview */}
-            <div className={`p-6 rounded-2xl border ${
-              darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-            } flex flex-col justify-between space-y-4`}>
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#1F5E3B]" />
+                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   Plantation Health Overview
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
@@ -937,18 +985,18 @@ const AdminDashboard = () => {
 
               <div className="space-y-4 py-2">
                 {[
-                  { label: 'Healthy', percentage: 78, count: '301 Estates', color: 'bg-[#1F5E3B]', text: 'text-[#1F5E3B]' },
+                  { label: 'Healthy', percentage: 78, count: '301 Estates', color: 'bg-emerald-600', text: 'text-emerald-700' },
                   { label: 'Needs Attention', percentage: 16, count: '62 Estates', color: 'bg-amber-500', text: 'text-amber-600' },
                   { label: 'Critical', percentage: 6, count: '23 Estates', color: 'bg-rose-500', text: 'text-rose-600' },
                 ].map((item, idx) => (
                   <div key={idx} className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-bold">
+                    <div className="flex justify-between text-xs font-extrabold">
                       <span className="text-slate-700 dark:text-slate-300">{item.label}</span>
-                      <span className="text-slate-900 dark:text-white font-extrabold">
+                      <span className="text-slate-900 dark:text-white font-black">
                         {item.percentage}% ({item.count})
                       </span>
                     </div>
-                    <div className="w-full h-3.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5">
+                    <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5">
                       <div
                         style={{ width: `${item.percentage}%` }}
                         className={`h-full ${item.color} rounded-full transition-all duration-500`}
@@ -958,9 +1006,9 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#E2E8F0] dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center justify-between">
-                <span>Avg Soil Moisture: <strong>74%</strong></span>
-                <span className="text-[#1F5E3B] font-bold">Optimal Range</span>
+              <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Avg Soil Moisture: <strong className="text-emerald-800 dark:text-emerald-300 font-black">74%</strong></span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-black bg-emerald-200/60 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full text-[10px]">Optimal Range</span>
               </div>
             </div>
 
@@ -972,16 +1020,14 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* SECTION 8: Workforce Overview */}
-            <div className={`p-6 rounded-2xl border ${
-              darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-            } space-y-4`}>
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <Users size={18} />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center font-bold shadow-md">
+                    <Users size={20} />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Workforce Overview</h3>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Workforce Overview</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Daily labor attendance & harvesting teams</p>
                   </div>
                 </div>
@@ -1028,16 +1074,14 @@ const AdminDashboard = () => {
             </div>
 
             {/* SECTION 10: Requires Your Attention */}
-            <div className={`p-6 rounded-2xl border ${
-              darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-            } space-y-4`}>
+            <div className="p-6 sm:p-7 rounded-3xl border border-amber-500/30 dark:border-amber-900/40 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                    <AlertTriangle size={18} />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold shadow-md">
+                    <AlertTriangle size={20} />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Requires Your Attention</h3>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Requires Your Attention</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pending administrative actions & approvals</p>
                   </div>
                 </div>
@@ -1049,21 +1093,21 @@ const AdminDashboard = () => {
                   return (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#E2E8F0] dark:border-slate-700 flex items-center justify-between gap-3 hover:border-[#1F5E3B]/40 transition-all"
+                      className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/70 via-slate-50 to-emerald-50/40 dark:from-slate-800/80 dark:to-slate-800/40 border border-amber-200/80 dark:border-slate-700 flex items-center justify-between gap-3 hover:border-amber-400 transition-all shadow-xs group"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
-                          <PIcon size={16} />
+                        <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 group-hover:scale-110 transition-transform">
+                          <PIcon size={18} />
                         </div>
                         <div>
-                          <h4 className="text-xs font-black text-slate-900 dark:text-white">{item.title}</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{item.subtitle}</p>
+                          <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">{item.title}</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{item.subtitle}</p>
                         </div>
                       </div>
 
                       <button
                         onClick={item.action}
-                        className="px-3 py-1.5 rounded-lg bg-[#1F5E3B] hover:bg-[#16442b] text-white font-bold text-xs shadow-2xs transition-all shrink-0"
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md transition-all shrink-0 cursor-pointer active:scale-95"
                       >
                         Review
                       </button>
@@ -1081,23 +1125,21 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* SECTION 9: Recent Activity Feed */}
-            <div className={`p-6 rounded-2xl border ${
-              darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-            } space-y-4`}>
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <Activity size={18} />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-bold shadow-md">
+                    <Activity size={20} />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Recent Activity</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Real-time platform system log</p>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Recent System Audit</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Real-time platform event log</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setSearchParams({ tab: 'admin', view: 'activity' })}
-                  className="text-xs font-extrabold text-[#1F5E3B] dark:text-emerald-400 hover:underline"
+                  className="text-xs font-black text-emerald-700 dark:text-emerald-400 hover:underline"
                 >
                   Full Activity Log →
                 </button>
@@ -1109,19 +1151,19 @@ const AdminDashboard = () => {
                   return (
                     <div
                       key={act.id || act._id}
-                      className="p-3.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between gap-3 text-xs"
+                      className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between gap-3 text-xs shadow-xs"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-emerald-50 dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shrink-0">
-                          <AIcon size={15} />
+                        <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 shrink-0">
+                          <AIcon size={16} />
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 dark:text-white">{act.description}</p>
-                          <p className="text-[11px] text-slate-400 font-medium mt-0.5">By {act.actorName || 'Planter'}</p>
+                          <p className="font-extrabold text-slate-900 dark:text-white">{act.description}</p>
+                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">By {act.actorName || 'Planter'}</p>
                         </div>
                       </div>
 
-                      <span className="text-[11px] font-bold text-slate-400 shrink-0">
+                      <span className="text-[11px] font-extrabold text-slate-400 shrink-0">
                         {act.timeAgo || (act.timestamp ? new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently')}
                       </span>
                     </div>
@@ -1131,9 +1173,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* SECTION 12: Plantation Location Network Map */}
-            <div className={`p-6 rounded-2xl border ${
-              darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-            } space-y-4 flex flex-col justify-between`}>
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4 flex flex-col justify-between">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
