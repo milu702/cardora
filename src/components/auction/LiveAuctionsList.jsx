@@ -3,6 +3,8 @@ import { Search, Plus, RefreshCw, Gavel, Sparkles } from 'lucide-react';
 import LiveAuctionCard from './LiveAuctionCard';
 import axios from 'axios';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, user, onToast }) => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
   const fetchAuctions = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
       const params = new URLSearchParams({
@@ -32,7 +34,7 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
       if (selectedLocation !== 'all') params.append('location', selectedLocation);
       if (selectedType !== 'all') params.append('plantationType', selectedType);
 
-      const { data } = await axios.get(`/api/auctions?${params.toString()}`, config);
+      const { data } = await axios.get(`${API_BASE}/auctions?${params.toString()}`, config);
 
       if (data.success) {
         setAuctions(data.auctions || []);
@@ -62,9 +64,9 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
 
     try {
       setSeeding(true);
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const { data } = await axios.post('/api/auctions/seed', {}, config);
+      const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+      const { data } = await axios.post(`${API_BASE}/auctions/seed`, {}, config);
 
       if (data.success) {
         if (onToast) onToast(data.message || 'Live sample auctions seeded!', 'success');
@@ -241,7 +243,10 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
           <Gavel size={48} className="mx-auto text-[#1F5E3B]" />
           <h3 className="text-xl font-black text-[#17331F] dark:text-white">No Live Auctions Available</h3>
           <p className="text-sm text-slate-500 font-medium max-w-md mx-auto">
-            New cardamom plantation auctions will appear here when farmers list them live.
+            New cardamom plantation auctions will appear here when approved by Admin.
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 font-extrabold bg-amber-50 dark:bg-amber-950/40 py-2 px-4 rounded-xl max-w-md mx-auto border border-amber-200 dark:border-amber-800">
+            ⏳ Submitted listings pending Admin approval can be tracked under <strong>"My Auctions"</strong> (top right button).
           </p>
           <div className="flex justify-center gap-3 pt-2">
             <button

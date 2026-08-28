@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Gavel, Plus, ArrowRight, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const MyAuctionsTab = ({ onSelectAuction, onCreateClick, onToast }) => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,9 +11,9 @@ const MyAuctionsTab = ({ onSelectAuction, onCreateClick, onToast }) => {
   const fetchMyAuctions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-      const { data } = await axios.get('/api/auctions/my-auctions', config);
+      const { data } = await axios.get(`${API_BASE}/auctions/my-auctions`, config);
 
       if (data.success) {
         setAuctions(data.auctions || []);

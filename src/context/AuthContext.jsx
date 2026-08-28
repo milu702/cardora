@@ -255,6 +255,7 @@ export const AuthProvider = ({ children }) => {
       if (res && res.success) {
         if (res.token) {
           localStorage.setItem('cardora_token', res.token);
+          localStorage.setItem('token', res.token);
           setToken(res.token);
         }
         if (res.user) {
@@ -298,6 +299,7 @@ export const AuthProvider = ({ children }) => {
       if (res && res.success) {
         if (res.token) {
           localStorage.setItem('cardora_token', res.token);
+          localStorage.setItem('token', res.token);
           setToken(res.token);
         }
         if (res.user) {

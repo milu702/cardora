@@ -63,8 +63,153 @@ const seedPlatformUsers = async () => {
       }
     }
     console.log('🔑 Platform Demo User Accounts Ready (Admin, Planters, Experts, Investors)');
+    await seedInitialAuctions();
   } catch (err) {
     console.warn('Seed Platform Users notice:', err.message);
+  }
+};
+
+const seedInitialAuctions = async () => {
+  try {
+    const Auction = require('../models/Auction');
+    const User = require('../models/User');
+    const Plantation = require('../models/Plantation');
+    const Bid = require('../models/Bid');
+
+    const count = await Auction.countDocuments();
+    if (count === 0) {
+      const defaultUser = (await User.findOne({ role: 'admin' })) || (await User.findOne());
+      if (!defaultUser) return;
+
+      let plantation = await Plantation.findOne({ user: defaultUser._id });
+      if (!plantation) {
+        plantation = await Plantation.create({
+          user: defaultUser._id,
+          name: 'Premium Kattappana Cardamom Estate',
+          district: 'Idukki',
+          location: 'Kattappana, Idukki, Kerala',
+          area: 5.5,
+          variety: 'Njallani Green Gold',
+        });
+      }
+
+      const sampleAuctions = [
+        {
+          title: '🌿 Premium Idukki Cardamom Estate (5.5 Acres)',
+          description: 'High-altitude organic cardamom plantation with mature Njallani Green Gold plants, automated drip irrigation, and high yield 8mm extra bold pods.',
+          plantation: plantation._id,
+          seller: defaultUser._id,
+          location: 'Kattappana, Idukki, Kerala',
+          district: 'Idukki',
+          plantationType: 'Njallani Green Gold',
+          areaAcres: 5.5,
+          estimatedYieldKg: 1450,
+          grade: 'AGEB (8mm Extra Bold)',
+          startingPrice: 50000,
+          currentBid: 65000,
+          minIncrement: 1000,
+          highestBidder: defaultUser._id,
+          highestBidderMasked: 'Buyer #A82',
+          biddersCount: 12,
+          totalBidsCount: 18,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 2 * 3600 * 1000 + 45 * 60 * 1000),
+          status: 'LIVE',
+          images: [
+            'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
+          ],
+          aiInsight: {
+            recommendedMinPrice: 55000,
+            recommendedMaxPrice: 70000,
+            expectedDemand: 'Very High',
+            marketTrend: '↗ Favorable Spices Board Index',
+            reasoning: 'Prime soil quality and high-density planting in Kattappana command a 20% premium over regional base prices.',
+          },
+        },
+        {
+          title: '🌱 High Yield Devikulam Cardamom Grove (8.0 Acres)',
+          description: 'Spectacular canopy shade management with disease-resistant Vazhukka variety. Complete IoT soil moisture sensors pre-installed.',
+          plantation: plantation._id,
+          seller: defaultUser._id,
+          location: 'Devikulam, Idukki, Kerala',
+          district: 'Idukki',
+          plantationType: 'Vazhukka Special',
+          areaAcres: 8.0,
+          estimatedYieldKg: 2100,
+          grade: 'AGB (7.5mm Bold)',
+          startingPrice: 75000,
+          currentBid: 88000,
+          minIncrement: 2000,
+          highestBidder: defaultUser._id,
+          highestBidderMasked: 'Buyer #K14',
+          biddersCount: 16,
+          totalBidsCount: 24,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 15 * 60 * 1000 + 30 * 1000),
+          status: 'ENDING_SOON',
+          images: [
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
+            'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+          ],
+          aiInsight: {
+            recommendedMinPrice: 80000,
+            recommendedMaxPrice: 95000,
+            expectedDemand: 'High',
+            marketTrend: '↗ Peak Demand',
+            reasoning: 'Large acreage in Devikulam with active IoT telemetry commands high competition among premium spice exporters.',
+          },
+        },
+        {
+          title: '🌄 Wayanad High-Grade Spice Plantation (4.2 Acres)',
+          description: 'Rich forest humus soil with inter-cropped black pepper and cardamom. Excellent access road and post-harvest drying yard.',
+          plantation: plantation._id,
+          seller: defaultUser._id,
+          location: 'Meppadi, Wayanad, Kerala',
+          district: 'Wayanad',
+          plantationType: 'Green Gold Hybrid',
+          areaAcres: 4.2,
+          estimatedYieldKg: 980,
+          grade: 'AGS (Grinded Special)',
+          startingPrice: 42000,
+          currentBid: 42000,
+          minIncrement: 1000,
+          highestBidderMasked: null,
+          biddersCount: 0,
+          totalBidsCount: 0,
+          startDate: new Date(Date.now() + 12 * 3600 * 1000),
+          endDate: new Date(Date.now() + 36 * 3600 * 1000),
+          status: 'SCHEDULED',
+          images: [
+            'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=1000&q=80',
+          ],
+          aiInsight: {
+            recommendedMinPrice: 45000,
+            recommendedMaxPrice: 58000,
+            expectedDemand: 'Moderate',
+            marketTrend: '→ Stable Market Rate',
+            reasoning: 'Good soil structure and moisture balance in Meppadi support steady bidding values.',
+          },
+        },
+      ];
+
+      for (const item of sampleAuctions) {
+        const createdAuc = await Auction.create(item);
+        if (createdAuc.currentBid > createdAuc.startingPrice) {
+          await Bid.create({
+            auction: createdAuc._id,
+            bidder: defaultUser._id,
+            bidderMasked: createdAuc.highestBidderMasked || 'Buyer #A82',
+            amount: createdAuc.currentBid,
+            isHighest: true,
+            placedAt: new Date(),
+          });
+        }
+      }
+      console.log('🔨 Live Cardamom Auctions Initialized in MongoDB Atlas');
+    }
+  } catch (err) {
+    console.warn('Seed Initial Auctions notice:', err.message);
   }
 };
 

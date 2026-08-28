@@ -7,7 +7,7 @@ import {
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
   Camera, Lock, Key, Bell, Upload, CornerDownRight, Shield, CloudSun,
   Droplets, TrendingUp, BarChart3, Calendar, ChevronRight,
-  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw
+  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw, Gavel
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -852,6 +852,7 @@ const Dashboard = () => {
     ? [
         { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard Overview', icon: Home },
+        { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
         { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
@@ -871,6 +872,7 @@ const Dashboard = () => {
       ]
     : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
+        { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
         { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
@@ -1469,7 +1471,7 @@ const Dashboard = () => {
                   <span>{lang === 'ml' ? 'ത്വരിത നടപടികൾ' : 'Important Quick Actions'}</span>
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                   {/* Action 1: Add Plantation */}
                   <button
                     onClick={() => setNewPlantationModalOpen(true)}
@@ -1538,7 +1540,26 @@ const Dashboard = () => {
                     </div>
                   </button>
 
-                  {/* Action 5: Send Message */}
+                  {/* Action 5: Live Auctions */}
+                  <button
+                    onClick={() => setActiveTab('auctions')}
+                    className="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-800 hover:scale-102 border-2 border-rose-300 dark:border-rose-800 text-left transition-all group flex flex-col justify-between h-24 shadow-sm cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="p-1.5 rounded-lg bg-rose-600 text-white shadow-xs">
+                        <Gavel className="w-4 h-4" />
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-600 text-white animate-pulse">🔴 LIVE</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1">
+                        {lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨'}
+                      </p>
+                      <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">Real-time estate bidding</p>
+                    </div>
+                  </button>
+
+                  {/* Action 6: Send Message */}
                   <button
                     onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
                     className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
@@ -1626,7 +1647,7 @@ const Dashboard = () => {
           )}
 
           {/* ===== TAB: CARDORA LIVE AUCTION MODULE ===== */}
-          {activeTab === 'auctions' && (
+          {(activeTab === 'auctions' || activeTab === 'auction') && (
             <div className="w-full">
               <AuctionModule user={user} onToast={showToast} />
             </div>
@@ -2354,6 +2375,8 @@ const Dashboard = () => {
 
           {/* ===== TAB: LIVE PLANTATION INTELLIGENCE & AI RECOMMENDATIONS ===== */}
           {(activeTab === 'intelligence' || activeTab === 'ai') && <LivePlantationIntelligenceModule onToast={showToast} />}
+
+
 
           {/* ===== TAB: ADMIN PORTAL ===== */}
           {activeTab === 'admin' && <AdminDashboard />}

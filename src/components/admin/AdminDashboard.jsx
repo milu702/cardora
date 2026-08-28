@@ -665,6 +665,7 @@ const AdminDashboard = () => {
 
   // Pending actions items
   const pendingActionsList = [
+    { title: '🔨 Live Plantation Auctions Oversight', count: 'Review', subtitle: 'Review pending plantation auctions & approve listings', icon: Gavel, action: () => setSearchParams({ tab: 'admin', view: 'auctions' }) },
     { title: '28 Supervisor Requests', count: 28, subtitle: 'License and background verification pending', icon: ShieldCheck, action: () => setSearchParams({ tab: 'admin', view: 'contractors' }) },
     { title: '12 Pending Worker Records', count: 12, subtitle: 'Wage settlement & Aadhaar verification required', icon: Users, action: () => navigate('/dashboard?tab=workforce') },
     { title: '8 Plantation Verification Requests', count: 8, subtitle: 'Pattayam revenue deed OCR check', icon: Building, action: () => setSearchParams({ tab: 'admin', view: 'marketplace' }) },
@@ -2291,6 +2292,11 @@ const AdminDashboard = () => {
             );
           })()}
         </div>
+      ) : adminViewMode === 'auctions' ? (
+        <AdminAuctionsTab
+          onSelectAuction={(auc) => navigate(`/dashboard?tab=auctions`)}
+          onToast={showToast}
+        />
       ) : (
         /* FALLBACK OR OTHER SUB-VIEWS: Activity Feed / Recommendations / Contractors / Posts */
         <div className="space-y-6">

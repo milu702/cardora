@@ -6,6 +6,8 @@ import {
 import { getSocket } from '../../utils/socket';
 import axios from 'axios';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
   const [auction, setAuction] = useState(null);
   const [bids, setBids] = useState([]);
@@ -27,9 +29,9 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
   const fetchAuctionDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
       const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-      const { data } = await axios.get(`/api/auctions/${auctionId}`, config);
+      const { data } = await axios.get(`${API_BASE}/auctions/${auctionId}`, config);
 
       if (data.success) {
         setAuction(data.auction);
@@ -143,9 +145,9 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
 
     try {
       setSubmittingBid(true);
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const { data } = await axios.post(`/api/auctions/${auctionId}/bid`, { amount: bidAmount }, config);
+      const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+      const { data } = await axios.post(`${API_BASE}/auctions/${auctionId}/bid`, { amount: bidAmount }, config);
 
       if (data.success) {
         if (onToast) onToast(data.message || '🎉 Bid placed successfully!', 'success');
@@ -348,10 +350,17 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
             
             {/* CARD HEADER & BADGE */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <span className="px-4 py-1.5 rounded-full text-xs font-black bg-rose-600 text-white flex items-center gap-2 shadow-sm">
-                <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                🔴 LIVE AUCTION
-              </span>
+              {auction.status === 'PENDING_APPROVAL' ? (
+                <span className="px-4 py-1.5 rounded-full text-xs font-black bg-amber-500 text-white flex items-center gap-2 shadow-xs animate-pulse">
+                  <Clock size={14} />
+                  ⏳ PENDING APPROVAL
+                </span>
+              ) : (
+                <span className="px-4 py-1.5 rounded-full text-xs font-black bg-rose-600 text-white flex items-center gap-2 shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                  🔴 LIVE AUCTION
+                </span>
+              )}
 
               <span className="text-xs font-extrabold text-gray-500 flex items-center gap-1">
                 <Users size={14} className="text-[#1F5E3B]" />
@@ -391,7 +400,17 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
             </div>
 
             {/* PLACE BID CALCULATOR & BUTTON */}
-            {!timeLeft.isExpired && auction.status !== 'COMPLETED' ? (
+            {auction.status === 'PENDING_APPROVAL' ? (
+              <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200 space-y-2 text-center">
+                <div className="font-black text-sm flex items-center justify-center gap-2">
+                  <Clock size={18} />
+                  <span>Submitted for Admin Approval</span>
+                </div>
+                <p className="text-xs leading-relaxed font-medium">
+                  Cardora Admins are currently verifying this plantation listing and revenue documents. As soon as it is approved, it will go <strong>LIVE</strong> for competitive bidding across India.
+                </p>
+              </div>
+            ) : !timeLeft.isExpired && auction.status !== 'COMPLETED' ? (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-black text-gray-500">

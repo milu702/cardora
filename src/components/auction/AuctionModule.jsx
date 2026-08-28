@@ -64,7 +64,11 @@ const AuctionModule = ({ user, onToast }) => {
         onToast={onToast}
         onAuctionCreated={(newAuction) => {
           if (newAuction) {
-            handleSelectAuction(newAuction);
+            if (newAuction.status === 'PENDING_APPROVAL') {
+              setView('my_auctions');
+            } else {
+              handleSelectAuction(newAuction);
+            }
           }
         }}
       />

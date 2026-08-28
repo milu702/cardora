@@ -13,6 +13,8 @@ const Expert = require('./models/Expert');
 const SystemAlert = require('./models/SystemAlert');
 const ActivityLog = require('./models/ActivityLog');
 const Recommendation = require('./models/Recommendation');
+const Auction = require('./models/Auction');
+const Bid = require('./models/Bid');
 
 const seedAllData = async () => {
   const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cardora';
@@ -279,15 +281,53 @@ const seedAllData = async () => {
       console.log('✅ Seeded IoT Sensors');
     }
 
-    // 6. Seed System Alerts
-    const alertCount = await SystemAlert.countDocuments();
-    if (alertCount === 0) {
-      await SystemAlert.insertMany([
-        { priority: 'critical', title: 'Low Soil Moisture Warning (<45%)', plantationName: 'Nedumkandam Organic Farm', farmerName: 'Mathew Joseph', recommendation: 'Initiate 2-hour pulse drip irrigation immediately.' },
-        { priority: 'critical', title: 'Heavy Monsoon Capsule Rot (Azhukal) Risk', plantationName: 'Munnar Mist Plantation', farmerName: 'Priya Nair', recommendation: 'Apply Bio-Fungicide canopy spray.' },
-        { priority: 'high', title: 'Leaf Spot Incident Recorded', plantationName: 'High Altitude Green Valley', farmerName: 'Devika Raj', recommendation: 'Prune affected stems and apply Organic Lime.' },
-      ]);
-      console.log('✅ Seeded System Alerts');
+    // 7. Seed Live Cardamom Auctions & Bids
+    const auctionCount = await Auction.countDocuments();
+    if (auctionCount === 0) {
+      const samplePlantation = await Plantation.findOne({ user: defaultUser._id }) || await Plantation.findOne();
+      const sampleAuction = await Auction.create({
+        title: '🌿 Premium Idukki Cardamom Estate (5.5 Acres)',
+        description: 'High-altitude organic cardamom plantation with mature Njallani Green Gold plants, automated drip irrigation, and high yield 8mm extra bold pods.',
+        plantation: samplePlantation ? samplePlantation._id : defaultUser._id,
+        seller: defaultUser._id,
+        location: 'Kattappana, Idukki, Kerala',
+        district: 'Idukki',
+        plantationType: 'Njallani Green Gold',
+        areaAcres: 5.5,
+        estimatedYieldKg: 1450,
+        grade: 'AGEB (8mm Extra Bold)',
+        startingPrice: 50000,
+        currentBid: 68000,
+        minIncrement: 1000,
+        highestBidder: defaultUser._id,
+        highestBidderMasked: 'Buyer #A82',
+        biddersCount: 8,
+        totalBidsCount: 14,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 48 * 3600 * 1000),
+        status: 'LIVE',
+        images: [
+          'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+          'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
+        ],
+        aiInsight: {
+          recommendedMinPrice: 55000,
+          recommendedMaxPrice: 72000,
+          expectedDemand: 'Very High',
+          marketTrend: '↗ Favorable Spices Board Index',
+          reasoning: 'Prime soil quality and high-density planting command a 20% premium over regional base rates.',
+        },
+      });
+
+      await Bid.create({
+        auction: sampleAuction._id,
+        bidder: defaultUser._id,
+        bidderMasked: 'Buyer #A82',
+        amount: 68000,
+        isHighest: true,
+        placedAt: new Date(),
+      });
+      console.log('✅ Seeded Auctions & Bids');
     }
 
     console.log('🎉 ALL DATABASE COLLECTIONS POPULATED SUCCESSFULLY!');

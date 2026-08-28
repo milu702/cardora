@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Gavel, RefreshCw, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Sparkles, Gavel, RefreshCw, ArrowRight, ArrowLeft, Upload, Image as ImageIcon, Plus } from 'lucide-react';
 import axios from 'axios';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }) => {
   const [step, setStep] = useState(1);
@@ -17,6 +19,41 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
   const [startDate, setStartDate] = useState(new Date().toISOString().substring(0, 16));
   const [endDate, setEndDate] = useState(new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().substring(0, 16));
 
+  // Gallery Images State
+  const [images, setImages] = useState([
+    'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+  ]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+
+  const presetPhotos = [
+    'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
+    'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=1000&q=80',
+    'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80',
+  ];
+
+  const handleAddImageUrl = () => {
+    if (imageUrlInput && imageUrlInput.startsWith('http')) {
+      setImages((prev) => [...prev, imageUrlInput]);
+      setImageUrlInput('');
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages((prev) => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // AI Price Insight State
   const [aiInsight, setAiInsight] = useState(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -28,23 +65,47 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
 
     const fetchMyPlantations = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-        const { data } = await axios.get('/api/plantations/my-plantations', config);
+        const { data } = await axios.get(`${API_BASE}/plantations/my-plantations`, config);
 
         if (data.success && data.plantations?.length > 0) {
           setUserPlantations(data.plantations);
           setSelectedPlantationId(data.plantations[0]._id || data.plantations[0].id);
           setSelectedPlantation(data.plantations[0]);
           setTitle(`🌿 ${data.plantations[0].name} Cardamom Auction`);
+        } else {
+          // Default fallback plantation if user hasn't registered one yet
+          const fallback = {
+            _id: '',
+            name: `${user?.fullName || user?.name || 'My'} Cardamom Estate`,
+            district: user?.district || 'Idukki',
+            location: user?.location || 'Idukki, Kerala',
+            areaAcres: 5.5,
+            cardamomVariety: 'Njallani Green Gold',
+            estimatedYieldKg: 1200,
+          };
+          setSelectedPlantation(fallback);
+          setTitle(`🌿 ${fallback.name} Auction`);
         }
       } catch (error) {
         console.error('Error fetching plantations:', error);
+        const fallback = {
+          _id: '',
+          name: `${user?.fullName || user?.name || 'My'} Cardamom Estate`,
+          district: user?.district || 'Idukki',
+          location: user?.location || 'Idukki, Kerala',
+          areaAcres: 5.5,
+          cardamomVariety: 'Njallani Green Gold',
+          estimatedYieldKg: 1200,
+        };
+        setSelectedPlantation(fallback);
+        setTitle(`🌿 ${fallback.name} Auction`);
       }
     };
 
     fetchMyPlantations();
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   // Update selected plantation obj when ID changes
   const handlePlantationChange = (id) => {
@@ -62,11 +123,11 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
 
     try {
       setLoadingAi(true);
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
       const { data } = await axios.post(
-        '/api/auctions/ai-price-insight',
+        `${API_BASE}/auctions/ai-price-insight`,
         {
           areaAcres: selectedPlantation.areaAcres || 5.0,
           district: selectedPlantation.district || 'Idukki',
@@ -91,30 +152,52 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
   const handleSubmit = async (submitForApproval = true) => {
     try {
       setSubmitting(true);
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      let token = localStorage.getItem('cardora_token') || localStorage.getItem('token');
+      
+      // Failsafe: Scan localStorage for any valid session token
+      if (!token) {
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('token') || key.includes('auth'))) {
+              const val = localStorage.getItem(key);
+              if (val && val.length > 15) {
+                token = val.replace(/"/g, '');
+                break;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
       const payload = {
-        plantationId: selectedPlantationId,
-        title,
-        description,
-        startingPrice: Number(startingPrice),
-        minIncrement: Number(minIncrement),
-        startDate,
-        endDate,
+        plantationId: (selectedPlantationId && selectedPlantationId.length > 5) ? selectedPlantationId : undefined,
+        title: title || '🌿 Cardamom Estate Auction',
+        description: description || 'High yield cardamom plantation auction.',
+        startingPrice: Number(startingPrice) || 50000,
+        minIncrement: Number(minIncrement) || 1000,
+        startDate: startDate || new Date(),
+        endDate: endDate || new Date(Date.now() + 3 * 24 * 3600 * 1000),
+        images: images.length > 0 ? images : undefined,
         submitForApproval,
       };
 
-      const { data } = await axios.post('/api/auctions', payload, config);
+      const { data } = await axios.post(`${API_BASE}/auctions`, payload, config);
 
       if (data.success) {
-        if (onToast) onToast(data.message || 'Auction created successfully!', 'success');
+        const successMsg = submitForApproval
+          ? '🎉 Auction submitted for Admin Approval successfully!'
+          : 'Draft saved successfully!';
+        if (onToast) onToast(data.message || successMsg, 'success');
         if (onAuctionCreated) onAuctionCreated(data.auction);
         onClose();
       }
     } catch (error) {
-      const msg = error.response?.data?.message || 'Failed to create auction.';
-      if (onToast) onToast(msg, 'error');
+      console.error('Error submitting auction:', error);
+      const msg = error.response?.data?.message || error.message || 'Failed to create auction.';
+      if (onToast) onToast(`⚠️ ${msg}`, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -219,7 +302,7 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
                   handleFetchAiPriceInsight();
                   setStep(2);
                 }}
-                disabled={!selectedPlantationId}
+                disabled={!selectedPlantation}
                 className="px-6 py-3 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white font-black text-sm flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
               >
                 <span>Continue to Auction Details</span>
@@ -359,6 +442,84 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
                   className="w-full p-3 rounded-2xl text-xs font-bold bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-white focus:outline-none"
                 />
               </div>
+
+              {/* PLANTATION GALLERY PHOTOS & FILE UPLOAD */}
+              <div className="sm:col-span-2 space-y-3 pt-2 border-t border-dashed border-[#D7E6D5] dark:border-slate-700">
+                <label className="block text-xs font-extrabold text-[#17331F] dark:text-slate-200 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <ImageIcon size={16} className="text-[#1F5E3B] dark:text-emerald-400" />
+                    Plantation Photos & Gallery
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-bold">Upload file, URL, or pick presets</span>
+                </label>
+
+                {/* IMAGE PREVIEW THUMBNAILS */}
+                <div className="flex items-center gap-3 overflow-x-auto pb-2">
+                  {images.map((img, i) => (
+                    <div key={i} className="relative w-24 h-20 rounded-2xl overflow-hidden border border-[#D7E6D5] dark:border-slate-700 shrink-0 group shadow-xs">
+                      <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(i)}
+                        className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 transition-opacity"
+                        title="Remove photo"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* UPLOAD FILE BUTTON */}
+                  <label className="w-24 h-20 rounded-2xl border-2 border-dashed border-[#1F5E3B]/40 hover:border-[#1F5E3B] bg-[#F8FAF7] dark:bg-slate-800 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all shrink-0">
+                    <Upload size={18} className="text-[#1F5E3B] dark:text-emerald-400" />
+                    <span className="text-[10px] font-black text-[#1F5E3B] dark:text-emerald-400">Upload Photo</span>
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                  </label>
+                </div>
+
+                {/* PASTE IMAGE URL & ADD BUTTON */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="Paste Image URL (https://...)"
+                    className="flex-1 p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    className="px-3.5 py-2.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white font-black text-xs cursor-pointer flex items-center gap-1 shrink-0"
+                  >
+                    <Plus size={14} />
+                    <span>Add URL</span>
+                  </button>
+                </div>
+
+                {/* QUICK PRESET PHOTOS */}
+                <div className="space-y-1 pt-1">
+                  <span className="text-[11px] text-gray-400 font-bold block">Preset Spice Estate Photos:</span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {presetPhotos.map((imgUrl, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          if (!images.includes(imgUrl)) setImages((prev) => [...prev, imgUrl]);
+                        }}
+                        className={`relative h-14 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
+                          images.includes(imgUrl) ? 'border-[#1F5E3B] ring-2 ring-[#1F5E3B]/30' : 'border-transparent opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={imgUrl} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                        {images.includes(imgUrl) && (
+                          <span className="absolute top-1 right-1 bg-[#1F5E3B] text-white rounded-full p-0.5 text-[8px]">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-between pt-3">
@@ -409,6 +570,17 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
                     <strong className="block text-[#17331F] dark:text-white">Until {new Date(endDate).toLocaleDateString()}</strong>
                   </div>
                 </div>
+
+                {images.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-gray-400 font-medium text-xs block mb-1">Attached Gallery Photos ({images.length}):</span>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {images.map((img, i) => (
+                        <img key={i} src={img} alt={`Preview ${i}`} className="w-16 h-12 rounded-xl object-cover border border-[#D7E6D5] shrink-0" />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

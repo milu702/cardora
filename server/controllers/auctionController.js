@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
 const Plantation = require('../models/Plantation');
@@ -97,10 +98,145 @@ exports.getAuctions = async (req, res) => {
       sortOptions = { createdAt: -1 };
     }
 
-    const auctions = await Auction.find(query)
+    let auctions = await Auction.find(query)
       .populate('seller', 'name email district avatar')
       .populate('plantation', 'name district location areaAcres cardamomVariety')
       .sort(sortOptions);
+
+    // If database has 0 total auctions, auto-seed initial live auctions
+    const totalCount = await Auction.countDocuments();
+    if (totalCount === 0) {
+      const User = require('../models/User');
+      const defaultUser = (await User.findOne({ role: 'admin' })) || (await User.findOne()) || { _id: new mongoose.Types.ObjectId() };
+      
+      const sampleAuctions = [
+        {
+          title: '🌿 Premium Idukki Cardamom Estate (5.5 Acres)',
+          description: 'High-altitude organic cardamom plantation with mature Njallani Green Gold plants, automated drip irrigation, and high yield 8mm extra bold pods.',
+          location: 'Kattappana, Idukki, Kerala',
+          district: 'Idukki',
+          plantationType: 'Njallani Green Gold',
+          areaAcres: 5.5,
+          estimatedYieldKg: 1450,
+          grade: 'AGEB (8mm Extra Bold)',
+          startingPrice: 50000,
+          currentBid: 65000,
+          minIncrement: 1000,
+          highestBidderMasked: 'Buyer #A82',
+          biddersCount: 12,
+          totalBidsCount: 18,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 2 * 3600 * 1000 + 45 * 60 * 1000), // 2h 45m remaining
+          status: 'LIVE',
+          images: [
+            'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
+          ],
+          aiInsight: {
+            recommendedMinPrice: 55000,
+            recommendedMaxPrice: 70000,
+            expectedDemand: 'Very High',
+            marketTrend: '↗ Favorable Spices Board Index',
+            reasoning: 'Prime soil quality and high-density planting in Kattappana command a 20% premium over regional base prices.',
+          },
+        },
+        {
+          title: '🌱 High Yield Devikulam Cardamom Grove (8.0 Acres)',
+          description: 'Spectacular canopy shade management with disease-resistant Vazhukka variety. Complete IoT soil moisture sensors pre-installed.',
+          location: 'Devikulam, Idukki, Kerala',
+          district: 'Idukki',
+          plantationType: 'Vazhukka Special',
+          areaAcres: 8.0,
+          estimatedYieldKg: 2100,
+          grade: 'AGB (7.5mm Bold)',
+          startingPrice: 75000,
+          currentBid: 88000,
+          minIncrement: 2000,
+          highestBidderMasked: 'Buyer #K14',
+          biddersCount: 16,
+          totalBidsCount: 24,
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 15 * 60 * 1000 + 30 * 1000), // 15m remaining -> ENDING SOON!
+          status: 'ENDING_SOON',
+          images: [
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80',
+            'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80',
+          ],
+          aiInsight: {
+            recommendedMinPrice: 80000,
+            recommendedMaxPrice: 95000,
+            expectedDemand: 'High',
+            marketTrend: '↗ Peak Demand',
+            reasoning: 'Large acreage in Devikulam with active IoT telemetry commands high competition among premium spice exporters.',
+          },
+        },
+        {
+          title: '🌄 Wayanad High-Grade Spice Plantation (4.2 Acres)',
+          description: 'Rich forest humus soil with inter-cropped black pepper and cardamom. Excellent access road and post-harvest drying yard.',
+          location: 'Meppadi, Wayanad, Kerala',
+          district: 'Wayanad',
+          plantationType: 'Green Gold Hybrid',
+          areaAcres: 4.2,
+          estimatedYieldKg: 980,
+          grade: 'AGS (Grinded Special)',
+          startingPrice: 42000,
+          currentBid: 42000,
+          minIncrement: 1000,
+          highestBidderMasked: null,
+          biddersCount: 0,
+          totalBidsCount: 0,
+          startDate: new Date(Date.now() + 12 * 3600 * 1000), // Starting in 12h
+          endDate: new Date(Date.now() + 36 * 3600 * 1000),
+          status: 'SCHEDULED',
+          images: [
+            'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=1000&q=80',
+          ],
+          aiInsight: {
+            recommendedMinPrice: 45000,
+            recommendedMaxPrice: 58000,
+            expectedDemand: 'Moderate',
+            marketTrend: '→ Stable Market Rate',
+            reasoning: 'Good soil structure and moisture balance in Meppadi support steady bidding values.',
+          },
+        },
+      ];
+
+      for (const item of sampleAuctions) {
+        let plantation = await Plantation.findOne({ user: defaultUser._id });
+        if (!plantation) {
+          plantation = await Plantation.create({
+            user: defaultUser._id,
+            name: item.title.split('(')[0].trim(),
+            district: item.district,
+            location: item.location,
+            area: item.areaAcres || 5.0,
+            variety: item.plantationType,
+          });
+        }
+
+        const createdAuc = await Auction.create({
+          ...item,
+          seller: defaultUser._id,
+          plantation: plantation._id,
+        });
+
+        if (createdAuc.currentBid > createdAuc.startingPrice) {
+          await Bid.create({
+            auction: createdAuc._id,
+            bidder: defaultUser._id,
+            bidderMasked: createdAuc.highestBidderMasked || 'Buyer #A82',
+            amount: createdAuc.currentBid,
+            isHighest: true,
+            placedAt: new Date(),
+          });
+        }
+      }
+
+      auctions = await Auction.find(query)
+        .populate('seller', 'name email district avatar')
+        .populate('plantation', 'name district location areaAcres cardamomVariety')
+        .sort(sortOptions);
+    }
 
     res.status(200).json({
       success: true,
@@ -172,13 +308,26 @@ exports.createAuction = async (req, res) => {
       submitForApproval,
     } = req.body;
 
-    const plantation = await Plantation.findById(plantationId);
-    if (!plantation) {
-      return res.status(404).json({ success: false, message: 'Plantation not found' });
+    let plantation;
+    if (plantationId && mongoose.Types.ObjectId.isValid(plantationId)) {
+      plantation = await Plantation.findById(plantationId);
     }
 
-    // Verify ownership
-    if (plantation.owner && String(plantation.owner) !== String(req.user._id)) {
+    if (!plantation) {
+      plantation = await Plantation.findOne({ user: req.user._id });
+    }
+
+    if (!plantation) {
+      // Auto-create a default plantation for the user if they don't have one registered yet
+      plantation = await Plantation.create({
+        user: req.user._id,
+        name: title ? title.split('(')[0].trim() : `${req.user.name || 'Planter'}'s Cardamom Estate`,
+        district: req.user.district || 'Idukki',
+        location: req.user.location || `${req.user.district || 'Idukki'}, Kerala`,
+        area: 5.5,
+        variety: 'Njallani',
+      });
+    } else if (plantation.user && String(plantation.user) !== String(req.user._id) && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'You can only auction your own registered plantations' });
     }
 
@@ -194,13 +343,15 @@ exports.createAuction = async (req, res) => {
       seller: req.user._id,
       location: plantation.location || `${plantation.district || 'Idukki'}, Kerala`,
       district: plantation.district || 'Idukki',
-      plantationType: plantation.cardamomVariety || 'NJALLANI GREEN GOLD',
-      areaAcres: plantation.areaAcres || 5.5,
+      plantationType: plantation.cardamomVariety || plantation.variety || 'NJALLANI GREEN GOLD',
+      areaAcres: plantation.areaAcres || plantation.area || 5.5,
       estimatedYieldKg: plantation.estimatedYieldKg || 1200,
       grade: plantation.grade || 'AGEB (8mm Extra Bold)',
-      images: plantation.images && plantation.images.length > 0
-        ? plantation.images
-        : ['https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80'],
+      images: (req.body.images && req.body.images.length > 0)
+        ? req.body.images
+        : (plantation.images && plantation.images.length > 0
+            ? plantation.images
+            : ['https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80']),
       startingPrice: Number(startingPrice) || 50000,
       currentBid: Number(startingPrice) || 50000,
       minIncrement: Number(minIncrement) || 1000,
@@ -208,6 +359,24 @@ exports.createAuction = async (req, res) => {
       endDate: end,
       status: auctionStatus,
     });
+
+    if (submitForApproval) {
+      try {
+        const User = require('../models/User');
+        const adminUsers = await User.find({ role: 'admin' });
+        for (const adminUser of adminUsers) {
+          await Notification.create({
+            user: adminUser._id,
+            title: '⏳ New Auction Approval Request',
+            message: `Planter ${req.user.name || req.user.fullName || 'Farmer'} submitted auction "${auction.title}" for admin approval.`,
+            type: 'AUCTION_PENDING',
+            link: '/dashboard?tab=admin&view=auctions',
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.log('Admin notification skipped:', err.message);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -461,8 +630,10 @@ exports.adminApproveRejectAuction = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Auction not found' });
     }
 
+    const now = new Date();
+
     if (action === 'approve') {
-      auction.status = 'LIVE';
+      auction.status = auction.startDate && new Date(auction.startDate) > now ? 'SCHEDULED' : 'LIVE';
     } else if (action === 'reject') {
       auction.status = 'REJECTED';
       auction.rejectionReason = reason || 'Does not meet plantation verification requirements.';
@@ -471,6 +642,21 @@ exports.adminApproveRejectAuction = async (req, res) => {
     }
 
     await auction.save();
+
+    // Create notification for seller about approval/rejection
+    if (auction.seller) {
+      await Notification.create({
+        user: auction.seller,
+        title: action === 'approve'
+          ? (auction.status === 'LIVE' ? '🎉 Auction Approved & LIVE!' : '🟢 Auction Approved & Scheduled!')
+          : '❌ Auction Submission Update',
+        message: action === 'approve'
+          ? `Your plantation auction "${auction.title}" has been approved by Cardora Admin and is now ${auction.status === 'LIVE' ? 'LIVE for bidding' : 'scheduled'}!`
+          : `Your auction submission "${auction.title}" was not approved. Reason: ${auction.rejectionReason}`,
+        type: action === 'approve' ? 'AUCTION_APPROVED' : 'AUCTION_REJECTED',
+        link: `/dashboard?tab=auctions`,
+      }).catch((e) => console.log('Seller notification skipped:', e.message));
+    }
 
     res.status(200).json({
       success: true,
@@ -587,15 +773,15 @@ exports.seedSampleAuctions = async (req, res) => {
 
     const createdAuctions = [];
     for (const item of sampleAuctions) {
-      let plantation = await Plantation.findOne({ owner: req.user._id });
+      let plantation = await Plantation.findOne({ user: req.user._id });
       if (!plantation) {
         plantation = await Plantation.create({
-          owner: req.user._id,
+          user: req.user._id,
           name: item.title.split('(')[0].trim(),
           district: item.district,
           location: item.location,
-          areaAcres: item.areaAcres,
-          cardamomVariety: item.plantationType,
+          area: item.areaAcres || 5.0,
+          variety: item.plantationType,
         });
       }
 
