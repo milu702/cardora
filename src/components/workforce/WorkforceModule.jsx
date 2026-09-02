@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Filter, ShieldCheck, MapPin, Star, DollarSign,
-  CheckCircle, Clock, Plus, UserPlus, MessageSquare, Briefcase,
+  CheckCircle, CheckCircle2, Clock, Plus, UserPlus, MessageSquare, Briefcase,
   Shield, ChevronRight, Navigation, RefreshCw, Mail, X, Trash2, Phone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -1058,39 +1058,59 @@ const WorkforceModule = ({ onOpenChat }) => {
       {activeTab === 'search' && (
         <div className="space-y-6">
           {/* Multi-faceted Filter Bar */}
-          <form onSubmit={handleSearchSubmit} className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 shadow-soft space-y-4">
+          <form onSubmit={handleSearchSubmit} className="p-6 bg-white dark:bg-slate-900 rounded-[28px] border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
+                <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-400 absolute left-4 top-3.5 z-10" />
                 <input
                   type="text"
-                  placeholder="Search by worker name, ID, skills (e.g. Capsule Harvesting), village..."
+                  placeholder="Search workers by name, ID, skill (e.g. Capsule Harvesting), village..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs focus:ring-2 focus:ring-[#1F5E3B] text-slate-800 dark:text-slate-100"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-[#1F5E3B] focus:border-[#1F5E3B] text-slate-800 dark:text-slate-100 outline-none transition-all"
                 />
               </div>
 
-              <button
-                type="submit"
-                className="px-6 py-2.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-2xl flex items-center justify-center gap-2 shadow-md transition"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Apply Search Filters</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs sm:text-sm font-black rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer whitespace-nowrap"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Apply Filters</span>
+                </button>
+                {(searchQuery || selectedDistrict || selectedVillage || selectedSkill || selectedAvailability !== 'All' || minRating || maxWage || verifiedOnly) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedDistrict('');
+                      setSelectedVillage('');
+                      setSelectedSkill('');
+                      setSelectedAvailability('All');
+                      setMinRating('');
+                      setMaxWage('');
+                      setVerifiedOnly(false);
+                    }}
+                    className="px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-2xl transition"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Filter Controls Row */}
             <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pt-2">
               <div>
-                <label className="text-[10px] font-bold text-slate-500">District</label>
+                <label className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block mb-1">District</label>
                 <select
                   value={selectedDistrict}
                   onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 >
                   <option value="">All Districts</option>
-                  <option value="Idukki">Idukki</option>
+                  <option value="Idukki">Idukki (Cardamom Belt)</option>
                   <option value="Wayanad">Wayanad</option>
                   <option value="Palakkad">Palakkad</option>
                   <option value="Pathanamthitta">Pathanamthitta</option>
@@ -1098,22 +1118,22 @@ const WorkforceModule = ({ onOpenChat }) => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500">Village / Locality</label>
+                <label className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block mb-1">Village / Locality</label>
                 <input
                   type="text"
                   placeholder="e.g. Vandanmedu"
                   value={selectedVillage}
                   onChange={(e) => setSelectedVillage(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500">Specialized Skill</label>
+                <label className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block mb-1">Specialized Skill</label>
                 <select
                   value={selectedSkill}
                   onChange={(e) => setSelectedSkill(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 >
                   <option value="">All Skills</option>
                   <option value="Capsule Harvesting">Capsule Harvesting</option>
@@ -1124,25 +1144,25 @@ const WorkforceModule = ({ onOpenChat }) => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500">Availability</label>
+                <label className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block mb-1">Availability</label>
                 <select
                   value={selectedAvailability}
                   onChange={(e) => setSelectedAvailability(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 >
                   <option value="All">All Statuses</option>
-                  <option value="Available Today">Available Today</option>
-                  <option value="Available Next Week">Available Next Week</option>
-                  <option value="On Duty">On Duty</option>
+                  <option value="Available Today">🟢 Available Today</option>
+                  <option value="Available Next Week">🟡 Next Week</option>
+                  <option value="On Duty">🔴 On Duty</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500">Min Rating</label>
+                <label className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block mb-1">Min Rating</label>
                 <select
                   value={minRating}
                   onChange={(e) => setMinRating(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 >
                   <option value="">Any Rating</option>
                   <option value="4.5">4.5+ Stars ★</option>
@@ -1152,27 +1172,31 @@ const WorkforceModule = ({ onOpenChat }) => {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500">Max Wage (₹)</label>
+                <label className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 block mb-1">Max Wage (₹/day)</label>
                 <input
                   type="number"
                   placeholder="e.g. 1000"
                   value={maxWage}
                   onChange={(e) => setMaxWage(e.target.value)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 />
               </div>
+            </div>
 
-              <div className="flex items-center pt-5">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#17331F] dark:text-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={verifiedOnly}
-                    onChange={(e) => setVerifiedOnly(e.target.checked)}
-                    className="w-4 h-4 text-[#1F5E3B] rounded"
-                  />
-                  <span>Verified Only</span>
-                </label>
-              </div>
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-black text-[#17331F] dark:text-emerald-400 select-none">
+                <input
+                  type="checkbox"
+                  checked={verifiedOnly}
+                  onChange={(e) => setVerifiedOnly(e.target.checked)}
+                  className="w-4 h-4 text-[#1F5E3B] rounded accent-[#1F5E3B] cursor-pointer"
+                />
+                <span>Show Verified & Rated Workers Only</span>
+              </label>
+
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                Showing {workers.length} worker profile{workers.length === 1 ? '' : 's'}
+              </span>
             </div>
           </form>
 
@@ -2372,57 +2396,61 @@ const WorkforceModule = ({ onOpenChat }) => {
 
       {/* UPLOAD / REGISTER WORKER PROFILE MODAL */}
       {registerWorkerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl space-y-4 my-8 border border-[#2E7D32]/30">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div>
-                <h3 className="text-base font-black text-[#17331F] dark:text-emerald-400 flex items-center gap-2">
-                  <UserPlus className="w-5 h-5 text-[#1B5E20]" />
-                  <span>Upload Plantation Worker Profile & Details</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">Publish your worker listing to Cardora MongoDB Directory</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto animate-fadeIn">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-[28px] p-6 shadow-2xl space-y-4 my-8 border border-[#1F5E3B]/30 overflow-hidden">
+            <div className="flex items-center justify-between border-b dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                  <UserPlus className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#17331F] dark:text-emerald-400 flex items-center gap-2">
+                    <span>Upload Plantation Worker Profile & Details</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Publish your worker listing to Cardora Directory</p>
+                </div>
               </div>
-              <button onClick={() => setRegisterWorkerModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 font-bold">
+              <button onClick={() => setRegisterWorkerModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold transition">
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleRegisterWorker} className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form onSubmit={handleRegisterWorker} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Full Name *</label>
+                  <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Full Name *</label>
                   <input
                     type="text"
                     placeholder="e.g. Joykutty Joseph"
                     value={registerWorkerForm.fullName}
                     onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, fullName: e.target.value })}
-                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Phone Number *</label>
+                  <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Phone Number *</label>
                   <input
                     type="text"
                     placeholder="+91 98470 00000"
                     value={registerWorkerForm.phone}
                     onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, phone: e.target.value })}
-                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">District *</label>
+                  <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">District *</label>
                   <select
                     value={registerWorkerForm.district}
                     onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, district: e.target.value })}
-                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                   >
-                    <option value="Idukki">Idukki</option>
+                    <option value="Idukki">Idukki (High Altitude Belt)</option>
                     <option value="Wayanad">Wayanad</option>
                     <option value="Palakkad">Palakkad</option>
                     <option value="Pathanamthitta">Pathanamthitta</option>
@@ -2431,84 +2459,121 @@ const WorkforceModule = ({ onOpenChat }) => {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Village / Panchayath</label>
+                  <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Village / Panchayath</label>
                   <input
                     type="text"
                     placeholder="Vandanmedu, Nedumkandam, Kattappana"
                     value={registerWorkerForm.village}
                     onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, village: e.target.value })}
-                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl font-semibold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Daily Wage (₹) *</label>
-                  <input
-                    type="number"
-                    placeholder="850"
-                    value={registerWorkerForm.dailyWage}
-                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, dailyWage: Number(e.target.value) })}
-                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
-                    required
-                  />
+              <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-black text-[#17331F] dark:text-slate-200">Daily Wage (₹ / Day) *</label>
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                    Est. ₹{((registerWorkerForm.dailyWage || 850) * 26).toLocaleString()} / month
+                  </span>
                 </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Availability Status</label>
-                  <select
-                    value={registerWorkerForm.availability}
-                    onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, availability: e.target.value })}
-                    className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl font-bold"
-                  >
-                    <option value="Available Today">Available Today 🟢</option>
-                    <option value="Available Next Week">Available Next Week 🟡</option>
-                    <option value="On Contract">On Contract 🔴</option>
-                  </select>
+                <input
+                  type="number"
+                  placeholder="850"
+                  value={registerWorkerForm.dailyWage}
+                  onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, dailyWage: Number(e.target.value) })}
+                  className="w-full p-2.5 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded-xl font-black text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  required
+                />
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-slate-500">Quick Rates:</span>
+                  {[600, 700, 800, 850, 900, 1000].map((rate) => (
+                    <button
+                      key={rate}
+                      type="button"
+                      onClick={() => setRegisterWorkerForm({ ...registerWorkerForm, dailyWage: rate })}
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold transition ${
+                        registerWorkerForm.dailyWage === rate
+                          ? 'bg-[#1F5E3B] text-white'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      ₹{rate}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300">Primary Skills (comma separated)</label>
+                <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Availability Status</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'Available Today', label: 'Available Today', icon: '🟢' },
+                    { id: 'Available Next Week', label: 'Next Week', icon: '🟡' },
+                    { id: 'On Contract', label: 'On Contract', icon: '🔴' },
+                  ].map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setRegisterWorkerForm({ ...registerWorkerForm, availability: st.id })}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${
+                        registerWorkerForm.availability === st.id
+                          ? 'bg-[#1F5E3B] text-white border-[#1F5E3B] shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>{st.icon}</span>
+                      <span>{st.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Primary Skills (comma separated)</label>
                 <input
                   type="text"
                   placeholder="Cardamom Capsule Picking, Shade Pruning, Soil Testing, Chemical Spray"
                   value={registerWorkerForm.skills}
                   onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, skills: e.target.value })}
-                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300">Photo URL (Optional)</label>
+                <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Photo URL (Optional)</label>
                 <input
                   type="text"
                   placeholder="https://images.unsplash.com/..."
                   value={registerWorkerForm.photo}
                   onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, photo: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300">Bio & Experience Summary</label>
+                <label className="font-extrabold text-slate-800 dark:text-slate-200 block mb-1">Bio & Experience Summary</label>
                 <textarea
                   placeholder="Describe your cardamom harvesting experience, daily capacity, and special skills..."
                   value={registerWorkerForm.bio}
                   onChange={(e) => setRegisterWorkerForm({ ...registerWorkerForm, bio: e.target.value })}
-                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                   rows={2}
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => setRegisterWorkerModalOpen(false)} className="flex-1 py-2.5 bg-slate-200 text-slate-700 rounded-xl font-bold">Cancel</button>
+              <div className="flex gap-2.5 pt-2">
+                <button type="button" onClick={() => setRegisterWorkerModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 rounded-xl font-extrabold transition">
+                  Cancel
+                </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#1B5E20] hover:bg-[#2E7D32] text-white rounded-xl font-bold transition shadow-md"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] hover:from-[#17482D] hover:to-[#1F5E3B] text-white rounded-xl font-extrabold transition shadow-md flex items-center justify-center gap-1.5"
                 >
-                  Upload & Publish Worker Details
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Upload & Publish Profile</span>
                 </button>
               </div>
             </form>
