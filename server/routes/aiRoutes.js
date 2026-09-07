@@ -4,7 +4,15 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
-const { chatWithAi, scanDocument, diagnosePlant, diagnosePlantImage } = require('../controllers/aiController');
+const { protect } = require('../middleware/authMiddleware');
+const {
+  chatWithAi,
+  scanDocument,
+  diagnosePlant,
+  diagnosePlantImage,
+  getFertilizerRecommendation,
+  getFertilizerHistory,
+} = require('../controllers/aiController');
 
 // @route   POST /api/ai/chat
 router.post('/chat', chatWithAi);
@@ -17,5 +25,11 @@ router.post('/diagnose-plant', diagnosePlant);
 
 // @route   POST /api/ai/diagnose-image
 router.post('/diagnose-image', upload.single('image'), diagnosePlantImage);
+
+// @route   POST /api/ai/fertilizer-recommendation
+router.post('/fertilizer-recommendation', protect, getFertilizerRecommendation);
+
+// @route   GET /api/ai/fertilizer-history/:plantationId
+router.get('/fertilizer-history/:plantationId', protect, getFertilizerHistory);
 
 module.exports = router;

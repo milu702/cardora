@@ -1,0 +1,54 @@
+nitrogen,phosphorus,potassium,ph,moisture,temperature,humidity,rainfall,crop,fertilizer
+25,15,30,5.2,35,26,82,18,cardamom,Urea
+30,40,25,5.5,40,24,78,25,cardamom,DAP
+20,18,60,6.0,30,25,80,12,cardamom,MOP
+50,45,90,6.2,45,23,85,30,cardamom,17-17-17 NPK
+15,12,20,4.8,25,27,70,10,cardamom,Organic Compost & Neem Cake
+35,50,30,6.1,42,22,88,35,cardamom,14-35-14 Complex
+40,30,85,5.8,38,25,82,20,cardamom,17-17-17 NPK
+18,15,75,5.4,32,26,80,15,cardamom,MOP
+28,35,22,5.9,36,24,84,28,cardamom,DAP
+22,14,28,5.1,34,27,76,14,cardamom,Urea
+12,10,18,4.9,28,28,68,8,cardamom,Organic Compost & Neem Cake
+45,40,80,6.3,44,23,86,32,cardamom,17-17-17 NPK
+32,48,26,6.0,41,22,89,38,cardamom,14-35-14 Complex
+24,16,68,5.6,33,26,81,16,cardamom,MOP
+26,38,24,5.7,37,25,83,22,cardamom,DAP
+21,12,25,5.3,31,27,77,11,cardamom,Urea
+14,11,19,4.7,26,29,69,9,cardamom,Organic Compost & Neem Cake
+48,42,88,6.4,46,23,87,34,cardamom,17-17-17 NPK
+34,52,28,6.2,43,21,90,40,cardamom,14-35-14 Complex
+23,17,72,5.5,35,26,79,17,cardamom,MOP
+29,42,26,5.8,39,24,85,26,cardamom,DAP
+27,15,29,5.2,33,27,78,13,cardamom,Urea
+16,13,22,5.0,29,28,71,10,cardamom,Organic Compost & Neem Cake
+52,46,92,6.5,47,22,88,36,cardamom,17-17-17 NPK
+36,54,30,6.3,45,21,91,42,cardamom,14-35-14 Complex
+22,18,74,5.7,36,25,82,18,cardamom,MOP
+31,44,28,5.9,40,24,86,29,cardamom,DAP
+23,13,27,5.4,32,27,75,12,cardamom,Urea
+13,11,17,4.8,27,29,67,7,cardamom,Organic Compost & Neem Cake
+46,44,84,6.2,43,23,85,31,cardamom,17-17-17 NPK
+33,50,27,6.1,42,22,88,37,cardamom,14-35-14 Complex
+25,19,70,5.6,34,26,80,16,cardamom,MOP
+30,41,25,5.8,38,25,84,24,cardamom,DAP
+20,14,30,5.3,35,26,76,15,cardamom,Urea
+15,10,21,4.9,28,28,70,9,cardamom,Organic Compost & Neem Cake
+50,48,90,6.4,45,22,87,33,cardamom,17-17-17 NPK
+38,55,32,6.2,44,21,92,44,cardamom,14-35-14 Complex
+21,16,76,5.5,33,26,81,17,cardamom,MOP
+27,39,23,5.7,37,25,83,23,cardamom,DAP
+24,15,26,5.1,34,27,77,14,cardamom,Urea
+11,9,16,4.6,24,30,65,6,cardamom,Organic Compost & Neem Cake
+54,50,95,6.6,48,22,89,37,cardamom,17-17-17 NPK
+35,51,29,6.0,43,23,87,39,cardamom,14-35-14 Complex
+26,20,78,5.8,37,25,82,19,cardamom,MOP
+32,45,29,5.9,41,24,85,30,cardamom,DAP
+80,40,40,6.5,50,29,80,150,rice,Urea
+60,80,40,6.2,45,28,75,120,rice,DAP
+40,30,100,6.0,40,30,70,100,rice,MOP
+70,70,90,6.4,48,27,82,140,rice,17-17-17 NPK
+90,50,30,6.8,55,31,78,90,maize,Urea
+50,90,40,6.5,50,30,72,80,maize,DAP
+30,40,110,6.3,42,32,68,70,maize,MOP
+80,75,95,6.6,52,29,75,85,maize,17-17-17 NPK

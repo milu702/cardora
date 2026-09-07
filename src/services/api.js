@@ -471,6 +471,30 @@ export const apiService = {
     }
   },
 
+  getFertilizerRecommendation: async (payload = {}) => {
+    try {
+      const res = await api.post('/ai/fertilizer-recommendation', payload);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'AI analysis temporarily unavailable. Please try again later.',
+      };
+    }
+  },
+
+  getFertilizerHistory: async (plantationId = 'all') => {
+    try {
+      const res = await api.get(`/ai/fertilizer-history/${plantationId}`);
+      return res.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to fetch fertilizer history',
+      };
+    }
+  },
+
   getWeather: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams();

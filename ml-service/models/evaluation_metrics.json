@@ -1,0 +1,76 @@
+{
+  "selected_model": "RandomForest",
+  "xgboost_accuracy": 0.8182,
+  "xgboost_f1": 0.8061,
+  "random_forest_accuracy": 0.9091,
+  "random_forest_f1": 0.903,
+  "confusion_matrix": [
+    [
+      1,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      2,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      2
+    ]
+  ],
+  "feature_names": [
+    "nitrogen",
+    "phosphorus",
+    "potassium",
+    "ph",
+    "moisture",
+    "temperature",
+    "humidity",
+    "rainfall",
+    "crop_encoded"
+  ],
+  "classes": [
+    "14-35-14 Complex",
+    "17-17-17 NPK",
+    "DAP",
+    "MOP",
+    "Organic Compost & Neem Cake",
+    "Urea"
+  ]
+}

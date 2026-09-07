@@ -22,6 +22,7 @@ import ChatDrawerModal from '../components/chat/ChatDrawerModal';
 import WorkforceModule from '../components/workforce/WorkforceModule';
 import PlantationModule from '../components/plantation/PlantationModule';
 import AddPlantationModal from '../components/plantation/AddPlantationModal';
+import CardoraFertilizerAdvisor from '../components/ai/CardoraFertilizerAdvisor';
 import AiAnalysisModule from '../components/ai/AiAnalysisModule';
 import CardamomMarketplace from '../components/marketplace/CardamomMarketplace';
 import MessagingModule from '../components/messaging/MessagingModule';
@@ -1584,6 +1585,12 @@ const Dashboard = () => {
                 onToast={showToast} 
               />
 
+              {/* CARDORA AI SOIL & FERTILIZER ADVISOR ON DASHBOARD */}
+              <CardoraFertilizerAdvisor 
+                plantation={plantations[0]} 
+                onToast={showToast} 
+              />
+
               {/* AI ANALYSIS MODULE SNIPPET ON DASHBOARD */}
               <AiAnalysisModule 
                 plantation={plantations[0]} 
@@ -1612,6 +1619,10 @@ const Dashboard = () => {
           {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
           {activeTab === 'ai' && (
             <div className="space-y-6">
+              <CardoraFertilizerAdvisor 
+                plantation={plantations[0]} 
+                onToast={showToast} 
+              />
               <AiAnalysisModule 
                 plantation={plantations[0]} 
                 onToast={showToast} 

@@ -1,3 +1,7 @@
+const axios = require('axios');
+const Plantation = require('../models/Plantation');
+const FertilizerRecommendation = require('../models/FertilizerRecommendation');
+const { getWeatherTelemetry } = require('../services/weatherService');
 const { askGemini, analyzeDocumentWithGemini } = require('../utils/geminiAi');
 
 /**
@@ -472,3 +476,165 @@ CRITICAL RULES:
     });
   }
 };
+
+/**
+ * @desc    Get ML-based Soil, Weather & Fertilizer Recommendation
+ * @route   POST /api/ai/fertilizer-recommendation
+ * @access  Private
+ */
+exports.getFertilizerRecommendation = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const { plantationId, nitrogen, phosphorus, potassium, ph, moisture, crop } = req.body;
+
+    let targetPlantation = null;
+    let n = nitrogen;
+    let p = phosphorus;
+    let k = potassium;
+    let soilPh = ph;
+    let soilMoisture = moisture;
+    let district = 'Idukki, Kerala';
+    let lat = 9.85;
+    let lon = 76.97;
+    let cropType = crop || 'cardamom';
+    let plantationName = 'Cardamom Plantation';
+
+    if (plantationId) {
+      targetPlantation = await Plantation.findById(plantationId);
+      if (targetPlantation) {
+        plantationName = targetPlantation.name || plantationName;
+        district = targetPlantation.district || targetPlantation.location || district;
+        lat = targetPlantation.latitude || lat;
+        lon = targetPlantation.longitude || lon;
+
+        if (n === undefined) n = targetPlantation.soil?.npk?.n ?? targetPlantation.npk?.n ?? 40;
+        if (p === undefined) p = targetPlantation.soil?.npk?.p ?? targetPlantation.npk?.p ?? 20;
+        if (k === undefined) k = targetPlantation.soil?.npk?.k ?? targetPlantation.npk?.k ?? 80;
+        if (soilPh === undefined) soilPh = targetPlantation.soil?.ph ?? targetPlantation.soilPh ?? 5.5;
+        if (soilMoisture === undefined) {
+          soilMoisture = targetPlantation.sensor?.currentMoisture ?? targetPlantation.soil?.moisture ?? targetPlantation.moisture ?? 35;
+        }
+      }
+    }
+
+    n = Number(n !== undefined ? n : 40);
+    p = Number(p !== undefined ? p : 20);
+    k = Number(k !== undefined ? k : 80);
+    soilPh = Number(soilPh !== undefined ? soilPh : 5.5);
+    soilMoisture = Number(soilMoisture !== undefined ? soilMoisture : 35);
+
+    // Retrieve live weather telemetry
+    const weatherData = await getWeatherTelemetry({ district, lat, lon });
+    const currentTemp = weatherData?.currentWeather?.temp ?? 25;
+    const currentHumidity = weatherData?.currentWeather?.humidity ?? 80;
+    const currentRainfall = weatherData?.currentWeather?.rain ?? 15;
+
+    const mlPayload = {
+      nitrogen: n,
+      phosphorus: p,
+      potassium: k,
+      ph: soilPh,
+      moisture: soilMoisture,
+      temperature: currentTemp,
+      humidity: currentHumidity,
+      rainfall: currentRainfall,
+      crop: cropType,
+    };
+
+    const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+
+    let mlResponse = null;
+    try {
+      const response = await axios.post(ML_SERVICE_URL, mlPayload, { timeout: 5000 });
+      if (response.data && response.data.success) {
+        mlResponse = response.data;
+      }
+    } catch (mlErr) {
+      console.warn('⚠️ Python ML Service notice:', mlErr.message);
+    }
+
+    if (!mlResponse) {
+      return res.status(503).json({
+        success: false,
+        message: 'AI analysis temporarily unavailable. Please try again later.',
+      });
+    }
+
+    let savedRec = null;
+    if (userId) {
+      savedRec = await FertilizerRecommendation.create({
+        user: userId,
+        plantation: targetPlantation?._id || null,
+        plantationName,
+        crop: cropType,
+        soilData: {
+          nitrogen: n,
+          phosphorus: p,
+          potassium: k,
+          ph: soilPh,
+          moisture: soilMoisture,
+        },
+        weatherData: {
+          temperature: currentTemp,
+          humidity: currentHumidity,
+          rainfall: currentRainfall,
+        },
+        prediction: {
+          fertilizer: mlResponse.fertilizer,
+          confidence: mlResponse.confidence,
+          nutrientPriority: mlResponse.nutrient_priority,
+          soilStatus: mlResponse.soil_status,
+          weatherStatus: mlResponse.weather_status,
+          recommendation: mlResponse.recommendation,
+          weatherAdvice: mlResponse.weather_advice,
+        },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: mlResponse,
+      recommendationId: savedRec?._id || null,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Fertilizer Recommendation Controller Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'AI analysis temporarily unavailable. Please try again later.',
+    });
+  }
+};
+
+/**
+ * @desc    Get Fertilizer Recommendation History
+ * @route   GET /api/ai/fertilizer-history/:plantationId
+ * @access  Private
+ */
+exports.getFertilizerHistory = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const { plantationId } = req.params;
+
+    const query = { user: userId };
+    if (plantationId && plantationId !== 'all') {
+      query.plantation = plantationId;
+    }
+
+    const history = await FertilizerRecommendation.find(query)
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.status(200).json({
+      success: true,
+      count: history.length,
+      history,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch fertilizer recommendation history.',
+    });
+  }
+};
+
