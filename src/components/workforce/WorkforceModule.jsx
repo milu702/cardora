@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Filter, ShieldCheck, MapPin, Star, DollarSign,
   CheckCircle, CheckCircle2, Clock, Plus, UserPlus, MessageSquare, Briefcase,
-  Shield, ChevronRight, Navigation, RefreshCw, Mail, X, Trash2, Phone
+  Shield, ChevronRight, Navigation, RefreshCw, Mail, X, Trash2, Phone, Activity
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import WorkerProfileModal from './WorkerProfileModal';
 import PaymentReceiptModal from './PaymentReceiptModal';
 import SupervisorDashboard from './SupervisorDashboard';
+import OwnerSupervisorManagement from './OwnerSupervisorManagement';
+import OwnerActivityHistory from './OwnerActivityHistory';
 
 const WorkforceModule = ({ onOpenChat }) => {
   const { user, showToast } = useAuth();
@@ -806,7 +808,11 @@ const WorkforceModule = ({ onOpenChat }) => {
             { id: 'tasks', label: 'Task Manager', icon: Briefcase, badge: tasks.length },
             { id: 'attendance', label: 'GPS Attendance', icon: MapPin },
             { id: 'payments', label: 'Payments & Receipts', icon: DollarSign, badge: payments.length },
-            ...(!isAdmin ? [{ id: 'supervisor', label: 'Supervisor Hub', icon: ShieldCheck }] : []),
+            ...(!isAdmin ? [
+              { id: 'owner_supervisors', label: 'Supervisors & Permissions', icon: ShieldCheck },
+              { id: 'owner_history', label: 'Activity Audit History', icon: Activity },
+              { id: 'supervisor', label: 'Supervisor Hub', icon: ShieldCheck },
+            ] : []),
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -838,6 +844,21 @@ const WorkforceModule = ({ onOpenChat }) => {
       {/* ===== SUPERVISOR HUB MODULE ===== */}
       {activeTab === 'supervisor' && (
         <SupervisorDashboard plantationId={(myPlantations && myPlantations[0]?._id) || 'default_plantation_id'} showToast={showToast} />
+      )}
+
+      {/* ===== OWNER SUPERVISORS & PERMISSIONS TAB ===== */}
+      {activeTab === 'owner_supervisors' && (
+        <OwnerSupervisorManagement
+          showToast={showToast}
+          onViewActivity={(supId, supName) => {
+            setActiveTab('owner_history');
+          }}
+        />
+      )}
+
+      {/* ===== OWNER ACTIVITY AUDIT HISTORY TAB ===== */}
+      {activeTab === 'owner_history' && (
+        <OwnerActivityHistory showToast={showToast} />
       )}
 
       {/* ===== TAB 1: OVERVIEW DASHBOARD ===== */}

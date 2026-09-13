@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  Home, Leaf, MapPin, Users, User, Settings, 
-  Search, Heart, MessageSquare, Share2, 
+import {
+  Home, Leaf, MapPin, Users, User, Settings,
+  Search, Heart, MessageSquare, Share2,
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
   Camera, Lock, Key, Bell, Upload, CornerDownRight, Shield, CloudSun,
   Droplets, TrendingUp, BarChart3, Calendar, ChevronRight,
@@ -20,6 +20,7 @@ import WeatherModule from '../components/weather/WeatherModule';
 import PublicProfileModal from '../components/profile/PublicProfileModal';
 import ChatDrawerModal from '../components/chat/ChatDrawerModal';
 import WorkforceModule from '../components/workforce/WorkforceModule';
+import SupervisorDashboard from '../components/workforce/SupervisorDashboard';
 import PlantationModule from '../components/plantation/PlantationModule';
 import AddPlantationModal from '../components/plantation/AddPlantationModal';
 import CardoraFertilizerAdvisor from '../components/ai/CardoraFertilizerAdvisor';
@@ -39,10 +40,10 @@ const Dashboard = () => {
 
   const isAdminAccount = (user?.role || '').toLowerCase().includes('admin') || (user?.email || '').toLowerCase().includes('admin');
   const isSupervisorUser = (user?.role || '').toLowerCase() === 'supervisor';
-  const defaultTab = isAdminAccount ? 'admin' : isSupervisorUser ? 'workforce' : 'dashboard';
+  const defaultTab = isAdminAccount ? 'admin' : isSupervisorUser ? 'supervisor' : 'dashboard';
 
   const rawTab = searchParams.get('tab') || defaultTab;
-  const activeTab = (isSupervisorUser && rawTab !== 'profile' && rawTab !== 'messages') ? 'workforce' : rawTab;
+  const activeTab = (isSupervisorUser && rawTab !== 'profile' && rawTab !== 'messages') ? 'supervisor' : rawTab;
   const isAdminUser = isAdminAccount || activeTab === 'admin';
 
   const setActiveTab = (tabName) => {
@@ -278,7 +279,7 @@ const Dashboard = () => {
       if (res && res.success && Array.isArray(res.conversations)) {
         setDashboardConversations(res.conversations);
       }
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const currentUserIdVal = user?._id || user?.id || '';
@@ -365,7 +366,7 @@ const Dashboard = () => {
             return idStr && !idStr.startsWith('community-10') && !idStr.startsWith('dummy') && !idStr.startsWith('post_');
           });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -524,7 +525,7 @@ const Dashboard = () => {
 
         setCommentsMap((prev) => ({ ...initialComments, ...prev }));
       }
-      
+
       // Filter out local posts that match DB posts by ID or by Content + Author
       const dbIdsSet = new Set(dbPosts.map((p) => p.id.toString()));
       const dbContentsSet = new Set(
@@ -595,7 +596,7 @@ const Dashboard = () => {
         if (res && res.success && Array.isArray(res.users)) {
           setSearchedPlanters(res.users);
         }
-      } catch (err) {}
+      } catch (err) { }
     };
     handleSearchPlanters();
   }, [communitySearchQuery]);
@@ -693,7 +694,7 @@ const Dashboard = () => {
   const handleLikePost = async (id) => {
     try {
       await apiService.likePost(id);
-    } catch (e) {}
+    } catch (e) { }
     setFeedPosts((prev) =>
       prev.map((p) => {
         if (p.id === id) {
@@ -808,7 +809,7 @@ const Dashboard = () => {
 
     try {
       await apiService.commentOnPost(postId, text);
-    } catch (e) {}
+    } catch (e) { }
 
     const isSelfAction = commenterName.toLowerCase().trim() === postOwner.toLowerCase().trim();
 
@@ -837,7 +838,7 @@ const Dashboard = () => {
 
     try {
       await apiService.updateComment(postId, commentId, newText);
-    } catch (e) {}
+    } catch (e) { }
 
     setEditingCommentId(null);
     setEditingCommentText('');
@@ -851,27 +852,27 @@ const Dashboard = () => {
 
   const sidebarLinks = isAdminUser
     ? [
-        { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
-        { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard Overview', icon: Home },
-        { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
-        { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
-        { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
-        { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
-        { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
-        { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendations', icon: Sparkles },
-        { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
-        { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
-        { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Share2 },
-        { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
-        { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
-      ]
+      { id: 'admin', label: lang === 'ml' ? 'അഡ്മിൻ പോർട്ടൽ' : 'Admin Portal', icon: Shield },
+      { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard Overview', icon: Home },
+      { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
+      { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
+      { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
+      { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
+      { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
+      { id: 'ai', label: lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendations', icon: Sparkles },
+      { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
+      { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
+      { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Share2 },
+      { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
+      { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
+    ]
     : isSupervisorUser
-    ? [
-        { id: 'workforce', label: lang === 'ml' ? 'സൂപ്പർവൈസർ ഹബ്' : 'Supervisor Hub', icon: ShieldCheck },
+      ? [
+        { id: 'supervisor', label: lang === 'ml' ? 'സൂപ്പർവൈസർ പോർട്ടൽ' : 'Supervisor Portal', icon: ShieldCheck },
         { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
         { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
       ]
-    : [
+      : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
         { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
         { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
@@ -893,7 +894,7 @@ const Dashboard = () => {
       {/* FIXED DESKTOP LEFT SIDEBAR NAVIGATION */}
       <aside className="hidden lg:flex fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-[#E2E8F0] dark:border-slate-800 z-30 flex-col justify-between p-4 overflow-y-auto shadow-xs">
         <div className="space-y-4">
-          
+
           {/* Admin / Planter Info Card */}
           <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/90 rounded-xl border border-[#E2E8F0] dark:border-slate-700 flex items-center gap-3">
             <img
@@ -981,11 +982,10 @@ const Dashboard = () => {
                             setSearchParams({ tab: link.id });
                           }
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-all border-l-3 ${
-                          isActive
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-all border-l-3 ${isActive
                             ? 'bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-2xs'
                             : 'text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900'
-                        }`}
+                          }`}
                       >
                         <Icon className={`w-4 h-4 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
                         <span className="truncate">{link.label}</span>
@@ -1012,11 +1012,10 @@ const Dashboard = () => {
                         setActiveTab(link.id);
                       }
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      isActive
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${isActive
                         ? 'bg-[#1F5E3B] text-white shadow-xs border-l-4 border-amber-400'
                         : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
-                    }`}
+                      }`}
                   >
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#5C8D4E] dark:text-emerald-400'}`} />
                     <span className="truncate">{link.label}</span>
@@ -1106,11 +1105,10 @@ const Dashboard = () => {
                             setActiveTab(link.id);
                           }
                         }}
-                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
-                          isActive
+                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${isActive
                             ? 'bg-[#1F5E3B] text-white shadow-sm'
                             : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         <Icon className="w-4 h-4 text-[#5C8D4E]" />
                         <span>{link.label}</span>
@@ -1150,8 +1148,8 @@ const Dashboard = () => {
                       {getTimeBasedGreeting(user?.fullName || user?.name || user?.username || 'Planter', lang)} 🌱
                     </h1>
                     <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1">
-                      {lang === 'ml' 
-                        ? 'ഇന്നത്തെ നിങ്ങളുടെ തോട്ടത്തിന്റെ വിവരങ്ങൾ താഴെ കാണാം.' 
+                      {lang === 'ml'
+                        ? 'ഇന്നത്തെ നിങ്ങളുടെ തോട്ടത്തിന്റെ വിവരങ്ങൾ താഴെ കാണാം.'
                         : "Here's your plantation overview for today."}
                     </p>
                   </div>
@@ -1259,7 +1257,7 @@ const Dashboard = () => {
 
               {/* MAIN DASHBOARD 2-COLUMN GRID */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
+
                 {/* LEFT COLUMN: MY PLANTATION SUMMARY CARD */}
                 <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
                   {plantations.length === 0 ? (
@@ -1580,21 +1578,21 @@ const Dashboard = () => {
               </div>
 
               {/* WEATHER MODULE SNIPPET ON DASHBOARD */}
-              <WeatherModule 
-                userLocation={user?.district || user?.location || 'Idukki, Kerala'} 
-                onToast={showToast} 
+              <WeatherModule
+                userLocation={user?.district || user?.location || 'Idukki, Kerala'}
+                onToast={showToast}
               />
 
               {/* CARDORA AI SOIL & FERTILIZER ADVISOR ON DASHBOARD */}
-              <CardoraFertilizerAdvisor 
-                plantation={plantations[0]} 
-                onToast={showToast} 
+              <CardoraFertilizerAdvisor
+                plantation={plantations[0]}
+                onToast={showToast}
               />
 
               {/* AI ANALYSIS MODULE SNIPPET ON DASHBOARD */}
-              <AiAnalysisModule 
-                plantation={plantations[0]} 
-                onToast={showToast} 
+              <AiAnalysisModule
+                plantation={plantations[0]}
+                onToast={showToast}
               />
 
             </div>
@@ -1603,9 +1601,9 @@ const Dashboard = () => {
           {/* ===== TAB: WEATHER INTELLIGENCE ===== */}
           {activeTab === 'weather' && (
             <div className="space-y-6">
-              <WeatherModule 
-                userLocation={user?.district || user?.location || 'Idukki, Kerala'} 
-                onToast={showToast} 
+              <WeatherModule
+                userLocation={user?.district || user?.location || 'Idukki, Kerala'}
+                onToast={showToast}
               />
             </div>
           )}
@@ -1619,13 +1617,38 @@ const Dashboard = () => {
           {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
           {activeTab === 'ai' && (
             <div className="space-y-6">
-              <CardoraFertilizerAdvisor 
-                plantation={plantations[0]} 
-                onToast={showToast} 
+              <CardoraFertilizerAdvisor
+                plantation={plantations[0]}
+                onToast={showToast}
               />
-              <AiAnalysisModule 
-                plantation={plantations[0]} 
-                onToast={showToast} 
+              <AiAnalysisModule
+                plantation={plantations[0]}
+                onToast={showToast}
+              />
+            </div>
+          )}
+
+          {/* ===== DEDICATED SUPERVISOR PORTAL HUB ===== */}
+          {(activeTab === 'supervisor' || (isSupervisorUser && activeTab !== 'messages' && activeTab !== 'profile')) && (
+            <div className="w-full">
+              <SupervisorDashboard
+                plantationId={
+                  (typeof user?.assignedPlantation === 'object'
+                    ? user?.assignedPlantation?._id || user?.assignedPlantation?.id
+                    : user?.assignedPlantation) ||
+                  plantations[0]?._id ||
+                  plantations[0]?.id ||
+                  'default_plantation_id'
+                }
+                showToast={showToast}
+                onNavigateTab={(targetTab) => {
+                  if (targetTab === 'messages') {
+                    setChatTargetUser(null);
+                    setChatModalOpen(true);
+                  } else {
+                    setActiveTab(targetTab);
+                  }
+                }}
               />
             </div>
           )}
@@ -1766,11 +1789,10 @@ const Dashboard = () => {
                       <button
                         key={cat.id}
                         onClick={() => setSelectedCategoryFilter(cat.id)}
-                        className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0 ${
-                          isActive
+                        className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0 ${isActive
                             ? 'bg-[#1F5E3B] text-white shadow-md shadow-[#1F5E3B]/20 scale-105'
                             : 'bg-[#F8FAF7] dark:bg-slate-800/60 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700'
-                        }`}
+                          }`}
                       >
                         <span>{cat.icon}</span>
                         <span>{cat.label}</span>
@@ -1782,10 +1804,10 @@ const Dashboard = () => {
 
               {/* Responsive Main Layout: 2 Columns on Desktop (Feed 8 cols, Sidebar 4 cols) */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
+
                 {/* LEFT MAIN FEED COLUMN (col-span-8) */}
                 <div className="lg:col-span-8 space-y-6">
-                  
+
                   {/* Matching Planter Profiles Banner (Live Search Results) */}
                   {communitySearchQuery.trim() && (
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
@@ -1804,8 +1826,8 @@ const Dashboard = () => {
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {searchedPlanters.map((planter) => (
-                            <div 
-                              key={planter._id || planter.id} 
+                            <div
+                              key={planter._id || planter.id}
                               onClick={() => setSelectedPublicUser({
                                 author: planter.name,
                                 username: planter.username,
@@ -1818,10 +1840,10 @@ const Dashboard = () => {
                               className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/70 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all shadow-xs hover:shadow-md"
                             >
                               <div className="flex items-center gap-3 overflow-hidden">
-                                <img 
-                                  src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`} 
-                                  alt="" 
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0" 
+                                <img
+                                  src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`}
+                                  alt=""
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0"
                                 />
                                 <div className="overflow-hidden">
                                   <h4 className="text-sm font-extrabold text-[#17331F] dark:text-slate-100 flex items-center gap-1.5 truncate">
@@ -1844,10 +1866,10 @@ const Dashboard = () => {
                   {/* Create New Post Card */}
                   <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
                     <div className="flex items-center gap-3">
-                      <img 
-                        src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'P')}&background=1F5E3B&color=ffffff`} 
-                        alt="" 
-                        className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0" 
+                      <img
+                        src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'P')}&background=1F5E3B&color=ffffff`}
+                        alt=""
+                        className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0"
                       />
                       <div>
                         <h3 className="text-base font-black text-[#17331F] dark:text-slate-100">Publish a Community Post</h3>
@@ -1863,9 +1885,8 @@ const Dashboard = () => {
                         if (postError) setPostError('');
                       }}
                       placeholder="Write your cardamom plantation update, ask a question, or share an organic farming tip..."
-                      className={`w-full p-4 rounded-2xl text-sm sm:text-base leading-relaxed focus:outline-none resize-none border font-medium ${
-                        postError ? 'border-red-400 bg-red-50/50' : 'border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 text-[#17331F] dark:text-slate-100'
-                      }`}
+                      className={`w-full p-4 rounded-2xl text-sm sm:text-base leading-relaxed focus:outline-none resize-none border font-medium ${postError ? 'border-red-400 bg-red-50/50' : 'border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 text-[#17331F] dark:text-slate-100'
+                        }`}
                     />
 
                     {/* Image Preview Box if set */}
@@ -1999,15 +2020,15 @@ const Dashboard = () => {
                       <div key={post.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 sm:p-7 shadow-md space-y-4 hover:shadow-lg transition-all">
                         {/* Author Header Row */}
                         <div className="flex items-center justify-between gap-4">
-                          <div 
-                            onClick={() => setSelectedPublicUser(post)} 
+                          <div
+                            onClick={() => setSelectedPublicUser(post)}
                             className="flex items-center gap-3.5 cursor-pointer group"
                             title="Click to view planter profile"
                           >
-                            <img 
-                              src={post.avatar} 
-                              alt="" 
-                              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform shadow-xs flex-shrink-0" 
+                            <img
+                              src={post.avatar}
+                              alt=""
+                              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform shadow-xs flex-shrink-0"
                             />
                             <div>
                               <h4 className="text-sm sm:text-base font-extrabold text-[#17331F] dark:text-slate-100 group-hover:text-[#1F5E3B] flex items-center gap-2">
@@ -2023,15 +2044,14 @@ const Dashboard = () => {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className={`px-3.5 py-1 rounded-full text-xs font-black tracking-wide border ${
-                              post.category === 'Expert Advice'
+                            <span className={`px-3.5 py-1 rounded-full text-xs font-black tracking-wide border ${post.category === 'Expert Advice'
                                 ? 'bg-purple-100 text-purple-800 border-purple-300'
                                 : post.category === 'Farming Tip'
-                                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                : post.category === 'Question'
-                                ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
-                            }`}>
+                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                  : post.category === 'Question'
+                                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                    : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
+                              }`}>
                               {post.category}
                             </span>
 
@@ -2065,33 +2085,31 @@ const Dashboard = () => {
                         {/* Interaction Bar: Heart, Comment, Share */}
                         <div className="flex items-center justify-between pt-4 border-t border-[#D7E6D5]/70 dark:border-slate-800 text-xs sm:text-sm font-extrabold">
                           <div className="flex items-center gap-2 sm:gap-4">
-                            <button 
-                              onClick={() => handleLikePost(post.id)} 
-                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${
-                                post.liked 
-                                  ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200' 
+                            <button
+                              onClick={() => handleLikePost(post.id)}
+                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${post.liked
+                                  ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200'
                                   : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-transparent'
-                              }`}
+                                }`}
                             >
                               <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.liked ? 'fill-red-500 text-red-500' : ''}`} />
                               <span>{post.likes} Likes</span>
                             </button>
 
-                            <button 
-                              onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)} 
-                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${
-                                activeCommentPostId === post.id 
-                                  ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30' 
+                            <button
+                              onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)}
+                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${activeCommentPostId === post.id
+                                  ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30'
                                   : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-[#DDEFD9] hover:text-[#1F5E3B] border border-transparent'
-                              }`}
+                                }`}
                             >
                               <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-[#1F5E3B]" />
                               <span>{post.comments} Comments</span>
                             </button>
                           </div>
 
-                          <button 
-                            onClick={() => showToast('Post link copied to clipboard!')} 
+                          <button
+                            onClick={() => showToast('Post link copied to clipboard!')}
                             className="px-4 py-2 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:text-[#1F5E3B] hover:bg-[#DDEFD9] transition-all flex items-center gap-2 border border-transparent cursor-pointer"
                           >
                             <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -2104,7 +2122,7 @@ const Dashboard = () => {
                           <div className="mt-4 pt-4 border-t border-[#D7E6D5] dark:border-slate-800 space-y-4">
                             {/* Comment Input Box */}
                             <div className="flex gap-2">
-                              <input 
+                              <input
                                 type="text"
                                 value={commentInputText}
                                 onChange={(e) => setCommentInputText(e.target.value)}
@@ -2112,7 +2130,7 @@ const Dashboard = () => {
                                 placeholder="Add a comment to this discussion..."
                                 className="flex-1 px-4 py-3 rounded-2xl text-xs sm:text-sm border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20"
                               />
-                              <button 
+                              <button
                                 onClick={() => handleAddComment(post.id)}
                                 className="px-5 py-3 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs sm:text-sm font-black transition-colors shadow-sm cursor-pointer"
                               >
@@ -2144,7 +2162,7 @@ const Dashboard = () => {
 
                                             {editingCommentId === c.id ? (
                                               <div className="flex items-center gap-2 mt-2">
-                                                <input 
+                                                <input
                                                   type="text"
                                                   value={editingCommentText}
                                                   onChange={(e) => setEditingCommentText(e.target.value)}
@@ -2164,7 +2182,7 @@ const Dashboard = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                          <button 
+                                          <button
                                             onClick={() => {
                                               setActiveReplyCommentId(activeReplyCommentId === c.id ? null : c.id);
                                               setReplyInputText('');
@@ -2176,11 +2194,11 @@ const Dashboard = () => {
                                           </button>
 
                                           {editingCommentId !== c.id && (
-                                            <button 
+                                            <button
                                               onClick={() => {
                                                 setEditingCommentId(c.id);
                                                 setEditingCommentText(c.text);
-                                              }} 
+                                              }}
                                               className="text-xs font-bold text-gray-400 hover:text-[#1F5E3B] px-1 py-1 cursor-pointer"
                                             >
                                               <Edit className="w-3.5 h-3.5" />
@@ -2347,7 +2365,7 @@ const Dashboard = () => {
                           location: 'Munnar Estate',
                         },
                       ].map((planter) => (
-                        <div 
+                        <div
                           key={planter.username}
                           onClick={() => setSelectedPublicUser({
                             author: planter.name,
@@ -2449,10 +2467,10 @@ const Dashboard = () => {
 
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="relative group">
-                    <img 
-                      src={photoUrlInput || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} 
-                      alt="Avatar preview" 
-                      className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" 
+                    <img
+                      src={photoUrlInput || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                      alt="Avatar preview"
+                      className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md"
                     />
                     <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold pointer-events-none">
                       Preview
@@ -2463,21 +2481,21 @@ const Dashboard = () => {
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Profile Photo Upload & URL</label>
                       <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <input 
+                        <input
                           type="text"
                           value={photoUrlInput}
                           onChange={(e) => setPhotoUrlInput(e.target.value)}
                           placeholder="Paste image URL or select a file..."
                           className="flex-1 w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
                         />
-                        <input 
-                          type="file" 
-                          id="profile-photo-upload" 
-                          accept="image/*" 
-                          onChange={handleProfileFileChange} 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          id="profile-photo-upload"
+                          accept="image/*"
+                          onChange={handleProfileFileChange}
+                          className="hidden"
                         />
-                        <label 
+                        <label
                           htmlFor="profile-photo-upload"
                           className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-black hover:bg-[#5C8D4E] hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
                         >
@@ -2527,7 +2545,7 @@ const Dashboard = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Full Name *</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.fullName}
                         onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
@@ -2536,7 +2554,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Username (@handle)</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.username}
                         onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
@@ -2561,7 +2579,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">District / Place *</label>
-                      <select 
+                      <select
                         value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -2593,7 +2611,7 @@ const Dashboard = () => {
 
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Mobile Phone Number</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.phone}
                         onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
@@ -2603,7 +2621,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Cover Photo URL</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.coverImage}
                         onChange={(e) => setProfileForm({ ...profileForm, coverImage: e.target.value })}
@@ -2615,7 +2633,7 @@ const Dashboard = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-[#17331F] mb-1">Personal Bio</label>
-                    <textarea 
+                    <textarea
                       rows="2"
                       value={profileForm.bio}
                       onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
@@ -2627,7 +2645,7 @@ const Dashboard = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#D7E6D5]">
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Cultivation Experience</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.experience}
                         onChange={(e) => setProfileForm({ ...profileForm, experience: e.target.value })}
@@ -2637,7 +2655,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Skills & Techniques (comma separated)</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.skills}
                         onChange={(e) => setProfileForm({ ...profileForm, skills: e.target.value })}
@@ -2647,7 +2665,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Certifications (comma separated)</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.certifications}
                         onChange={(e) => setProfileForm({ ...profileForm, certifications: e.target.value })}
@@ -2657,7 +2675,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Education / Qualifications</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.education}
                         onChange={(e) => setProfileForm({ ...profileForm, education: e.target.value })}
@@ -2667,7 +2685,7 @@ const Dashboard = () => {
                     </div>
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-bold text-[#17331F] mb-1">Organization / Society</label>
-                      <input 
+                      <input
                         type="text"
                         value={profileForm.organization}
                         onChange={(e) => setProfileForm({ ...profileForm, organization: e.target.value })}
@@ -2693,7 +2711,7 @@ const Dashboard = () => {
                 <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
                   <div>
                     <label className="block text-xs font-bold text-[#17331F] mb-1">Current Password *</label>
-                    <input 
+                    <input
                       type="password"
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
@@ -2707,7 +2725,7 @@ const Dashboard = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-[#17331F] mb-1">New Password *</label>
-                    <input 
+                    <input
                       type="password"
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
@@ -2721,7 +2739,7 @@ const Dashboard = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-[#17331F] mb-1">Confirm New Password *</label>
-                    <input 
+                    <input
                       type="password"
                       value={passwordForm.confirmNewPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, confirmNewPassword: e.target.value })}
@@ -2752,7 +2770,7 @@ const Dashboard = () => {
                       <p className="text-xs font-extrabold text-[#17331F]">Interface Language</p>
                       <p className="text-[11px] text-[#4A5568]">Switch between English and Malayalam (മലയാളം)</p>
                     </div>
-                    <button 
+                    <button
                       onClick={toggleLang}
                       className="px-3.5 py-1.5 rounded-full bg-[#1F5E3B] text-white font-extrabold text-xs"
                     >
@@ -2765,7 +2783,7 @@ const Dashboard = () => {
                       <p className="text-xs font-extrabold text-[#17331F]">Dark Theme Mode</p>
                       <p className="text-[11px] text-[#4A5568]">Toggle high-contrast dark green display theme</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setDarkMode(!darkMode)}
                       className={`px-3.5 py-1.5 rounded-full font-extrabold text-xs transition-colors ${darkMode ? 'bg-amber-500 text-white' : 'bg-emerald-800 text-white'}`}
                     >
@@ -2796,34 +2814,34 @@ const Dashboard = () => {
               <form onSubmit={handleAddPlantation} className="space-y-4" noValidate>
                 <div>
                   <label className="block text-xs font-bold mb-1">Estate Name <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    value={plantationForm.name} 
-                    onChange={(e) => setPlantationForm({...plantationForm, name: e.target.value})} 
-                    placeholder="Vandanmedu Green Estate" 
-                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.name ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
+                  <input
+                    type="text"
+                    value={plantationForm.name}
+                    onChange={(e) => setPlantationForm({ ...plantationForm, name: e.target.value })}
+                    placeholder="Vandanmedu Green Estate"
+                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.name ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
                   />
                   {plantationErrors.name && <p className="text-[11px] text-red-600 font-bold mt-1">{plantationErrors.name}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1">Area (Acres) <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    value={plantationForm.area} 
-                    onChange={(e) => setPlantationForm({...plantationForm, area: e.target.value})} 
-                    placeholder="10" 
-                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.area ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
+                  <input
+                    type="number"
+                    value={plantationForm.area}
+                    onChange={(e) => setPlantationForm({ ...plantationForm, area: e.target.value })}
+                    placeholder="10"
+                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.area ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
                   />
                   {plantationErrors.area && <p className="text-[11px] text-red-600 font-bold mt-1">{plantationErrors.area}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1">Number of Clumps/Plants <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
-                    value={plantationForm.plants} 
-                    onChange={(e) => setPlantationForm({...plantationForm, plants: e.target.value})} 
-                    placeholder="3500" 
-                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.plants ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
+                  <input
+                    type="number"
+                    value={plantationForm.plants}
+                    onChange={(e) => setPlantationForm({ ...plantationForm, plants: e.target.value })}
+                    placeholder="3500"
+                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.plants ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
                   />
                   {plantationErrors.plants && <p className="text-[11px] text-red-600 font-bold mt-1">{plantationErrors.plants}</p>}
                 </div>
@@ -2850,11 +2868,11 @@ const Dashboard = () => {
               <form onSubmit={handleSaveProfile} className="space-y-4" noValidate>
                 <div>
                   <label className="block text-xs font-bold mb-1">Full Name <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    value={profileForm.fullName} 
-                    onChange={(e) => setProfileForm({...profileForm, fullName: e.target.value})} 
-                    className={`w-full p-2.5 rounded-xl text-xs border ${profileErrors.fullName ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
+                  <input
+                    type="text"
+                    value={profileForm.fullName}
+                    onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                    className={`w-full p-2.5 rounded-xl text-xs border ${profileErrors.fullName ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
                   />
                   {profileErrors.fullName && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.fullName}</p>}
                 </div>
@@ -2862,32 +2880,32 @@ const Dashboard = () => {
                   <label className="block text-xs font-bold mb-1">Profile Photo / Avatar</label>
                   <div className="flex items-center gap-3 mb-2">
                     <img src={photoUrlInput || profileForm.avatar || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B]" />
-                    <input 
-                      type="file" 
-                      id="modal-profile-photo" 
-                      accept="image/*" 
-                      onChange={handleProfileFileChange} 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      id="modal-profile-photo"
+                      accept="image/*"
+                      onChange={handleProfileFileChange}
+                      className="hidden"
                     />
                     <label htmlFor="modal-profile-photo" className="cursor-pointer px-3 py-1.5 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-bold hover:bg-[#5C8D4E] hover:text-white transition-all flex items-center gap-1.5">
                       <Upload className="w-3.5 h-3.5" />
                       <span>Choose Photo</span>
                     </label>
                   </div>
-                  <input 
-                    type="text" 
-                    value={photoUrlInput || profileForm.avatar || ''} 
+                  <input
+                    type="text"
+                    value={photoUrlInput || profileForm.avatar || ''}
                     onChange={(e) => {
                       setPhotoUrlInput(e.target.value);
-                      setProfileForm({...profileForm, avatar: e.target.value});
+                      setProfileForm({ ...profileForm, avatar: e.target.value });
                     }}
-                    placeholder="Paste image URL or choose file above" 
-                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5]" 
+                    placeholder="Paste image URL or choose file above"
+                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1">District / Place <span className="text-red-500">*</span></label>
-                  <select 
+                  <select
                     value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -2897,7 +2915,7 @@ const Dashboard = () => {
                         setProfileForm({ ...profileForm, district: val, location: val });
                       }
                     }}
-                    className={`w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border cursor-pointer ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`} 
+                    className={`w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border cursor-pointer ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
                   >
                     {KERALA_DISTRICTS.map((dist) => (
                       <option key={dist} value={dist}>{dist}</option>
@@ -2920,11 +2938,11 @@ const Dashboard = () => {
 
                 <div>
                   <label className="block text-xs font-bold mb-1">Bio</label>
-                  <textarea 
-                    rows="3" 
-                    value={profileForm.bio} 
-                    onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})} 
-                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] resize-none" 
+                  <textarea
+                    rows="3"
+                    value={profileForm.bio}
+                    onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] resize-none"
                   />
                 </div>
                 <Button type="submit" variant="primary" size="md" className="w-full justify-center">

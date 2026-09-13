@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Leaf, Lock, Mail, User, ArrowRight, ShieldCheck, Sparkles, 
+import {
+  Leaf, Lock, Mail, User, ArrowRight, ShieldCheck, Sparkles,
   CheckCircle, ArrowLeft, AlertCircle, Eye, EyeOff, TrendingUp, CloudSun, Shield,
   Sprout, Droplets
 } from 'lucide-react';
@@ -30,8 +30,8 @@ const PasswordStrengthMeter = ({ password }) => {
 
       {/* Dynamic Progress Bar */}
       <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden flex">
-        <div 
-          className={`h-full transition-all duration-300 ${strength.color}`} 
+        <div
+          className={`h-full transition-all duration-300 ${strength.color}`}
           style={{ width: strength.barWidth }}
         />
       </div>
@@ -299,7 +299,7 @@ const Auth = () => {
         });
         window.google.accounts.id.prompt();
         return;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Fallback: Direct Google Session Authorization
@@ -377,32 +377,32 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F4F8F3] via-white to-[#EAF3E8] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-200 flex flex-col justify-between transition-colors overflow-hidden relative">
-      
+
       {/* 1. ROTATING COLOR GRADIENT AMBIENT AURAS ("ROOTING COLORS") */}
-      <motion.div 
-        animate={{ 
+      <motion.div
+        animate={{
           rotate: [0, 360],
           scale: [1, 1.25, 1],
-          opacity: [0.4, 0.7, 0.4] 
+          opacity: [0.4, 0.7, 0.4]
         }}
         transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
         className="absolute -top-20 -left-20 w-[30rem] h-[30rem] bg-gradient-to-tr from-emerald-500/30 via-amber-400/20 to-teal-500/30 rounded-full blur-3xl pointer-events-none z-0"
       />
-      
-      <motion.div 
-        animate={{ 
+
+      <motion.div
+        animate={{
           rotate: [360, 0],
           scale: [1, 1.3, 1],
-          opacity: [0.35, 0.65, 0.35] 
+          opacity: [0.35, 0.65, 0.35]
         }}
         transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
         className="absolute -bottom-24 -right-20 w-[34rem] h-[34rem] bg-gradient-to-bl from-[#1F5E3B]/30 via-emerald-400/25 to-yellow-500/20 rounded-full blur-3xl pointer-events-none z-0"
       />
 
-      <motion.div 
-        animate={{ 
+      <motion.div
+        animate={{
           scale: [0.9, 1.15, 0.9],
-          opacity: [0.2, 0.5, 0.2] 
+          opacity: [0.2, 0.5, 0.2]
         }}
         transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[45rem] h-[45rem] bg-emerald-300/10 dark:bg-emerald-600/10 rounded-full blur-3xl pointer-events-none z-0"
@@ -448,9 +448,9 @@ const Auth = () => {
 
       {/* 3. RIGHT SIDE - LARGE ANIMATED CARDAMOM PLANT GROWTH SHOWCASE */}
       <div className="hidden xl:flex flex-col items-center justify-between absolute right-3 sm:right-8 top-24 bottom-12 z-0 pointer-events-none select-none w-56">
-        
+
         {/* Top Water Droplets & Cloud Sync */}
-        <motion.div 
+        <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           className="flex flex-col items-center gap-1 bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-2xl border border-emerald-300/40 backdrop-blur-md shadow-md"
@@ -464,9 +464,9 @@ const Auth = () => {
 
         {/* LARGE ANIMATED CARDAMOM PLANT SVG STEM & LEAVES */}
         <div className="relative w-full h-[28rem] flex items-center justify-center my-2">
-          
+
           {/* Animated Falling Droplets */}
-          <motion.div 
+          <motion.div
             animate={{ y: [0, 180], opacity: [1, 0] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
             className="absolute top-0 text-emerald-500 text-xs"
@@ -555,7 +555,7 @@ const Auth = () => {
         </div>
 
         {/* Soil Base & Harvest Badge */}
-        <motion.div 
+        <motion.div
           whileHover={{ scale: 1.05 }}
           className="flex items-center gap-2 p-2.5 rounded-2xl bg-gradient-to-r from-[#17331F] to-[#1F5E3B] border border-amber-300/40 text-white shadow-lg"
         >
@@ -570,7 +570,7 @@ const Auth = () => {
 
       <Navbar />
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-10 pt-24 pb-16 relative z-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 35, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -578,16 +578,16 @@ const Auth = () => {
         >
           {/* LEFT SIDE PANEL - Cardora Premium Banner with Animated Physics */}
           <div className="lg:col-span-5 bg-gradient-to-br from-[#0B2E1C] via-[#17331F] to-[#1F5E3B] text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
-            
+
             {/* Animated Ambient Light Beam */}
-            <motion.div 
+            <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
               className="absolute -top-32 -right-32 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"
             />
 
             <div className="relative z-10">
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.03 }}
                 className="flex items-center gap-3 mb-8 cursor-pointer inline-flex"
               >
@@ -597,7 +597,7 @@ const Auth = () => {
                 <span className="text-2xl font-black font-poppins tracking-wider text-white">CARDORA</span>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black mb-5 border border-emerald-400/30 backdrop-blur-md shadow-xs"
@@ -638,7 +638,7 @@ const Auth = () => {
 
               {/* Animated Growth Graphic Container */}
               <AnimatePresence mode="wait">
-                <motion.div 
+                <motion.div
                   key={plantStage}
                   initial={{ opacity: 0, scale: 0.92, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -665,7 +665,7 @@ const Auth = () => {
 
                   {/* Visual Growth Meter Bar */}
                   <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden p-0.5">
-                    <motion.div 
+                    <motion.div
                       className="h-full bg-gradient-to-r from-emerald-400 via-amber-300 to-yellow-400 rounded-full"
                       initial={{ width: '0%' }}
                       animate={{ width: `${((plantStage + 1) / 5) * 100}%` }}
@@ -682,11 +682,10 @@ const Auth = () => {
                     key={idx}
                     type="button"
                     onClick={() => setPlantStage(idx)}
-                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
-                      idx === plantStage
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer flex flex-col items-center gap-0.5 ${idx === plantStage
                         ? 'bg-amber-400 text-slate-900 shadow-md scale-105'
                         : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <span>{st.label}</span>
                   </button>
@@ -705,7 +704,7 @@ const Auth = () => {
 
           {/* RIGHT SIDE FORM CONTAINER */}
           <div className="lg:col-span-7 p-6 sm:p-8 md:p-10 flex flex-col justify-center bg-white dark:bg-slate-900 relative">
-            
+
             {/* Header & Mode Selector Bar */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E2E8F0] dark:border-slate-800">
               <div>
@@ -727,11 +726,10 @@ const Auth = () => {
                     whileTap={{ scale: 0.95 }}
                     type="button"
                     onClick={() => switchAuthMode('login')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${
-                      authMode === 'login'
+                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${authMode === 'login'
                         ? 'bg-[#1F5E3B] text-white shadow-md'
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#1F5E3B]'
-                    }`}
+                      }`}
                   >
                     Login
                   </motion.button>
@@ -739,11 +737,10 @@ const Auth = () => {
                     whileTap={{ scale: 0.95 }}
                     type="button"
                     onClick={() => switchAuthMode('signup')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${
-                      authMode === 'signup'
+                    className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${authMode === 'signup'
                         ? 'bg-[#1F5E3B] text-white shadow-md'
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#1F5E3B]'
-                    }`}
+                      }`}
                   >
                     Register
                   </motion.button>
@@ -753,7 +750,7 @@ const Auth = () => {
 
             {/* Global Error Banner */}
             {formGlobalError && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-bold flex items-center gap-2.5"
@@ -765,7 +762,7 @@ const Auth = () => {
 
             {/* Reset Success Message */}
             {resetSuccessMessage && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-5 p-3.5 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950/50 border border-[#5C8D4E]/40 text-[#1F5E3B] dark:text-emerald-300 text-xs font-bold flex items-center gap-2.5"
@@ -776,10 +773,10 @@ const Auth = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-              
+
               {/* ===== SIGNUP EXTRA FIELDS ===== */}
               {authMode === 'signup' && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   className="space-y-4"
@@ -942,7 +939,7 @@ const Auth = () => {
                     <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">Registered Email Address <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-[#5C8D4E]" />
-                      <input 
+                      <input
                         type="email"
                         value={resetEmail || formData.email}
                         onChange={(e) => setResetEmail(e.target.value)}
@@ -978,7 +975,7 @@ const Auth = () => {
                   </p>
                   <div>
                     <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">6-Digit OTP Code <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="text"
                       value={resetOtp}
                       onChange={(e) => setResetOtp(e.target.value)}
@@ -988,7 +985,7 @@ const Auth = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">New Password <span className="text-red-500">*</span></label>
-                    <input 
+                    <input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}

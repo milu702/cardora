@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import AcceptInvitation from './pages/AcceptInvitation';
 import NotFound from './pages/NotFound';
 
 // Protected Route for Dashboard & Sub-pages
@@ -67,6 +68,7 @@ const MainContent = () => {
         <Route path="/login" element={<AuthRoute />} />
         <Route path="/signup" element={<AuthRoute />} />
         <Route path="/forgot-password" element={<AuthRoute />} />
+        <Route path="/accept-invitation" element={<AcceptInvitation />} />
 
         {/* Main Application Dashboard & Sub-page routes */}
         <Route path="/dashboard" element={<ProtectedDashboard />} />

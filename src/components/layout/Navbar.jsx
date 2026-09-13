@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Leaf, 
-  Menu, 
-  X, 
-  Globe, 
-  LogOut, 
-  Home, 
-  Users, 
-  MapPin, 
+import {
+  Leaf,
+  Menu,
+  X,
+  Globe,
+  LogOut,
+  Home,
+  Users,
+  MapPin,
   Sparkles,
   User,
   Bell,
@@ -60,24 +60,24 @@ const Navbar = ({ onToggleMobileSidebar }) => {
 
   const loggedInNavLinks = isSupervisorUser
     ? [
-        { name: 'Supervisor Hub', href: '/dashboard?tab=workforce', icon: ShieldCheck },
-        { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
-        { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
-      ]
+      { name: 'Supervisor Hub', href: '/dashboard?tab=workforce', icon: ShieldCheck },
+      { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
+      { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+    ]
     : [
-        ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
-        { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
-        { name: 'Live Auctions', href: '/dashboard?tab=auctions', icon: Gavel },
-        { name: 'Live Intelligence', href: '/dashboard?tab=intelligence', icon: Sparkles },
-        { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
-        { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },
-        { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
-        { name: 'Weather Intelligence', href: '/dashboard?tab=weather', icon: CloudSun },
-        { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
-        { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
-        { name: 'Community', href: '/dashboard?tab=community', icon: Users },
-        { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
-      ];
+      ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
+      { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
+      { name: 'Live Auctions', href: '/dashboard?tab=auctions', icon: Gavel },
+      { name: 'Live Intelligence', href: '/dashboard?tab=intelligence', icon: Sparkles },
+      { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
+      { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },
+      { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
+      { name: 'Weather Intelligence', href: '/dashboard?tab=weather', icon: CloudSun },
+      { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
+      { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
+      { name: 'Community', href: '/dashboard?tab=community', icon: Users },
+      { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+    ];
 
   const handleLogout = async () => {
     await logout();
@@ -101,7 +101,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
       className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-slate-800 shadow-sm transition-colors"
     >
       <div className="h-full w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
-        
+
         {/* Left Section: Mobile Menu Toggle & Brand Logo */}
         <div className="flex items-center gap-3">
           {isAuthenticated && (
@@ -167,7 +167,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
 
         {/* Right Controls Section */}
         <div className="flex items-center gap-2 sm:gap-3">
-          
+
           {/* Language Selector Button */}
           <button
             onClick={toggleLang}
@@ -181,11 +181,10 @@ const Navbar = ({ onToggleMobileSidebar }) => {
           {/* Dark/Light Theme Toggle */}
           <button
             onClick={toggleDarkMode}
-            className={`p-1.5 rounded-lg text-xs font-bold transition-colors border ${
-              darkMode
+            className={`p-1.5 rounded-lg text-xs font-bold transition-colors border ${darkMode
                 ? 'bg-slate-800 border-slate-700 text-amber-300 hover:bg-slate-700'
                 : 'bg-[#EAF3E8] border-[#5C8D4E]/30 text-[#17331F] hover:bg-[#DDEFD9]'
-            }`}
+              }`}
             title="Toggle Dark / Light Mode"
           >
             {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-[#1F5E3B]" />}
@@ -206,7 +205,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
             </div>
           ) : (
             <div className="flex items-center gap-2 pl-2 border-l border-[#D7E6D5] dark:border-slate-800">
-              
+
               {/* Notification Bell */}
               <div className="relative">
                 <button
@@ -239,7 +238,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                           </span>
                         )}
                         {notifications.length > 0 && (
-                          <button 
+                          <button
                             onClick={() => clearNotifications && clearNotifications()}
                             className="text-[10px] font-extrabold text-red-600 hover:underline cursor-pointer"
                           >
@@ -266,8 +265,8 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                           else if (nType.includes('work') || nType.includes('task')) iconSymbol = '📋';
 
                           return (
-                            <div 
-                              key={n._id || n.id || idx} 
+                            <div
+                              key={n._id || n.id || idx}
                               onClick={() => {
                                 setShowNotificationsDropdown(false);
                                 if (markNotificationsRead) markNotificationsRead();
@@ -276,11 +275,10 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                                 else if (nType.includes('login') || nType.includes('register')) navigate('/dashboard?tab=admin');
                                 else navigate('/dashboard');
                               }}
-                              className={`p-3 rounded-2xl transition-all cursor-pointer border flex items-start gap-2.5 ${
-                                !n.read
+                              className={`p-3 rounded-2xl transition-all cursor-pointer border flex items-start gap-2.5 ${!n.read
                                   ? 'bg-[#EAF3E8]/80 dark:bg-slate-800 border-[#1F5E3B]/40 shadow-xs'
                                   : 'bg-slate-50/70 dark:bg-slate-850 border-slate-100 dark:border-slate-800 hover:bg-slate-100'
-                              }`}
+                                }`}
                             >
                               <span className="text-base shrink-0 mt-0.5">{iconSymbol}</span>
                               <div className="flex-1 min-w-0">

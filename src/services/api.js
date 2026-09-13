@@ -1338,6 +1338,126 @@ export const apiService = {
     }
   },
 
+  sendSupervisorInvitation: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/invitations', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getInvitationByToken: async (token) => {
+    try {
+      const res = await api.get(`/workforce/supervisor/invitations/token/${token}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  acceptSupervisorInvitation: async (token, data = {}) => {
+    try {
+      const res = await api.post(`/workforce/supervisor/invitations/${token}/accept`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  rejectSupervisorInvitation: async (token) => {
+    try {
+      const res = await api.post(`/workforce/supervisor/invitations/${token}/reject`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getOwnerSupervisors: async () => {
+    try {
+      const res = await api.get('/workforce/owner/supervisors');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getSupervisorProfile: async (id) => {
+    try {
+      const res = await api.get(`/workforce/owner/supervisors/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  updateSupervisorPermissions: async (id, data) => {
+    try {
+      const res = await api.put(`/workforce/owner/supervisors/${id}/permissions`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  revokeSupervisorAccess: async (id) => {
+    try {
+      const res = await api.post(`/workforce/owner/supervisors/${id}/revoke`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  reassignSupervisor: async (id, data) => {
+    try {
+      const res = await api.post(`/workforce/owner/supervisors/${id}/reassign`, data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getOwnerActivityHistory: async (params = {}) => {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/owner/activity?${query}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getPlantationCombinedHistory: async (plantationId, params = {}) => {
+    try {
+      const query = new URLSearchParams(params).toString();
+      const res = await api.get(`/workforce/owner/plantations/${plantationId}/activity?${query}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  recordPlantationActivity: async (data) => {
+    try {
+      const res = await api.post('/workforce/supervisor/activities', data);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getPlantationActivities: async (plantationId) => {
+    try {
+      const query = plantationId ? `?plantationId=${plantationId}` : '';
+      const res = await api.get(`/workforce/supervisor/activities${query}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
   // ===== 14. REAL GOOGLE GEMINI AI APIs =====
   askAiChat: async (prompt, lang = 'en', context = '') => {
     try {

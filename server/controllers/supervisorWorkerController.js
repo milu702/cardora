@@ -10,6 +10,7 @@ const Plantation = require('../models/Plantation');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const { sendSmsNotification, getSmsSettings, updateSmsSettings } = require('../services/smsService');
+const { logActivity } = require('../services/activityLogger');
 
 /**
  * Helper to auto-append attendance records to server CSV log
@@ -171,6 +172,18 @@ exports.createWorker = async (req, res) => {
       });
     }
 
+    await logActivity({
+      req,
+      ownerId: authCheck.plantation?.user,
+      supervisorId: req.user._id,
+      plantationId: targetPlantationId,
+      action: 'WORKER_ADDED',
+      entityType: 'Worker',
+      entityId: worker._id,
+      description: `Added worker "${worker.fullName}" (${worker.workerId})`,
+      metadata: { fullName: worker.fullName, workerId: worker.workerId, workType: worker.workType, dailyWage: worker.dailyWage },
+    });
+
     res.status(201).json({
       success: true,
       message: 'Worker registered successfully',
@@ -267,6 +280,18 @@ exports.updateWorker = async (req, res) => {
     }
 
     worker = await Worker.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+
+    await logActivity({
+      req,
+      ownerId: worker.plantationId ? (await Plantation.findById(worker.plantationId))?.user : undefined,
+      supervisorId: req.user._id,
+      plantationId: worker.plantationId,
+      action: req.body.status !== undefined ? 'WORKER_STATUS_CHANGED' : 'WORKER_UPDATED',
+      entityType: 'Worker',
+      entityId: worker._id,
+      description: `Updated worker "${worker.fullName}" (${worker.workerId})`,
+      metadata: { workerId: worker.workerId, status: worker.status },
+    });
 
     res.status(200).json({
       success: true,
@@ -412,6 +437,20 @@ exports.markBulkAttendance = async (req, res) => {
 
     // Auto-append to server CSV storage
     appendToCsvFile(updatedRecords, authCheck.plantation.name);
+
+    const presentCount = updatedRecords.filter((r) => r.status === 'Present').length;
+    const absentCount = updatedRecords.filter((r) => r.status === 'Absent').length;
+
+    await logActivity({
+      req,
+      ownerId: authCheck.plantation?.user,
+      supervisorId: req.user._id,
+      plantationId: targetPlantationId,
+      action: 'ATTENDANCE_MARKED',
+      entityType: 'Attendance',
+      description: `Marked attendance for ${updatedRecords.length} workers (${presentCount} present, ${absentCount} absent)`,
+      metadata: { total: updatedRecords.length, present: presentCount, absent: absentCount, date: attendanceDate },
+    });
 
     res.status(200).json({
       success: true,
@@ -764,6 +803,18 @@ exports.recordPayment = async (req, res) => {
         supervisorId: req.user._id,
       });
     }
+
+    await logActivity({
+      req,
+      ownerId: authCheck.plantation?.user,
+      supervisorId: req.user._id,
+      plantationId: targetPlantationId,
+      action: 'WAGE_CREATED',
+      entityType: 'Payment',
+      entityId: payment._id,
+      description: `Recorded payment of ₹${payment.amount} for worker "${worker.fullName}"`,
+      metadata: { amount: payment.amount, type: payment.type, workerName: worker.fullName },
+    });
 
     res.status(201).json({
       success: true,
