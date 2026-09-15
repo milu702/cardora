@@ -1490,12 +1490,103 @@ export const apiService = {
     try {
       let res;
       if (formDataOrObject instanceof FormData) {
-        res = await api.post('/ai/diagnose-image', formDataOrObject, {
+        res = await api.post('/ai/crop-diagnosis/analyze', formDataOrObject, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
-        res = await api.post('/ai/diagnose-image', formDataOrObject);
+        res = await api.post('/ai/crop-diagnosis/analyze', formDataOrObject);
       }
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  analyzeCropImageReal: async (formDataOrObject) => {
+    try {
+      let res;
+      if (formDataOrObject instanceof FormData) {
+        res = await api.post('/ai/crop-diagnosis/analyze', formDataOrObject, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        res = await api.post('/ai/crop-diagnosis/analyze', formDataOrObject);
+      }
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getCropDiagnosisHistory: async (plantationId = '') => {
+    try {
+      const query = plantationId ? `?plantationId=${plantationId}` : '';
+      const res = await api.get(`/ai/crop-diagnosis/history${query}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message, history: [] };
+    }
+  },
+
+  getCropDiagnosisById: async (id) => {
+    try {
+      const res = await api.get(`/ai/crop-diagnosis/history/${id}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  compareCropImages: async (payload) => {
+    try {
+      const res = await api.post('/ai/crop-diagnosis/compare', payload);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  askCardoraAboutDiagnosis: async (payload) => {
+    try {
+      const res = await api.post('/ai/crop-diagnosis/ask', payload);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getPlotHealthStatus: async (plantationId) => {
+    try {
+      const res = await api.get(`/ai/crop-diagnosis/plot-health/${plantationId}`);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+
+  // ===== 15. EXPERT CONSULTATION TICKETS APIs =====
+  getExpertConsultations: async () => {
+    try {
+      const res = await api.get('/ai/expert-consultations');
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message, consultations: [] };
+    }
+  },
+
+  createExpertConsultation: async (ticketData) => {
+    try {
+      const res = await api.post('/ai/expert-consultation', ticketData);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  answerExpertConsultation: async (id, answerData) => {
+    try {
+      const res = await api.put(`/ai/expert-consultation/${id}/answer`, answerData);
       return res.data;
     } catch (error) {
       return { success: false, message: error.response?.data?.message || error.message };
@@ -1503,6 +1594,6 @@ export const apiService = {
   },
 };
 
-export default apiService;
+export default api;
 
 

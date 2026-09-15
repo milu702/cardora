@@ -6,10 +6,11 @@ import {
   Search, Heart, MessageSquare, Share2,
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
   Camera, Lock, Key, Bell, Upload, CornerDownRight, Shield, CloudSun,
-  Droplets, TrendingUp, BarChart3, Calendar, ChevronRight,
-  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw, Gavel
+  Droplets, TrendingUp, BarChart3, Calendar, ChevronRight, ChevronLeft,
+  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw, Gavel, Mic, Volume2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useVoiceNavigation } from '../context/VoiceNavigationContext';
 import { apiService } from '../services/api';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -30,12 +31,14 @@ import MessagingModule from '../components/messaging/MessagingModule';
 import NotificationModule from '../components/notifications/NotificationModule';
 import LivePlantationIntelligenceModule from '../components/intelligence/LivePlantationIntelligenceModule';
 import AuctionModule from '../components/auction/AuctionModule';
+import ExpertConsultationPortal from '../components/community/ExpertConsultationPortal';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
 import { KERALA_DISTRICTS } from '../utils/districts';
 
 
 const Dashboard = () => {
-  const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification } = useAuth();
+  const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification, easyMode, toggleEasyMode } = useAuth();
+  const { isListening, startListening, statusMessage, recognitionStatus } = useVoiceNavigation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isAdminAccount = (user?.role || '').toLowerCase().includes('admin') || (user?.email || '').toLowerCase().includes('admin');
@@ -856,6 +859,7 @@ const Dashboard = () => {
       { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard Overview', icon: Home },
       { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
       { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
+      { id: 'expert', label: lang === 'ml' ? 'വിദഗ്ദ്ധ ഉപദേശം' : 'Expert Desk 👨‍🌾', icon: UserCheck },
       { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
       { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
       { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
@@ -876,6 +880,7 @@ const Dashboard = () => {
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
         { id: 'auctions', label: lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨', icon: Gavel },
         { id: 'intelligence', label: lang === 'ml' ? 'ലൈവ് ഇൻ്റലിജൻസ്' : 'Live Intelligence 🌿', icon: Sparkles },
+        { id: 'expert', label: lang === 'ml' ? 'വിദഗ്ദ്ധ ഉപദേശം' : 'Expert Desk 👨‍🌾', icon: UserCheck },
         { id: 'plantations', label: lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation', icon: Leaf },
         { id: 'workforce', label: lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Workforce & Workers', icon: Users },
         { id: 'weather', label: lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather Intelligence', icon: CloudSun },
@@ -888,25 +893,25 @@ const Dashboard = () => {
       ];
 
   return (
-    <div className="min-h-screen bg-[#F4F8F3] dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors flex flex-col justify-between">
+    <div className="min-h-screen bg-[#F2F7F4] dark:bg-[#06150D] text-slate-800 dark:text-emerald-100 transition-colors flex flex-col justify-between">
       <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       {/* FIXED DESKTOP LEFT SIDEBAR NAVIGATION */}
-      <aside className="hidden lg:flex fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-[#E2E8F0] dark:border-slate-800 z-30 flex-col justify-between p-4 overflow-y-auto shadow-xs">
+      <aside className="hidden lg:flex fixed top-16 left-0 w-60 h-[calc(100vh-4rem)] bg-white/90 dark:bg-[#06150D]/95 backdrop-blur-xl border-r border-[#CDE3D5] dark:border-[#1A402D] z-30 flex-col justify-between p-4 overflow-y-auto shadow-md">
         <div className="space-y-4">
 
           {/* Admin / Planter Info Card */}
-          <div className="p-3 bg-[#F8FAF7] dark:bg-slate-800/90 rounded-xl border border-[#E2E8F0] dark:border-slate-700 flex items-center gap-3">
+          <div className="p-3 bg-[#EAF4EE] dark:bg-[#0D261B] rounded-2xl border border-[#CDE3D5] dark:border-[#1A402D] flex items-center gap-3 shadow-inner">
             <img
-              src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Admin')}&background=1F5E3B&color=ffffff`}
+              src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Admin')}&background=059669&color=ffffff`}
               alt=""
-              className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0"
+              className="w-9 h-9 rounded-full object-cover border-2 border-[#059669] flex-shrink-0"
             />
             <div className="overflow-hidden">
-              <p className="text-xs font-black text-slate-900 dark:text-white truncate">
+              <p className="text-xs font-black text-slate-900 dark:text-white truncate font-poppins">
                 {isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')}
               </p>
-              <p className="text-[10px] text-[#1F5E3B] dark:text-emerald-400 font-bold truncate">
+              <p className="text-[10px] text-[#059669] dark:text-emerald-400 font-extrabold truncate">
                 {isAdminUser ? 'Admin • Idukki, Kerala' : `${user?.role || 'Farmer'} • ${user?.district || 'Idukki'}`}
               </p>
             </div>
@@ -983,8 +988,8 @@ const Dashboard = () => {
                           }
                         }}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-all border-l-3 ${isActive
-                            ? 'bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-2xs'
-                            : 'text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900'
+                          ? 'bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900'
                           }`}
                       >
                         <Icon className={`w-4 h-4 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
@@ -1012,12 +1017,12 @@ const Dashboard = () => {
                         setActiveTab(link.id);
                       }
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${isActive
-                        ? 'bg-[#1F5E3B] text-white shadow-xs border-l-4 border-amber-400'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all ${isActive
+                      ? 'bg-gradient-to-r from-[#059669] via-[#047857] to-[#06150D] text-white shadow-md shadow-emerald-950/30 border-l-4 border-amber-400 font-black'
+                      : 'text-slate-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-[#0D261B]'
                       }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#5C8D4E] dark:text-emerald-400'}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-amber-300' : 'text-[#059669] dark:text-emerald-400'}`} />
                     <span className="truncate">{link.label}</span>
                     {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-amber-300" />}
                   </button>
@@ -1028,8 +1033,8 @@ const Dashboard = () => {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="pt-3 border-t border-[#E2E8F0] dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-medium space-y-1">
-          <p className="flex items-center gap-1.5 font-bold text-[#1F5E3B] dark:text-emerald-400">
+        <div className="pt-3 border-t border-[#CDE3D5] dark:border-[#1A402D] text-[10px] text-slate-500 dark:text-emerald-400/80 font-medium space-y-1">
+          <p className="flex items-center gap-1.5 font-bold text-[#059669] dark:text-emerald-400">
             <Leaf className="w-3.5 h-3.5" />
             <span>Cardora Agriculture Platform</span>
           </p>
@@ -1041,7 +1046,6 @@ const Dashboard = () => {
           </p>
         </div>
       </aside>
-      )}
 
       {/* MOBILE SLIDE-OUT DRAWER NAVIGATION */}
       <AnimatePresence>
@@ -1106,8 +1110,8 @@ const Dashboard = () => {
                           }
                         }}
                         className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${isActive
-                            ? 'bg-[#1F5E3B] text-white shadow-sm'
-                            : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
+                          ? 'bg-[#1F5E3B] text-white shadow-sm'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
                           }`}
                       >
                         <Icon className="w-4 h-4 text-[#5C8D4E]" />
@@ -1117,31 +1121,28 @@ const Dashboard = () => {
                   })}
                 </nav>
               </div>
-
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <p className="text-xs font-bold text-slate-400">Cardora Agriculture System</p>
-              </div>
             </motion.aside>
           </div>
         )}
       </AnimatePresence>
 
-      {/* MAIN CONTAINER AREA (Full Page Width) */}
-      <div className="min-h-screen bg-[#F4F8F3] dark:bg-slate-950 text-slate-800 dark:text-slate-200 pt-20 pb-16 transition-all lg:ml-60 px-4 sm:px-6 lg:px-8">
-        <main className="w-full space-y-6">
-
-          {/* ===== TAB 1: DASHBOARD OVERVIEW ===== */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-
-              {/* COMPACT WELCOME CARD */}
-              <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] text-white rounded-2xl p-5 sm:p-6 shadow-md border border-[#1F5E3B]/40 relative overflow-hidden">
+      {/* MAIN CONTENT AREA */}
+      <main className="lg:pl-64 pt-16 flex-1 p-4 sm:p-6 lg:p-8 space-y-6 w-full max-w-none min-h-[calc(100vh-4rem)] overflow-x-hidden">
+        {(activeTab === 'dashboard' || activeTab === 'overview' || !activeTab) && (
+          <div className="space-y-6">
+            {/* COMPACT WELCOME CARD */}
+              <div className="bg-gradient-to-r from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/30">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/40 shadow-xs">
                         🌱 Farmer First Portal
                       </span>
+                      {easyMode && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                          🌿 Easy Mode Active
+                        </span>
+                      )}
                       <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Cardamom Management</span>
                     </div>
                     <h1 className="text-xl sm:text-2xl font-black font-poppins text-white flex items-center gap-2">
@@ -1149,14 +1150,14 @@ const Dashboard = () => {
                     </h1>
                     <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1">
                       {lang === 'ml'
-                        ? 'ഇന്നത്തെ നിങ്ങളുടെ തോട്ടത്തിന്റെ വിവരങ്ങൾ താഴെ കാണാം.'
-                        : "Here's your plantation overview for today."}
+                        ? 'ഇന്ന് നിങ്ങളുടെ തോട്ടത്തിൽ എന്താണ് നടക്കുന്നത്? Cardora-യോട് ചോദിക്കാം.'
+                        : "What is happening in your plantation today? Ask Cardora."}
                     </p>
                   </div>
 
                   {/* Location & Date Badges */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-black/20 backdrop-blur-xs p-2.5 rounded-xl border border-white/10 self-start md:self-auto">
-                    <div className="flex items-center gap-1.5 text-xs text-white font-bold px-2.5 py-1 rounded-lg bg-white/10">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-black/30 backdrop-blur-md p-2.5 rounded-2xl border border-white/15 self-start md:self-auto">
+                    <div className="flex items-center gap-1.5 text-xs text-white font-bold px-2.5 py-1 rounded-xl bg-white/10">
                       <MapPin className="w-3.5 h-3.5 text-amber-300" />
                       <span>{user?.district || user?.location || 'Idukki, Kerala'}</span>
                     </div>
@@ -1164,84 +1165,227 @@ const Dashboard = () => {
                       <Calendar className="w-3.5 h-3.5 text-emerald-300" />
                       <span>{new Date().toLocaleDateString(lang === 'ml' ? 'ml-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-amber-300 font-black px-2.5 py-1 bg-amber-400/20 rounded-lg border border-amber-400/30">
-                      <CloudSun className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1.5 text-xs text-amber-300 font-black px-2.5 py-1 bg-amber-400/20 rounded-xl border border-amber-400/40">
+                      <CloudSun className="w-3.5 h-3.5 text-amber-300" />
                       <span>28°C • Sunny</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* 4 COMPACT STATISTICS CARDS */}
+              {/* 🎙️ PROMINENT CARDORA VOICE HERO CARD */}
+              <div className="bg-gradient-to-br from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-emerald-500/40 relative overflow-hidden space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                        <Mic className="w-3.5 h-3.5" />
+                        {lang === 'ml' ? 'പറഞ്ഞാൽ മതി. Cardora വഴികാട്ടും' : 'Voice-First Assistant'}
+                      </span>
+                      <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Malayalam, Manglish & English</span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-black font-poppins text-white flex items-center gap-2">
+                      {lang === 'ml' ? 'SPEAK TO CARDORA 🎙️' : 'Speak to Cardora 🎙️'}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-emerald-100 font-medium">
+                      {lang === 'ml' ? 'എന്താണ് വേണ്ടത്? Just tell Cardora what you want.' : 'Just tell Cardora what you want, it will navigate automatically.'}
+                    </p>
+                  </div>
+
+                  {/* Big 64px Tap Target Microphone Button */}
+                  <div className="flex flex-col items-center gap-2 shrink-0 self-center md:self-auto">
+                    <button
+                      onClick={startListening}
+                      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white font-black shadow-2xl transition-all cursor-pointer ${
+                        isListening
+                          ? 'bg-rose-600 border-4 border-white animate-pulse scale-105 shadow-rose-900/50'
+                          : 'bg-gradient-to-br from-[#F59E0B] via-[#D4AF37] to-[#FBBF24] hover:scale-105 border-4 border-amber-300/60 text-slate-950 shadow-amber-950/50'
+                      }`}
+                      title={lang === 'ml' ? 'സംസാരിക്കാൻ ടാപ്പ് ചെയ്യുക' : 'Tap to Speak'}
+                    >
+                      <Mic className={`w-8 h-8 sm:w-10 sm:h-10 ${isListening ? 'text-white' : 'text-slate-950'}`} />
+                    </button>
+                    <span className="text-xs font-extrabold text-amber-300">
+                      {isListening ? (lang === 'ml' ? '🎙️ കേൾക്കുന്നു...' : 'Listening...') : (lang === 'ml' ? '[ 🎙️ സംസാരിക്കുക ]' : '[ Tap to Speak ]')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status Message Display */}
+                {statusMessage && (
+                  <div className="p-3 rounded-2xl bg-black/30 border border-white/20 text-xs font-extrabold text-amber-300 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                    <span>{statusMessage}</span>
+                  </div>
+                )}
+
+                {/* Voice Prompts Hints */}
+                <div className="pt-3 border-t border-white/15 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-200/90">{lang === 'ml' ? 'ഉദാഹരണം:' : 'Examples:'}</span>
+                  {[
+                    { text: lang === 'ml' ? '"എന്റെ തോട്ടം കാണിക്കൂ"' : '"Show my plantation"', tab: 'plantations' },
+                    { text: lang === 'ml' ? '"ലൈവ് ലേലം തുറക്കൂ"' : '"Open live auctions"', tab: 'auctions' },
+                    { text: lang === 'ml' ? '"കാലാവസ്ഥ കാണിക്കൂ"' : '"Check weather"', tab: 'weather' },
+                    { text: lang === 'ml' ? '"രോഗം പരിശോധിക്കണം"' : '"Plant health scanner"', tab: 'ai' },
+                    { text: lang === 'ml' ? '"തൊഴിലാളികൾ കാണിക്കൂ"' : '"Labour workforce"', tab: 'workforce' },
+                  ].map((hint, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveTab(hint.tab)}
+                      className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/30 text-emerald-100 text-xs font-bold border border-white/20 transition-all cursor-pointer"
+                    >
+                      {hint.text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ⚡ HIGH-VISIBILITY QUICK ACTION TILES */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 font-poppins flex items-center gap-2">
+                  <span>{lang === 'ml' ? 'നിങ്ങൾക്ക് എന്ത് ചെയ്യണം?' : 'Quick Actions'}</span>
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  <button
+                    onClick={() => setActiveTab('plantations')}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                      🌱
+                    </div>
+                    <div>
+                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                        {lang === 'ml' ? 'തോട്ടം കാണുക' : 'My Plantation'}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-[#059669] dark:text-emerald-400">
+                        {lang === 'ml' ? 'തോട്ടം മാനേജ് ചെയ്യുക' : 'Manage Plots'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('ai')}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                      🔬
+                    </div>
+                    <div>
+                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                        {lang === 'ml' ? 'രോഗം പരിശോധിക്കുക' : 'Plant Scanner'}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-rose-600 dark:text-rose-400">
+                        {lang === 'ml' ? 'ഇല സ്കാൻ ചെയ്യുക' : 'Scan Leaf Health'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('weather')}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                      ☁
+                    </div>
+                    <div>
+                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                        {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather'}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-sky-600 dark:text-sky-400">
+                        {lang === 'ml' ? 'മഴ പ്രവചനം' : 'Rain Forecast'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('auctions')}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                      🔨
+                    </div>
+                    <div>
+                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                        {lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions'}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400">
+                        {lang === 'ml' ? 'ഏലക്കായ് വില' : 'Daily Spice Prices'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 OVERVIEW STATISTICS CARDS */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Active Plantations */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400">
+                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400">
                       <Leaf className="w-4 h-4" />
                     </span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      {plantations.length > 0 ? 'Active' : 'No Plots'}
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+                      {plantations.length > 0 ? (lang === 'ml' ? 'സജീവം' : 'Active') : (lang === 'ml' ? 'ഇല്ല' : 'No Plots')}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
                       {plantations.length}
                     </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                    <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
                       {lang === 'ml' ? 'സജീവ തോട്ടങ്ങൾ' : 'Active Plantations'}
                     </p>
                   </div>
                 </div>
 
                 {/* Soil Moisture */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                    <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400">
                       <Droplets className="w-4 h-4" />
                     </span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                      {plantations.length > 0 ? 'Optimal' : 'N/A'}
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300">
+                      {plantations.length > 0 ? (lang === 'ml' ? 'ഉചിതം' : 'Optimal') : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
                       {plantations.length > 0 ? `${avgMoisture}%` : '0%'}
                     </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
-                      {lang === 'ml' ? 'മണ്ണിന്റെ ഈർപ്പം' : 'Soil Moisture'}
+                    <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
+                      {lang === 'ml' ? 'മണ്ണിലെ ഈർപ്പം' : 'Soil Moisture'}
                     </p>
                   </div>
                 </div>
 
                 {/* Plantation Health */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400">
                       <Sparkles className="w-4 h-4" />
                     </span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                      {plantations.length > 0 ? 'Healthy' : 'N/A'}
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                      {plantations.length > 0 ? (lang === 'ml' ? 'ആരോഗ്യം' : 'Healthy') : 'N/A'}
                     </span>
                   </div>
                   <div>
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
                       {plantations.length > 0 ? `${avgHealth}%` : '0%'}
                     </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                    <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
                       {lang === 'ml' ? 'തോട്ടം ആരോഗ്യം' : 'Plantation Health'}
                     </p>
                   </div>
                 </div>
 
                 {/* Predicted Yield */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-[#E2E8F0] dark:border-slate-800 shadow-xs hover:border-[#1F5E3B] transition-all flex flex-col justify-between">
+                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400">
+                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400">
                       <TrendingUp className="w-4 h-4" />
                     </span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      {plantations.length > 0 ? 'Est. Harvest' : 'N/A'}
+                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+                      {plantations.length > 0 ? (lang === 'ml' ? 'വിളവെടുപ്പ്' : 'Est. Harvest') : 'N/A'}
                     </span>
                   </div>
                   <div>
@@ -1249,7 +1393,7 @@ const Dashboard = () => {
                       {plantations.length > 0 ? `${predictedYield} kg` : '0 kg'}
                     </div>
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
-                      {lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield/Acre'}
+                      {lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield'}
                     </p>
                   </div>
                 </div>
@@ -1616,7 +1760,7 @@ const Dashboard = () => {
 
           {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
           {activeTab === 'ai' && (
-            <div className="space-y-6">
+            <div className="space-y-6 w-full max-w-none">
               <CardoraFertilizerAdvisor
                 plantation={plantations[0]}
                 onToast={showToast}
@@ -1687,9 +1831,34 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* ===== TAB: EXPERT CONSULTATION PORTAL ===== */}
+          {activeTab === 'expert' && (
+            <div className="w-full max-w-7xl mx-auto">
+              <ExpertConsultationPortal />
+            </div>
+          )}
+
           {/* ===== TAB 4: COMMUNITY ===== */}
           {activeTab === 'community' && (
             <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4">
+              {/* Expert Consultation Entry Banner */}
+              <div className="bg-[#EAF3E8] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 rounded-3xl p-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#1F5E3B] text-white flex items-center justify-center font-bold">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-[#1F5E3B] dark:text-emerald-400 text-sm">Need Agricultural Advice for your Cardamom Plantation?</h4>
+                    <p className="text-xs text-gray-600 dark:text-slate-300">Consult with verified Cardora agronomists, ask questions in Malayalam or English.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('expert')}
+                  className="px-4 py-2.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-black hover:bg-[#17331F] transition-all cursor-pointer whitespace-nowrap shadow-sm"
+                >
+                  Ask an Agronomist →
+                </button>
+              </div>
               {/* Header Title & DB Sync Banner */}
               <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -1790,8 +1959,8 @@ const Dashboard = () => {
                         key={cat.id}
                         onClick={() => setSelectedCategoryFilter(cat.id)}
                         className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0 ${isActive
-                            ? 'bg-[#1F5E3B] text-white shadow-md shadow-[#1F5E3B]/20 scale-105'
-                            : 'bg-[#F8FAF7] dark:bg-slate-800/60 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700'
+                          ? 'bg-[#1F5E3B] text-white shadow-md shadow-[#1F5E3B]/20 scale-105'
+                          : 'bg-[#F8FAF7] dark:bg-slate-800/60 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700'
                           }`}
                       >
                         <span>{cat.icon}</span>
@@ -2045,12 +2214,12 @@ const Dashboard = () => {
 
                           <div className="flex items-center gap-2">
                             <span className={`px-3.5 py-1 rounded-full text-xs font-black tracking-wide border ${post.category === 'Expert Advice'
-                                ? 'bg-purple-100 text-purple-800 border-purple-300'
-                                : post.category === 'Farming Tip'
-                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                  : post.category === 'Question'
-                                    ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                    : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
+                              ? 'bg-purple-100 text-purple-800 border-purple-300'
+                              : post.category === 'Farming Tip'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : post.category === 'Question'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                  : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
                               }`}>
                               {post.category}
                             </span>
@@ -2088,8 +2257,8 @@ const Dashboard = () => {
                             <button
                               onClick={() => handleLikePost(post.id)}
                               className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${post.liked
-                                  ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200'
-                                  : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-transparent'
+                                ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200'
+                                : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-transparent'
                                 }`}
                             >
                               <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.liked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -2099,8 +2268,8 @@ const Dashboard = () => {
                             <button
                               onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)}
                               className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${activeCommentPostId === post.id
-                                  ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30'
-                                  : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-[#DDEFD9] hover:text-[#1F5E3B] border border-transparent'
+                                ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30'
+                                : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-[#DDEFD9] hover:text-[#1F5E3B] border border-transparent'
                                 }`}
                             >
                               <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-[#1F5E3B]" />
@@ -2795,10 +2964,7 @@ const Dashboard = () => {
 
             </div>
           )}
-
         </main>
-
-      </div>
 
       {/* NEW PLANTATION MODAL WITH VALIDATION */}
       <AnimatePresence>

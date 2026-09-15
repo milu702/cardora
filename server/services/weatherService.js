@@ -321,29 +321,32 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
 
   // 1. Check MongoDB Cache (Cache validity: 45 minutes)
   try {
-    const cached = await WeatherCache.findOne({ locationKey });
-    if (cached && cached.fetchedAt) {
-      const ageInMinutes = (Date.now() - new Date(cached.fetchedAt).getTime()) / (1000 * 60);
-      if (ageInMinutes < 45) {
-        const payload = {
-          success: true,
-          source: 'cache',
-          district: cached.district,
-          lat: cached.lat,
-          lon: cached.lon,
-          currentWeather: cached.currentWeather,
-          forecast: cached.forecast,
-          suitability: cached.suitability,
-          aiRecommendations: cached.aiRecommendations,
-          weatherAlerts: cached.weatherAlerts,
-          isRecognizedCardamomRegion: cached.isRecognizedCardamomRegion,
-          regionNotice: cached.regionNotice,
-          isFallback: false,
-          warningMessage: '',
-          fetchedAt: cached.fetchedAt,
-        };
-        inMemoryWeatherCache.set(locationKey, { timestamp: Date.now(), data: payload });
-        return payload;
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState === 1) {
+      const cached = await WeatherCache.findOne({ locationKey }).maxTimeMS(2000);
+      if (cached && cached.fetchedAt) {
+        const ageInMinutes = (Date.now() - new Date(cached.fetchedAt).getTime()) / (1000 * 60);
+        if (ageInMinutes < 45) {
+          const payload = {
+            success: true,
+            source: 'cache',
+            district: cached.district,
+            lat: cached.lat,
+            lon: cached.lon,
+            currentWeather: cached.currentWeather,
+            forecast: cached.forecast,
+            suitability: cached.suitability,
+            aiRecommendations: cached.aiRecommendations,
+            weatherAlerts: cached.weatherAlerts,
+            isRecognizedCardamomRegion: cached.isRecognizedCardamomRegion,
+            regionNotice: cached.regionNotice,
+            isFallback: false,
+            warningMessage: '',
+            fetchedAt: cached.fetchedAt,
+          };
+          inMemoryWeatherCache.set(locationKey, { timestamp: Date.now(), data: payload });
+          return payload;
+        }
       }
     }
   } catch (dbErr) {

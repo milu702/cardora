@@ -28,12 +28,13 @@ exports.updateProfile = async (req, res) => {
 
     const { 
       fullName, name, username, phone, address, district, location, state, country, 
-      bio, language, role, avatar, profileImage, profilePhoto, coverImage,
+      bio, language, role, isExpert, avatar, profileImage, profilePhoto, coverImage,
       experience, skills, certifications, education, organization
     } = req.body;
 
     user.name = fullName || name || user.name;
     if (username) user.username = username;
+    if (isExpert !== undefined) user.isExpert = Boolean(isExpert);
     user.phone = phone !== undefined ? phone : user.phone;
     user.address = address !== undefined ? address : user.address;
     user.district = district || location || user.district;

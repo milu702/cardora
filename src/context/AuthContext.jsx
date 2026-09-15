@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { translations } from '../utils/translations';
-import { apiService } from '../services/api';
+import api, { apiService } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -69,7 +69,16 @@ export const AuthProvider = ({ children }) => {
   // Language State ('en' or 'ml')
   const [lang, setLang] = useState('en');
 
-  // Theme State
+  // Farmer Easy Mode State
+  const [easyMode, setEasyMode] = useState(() => {
+    try {
+      return localStorage.getItem('cardora_easy_mode') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
     try {
       return localStorage.getItem('cardora_dark_mode') === 'true';
@@ -77,6 +86,14 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   });
+
+  const toggleEasyMode = () => {
+    setEasyMode((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('cardora_easy_mode', String(next)); } catch (e) {}
+      return next;
+    });
+  };
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
@@ -405,10 +422,15 @@ export const AuthProvider = ({ children }) => {
     showToast('Logged out of Cardora.');
   };
 
-  const toggleExpertMode = () => {
-    const updated = !user.isExpert;
+  const toggleExpertMode = async () => {
+    const updated = !(user?.isExpert);
     setUser((prev) => ({ ...prev, isExpert: updated }));
-    showToast(updated ? 'Expert Mode Enabled!' : 'Expert Mode Disabled.');
+    try {
+      await api.put('/users/profile', { isExpert: updated });
+    } catch (e) {
+      console.warn('Backend expert mode toggle notice:', e.message);
+    }
+    showToast(updated ? 'Expert Mode Enabled! Workspace Unlocked.' : 'Expert Mode Disabled.');
   };
 
   const updateProfile = async (updatedData) => {
@@ -551,6 +573,9 @@ export const AuthProvider = ({ children }) => {
         darkMode,
         setDarkMode,
         toggleDarkMode,
+        easyMode,
+        setEasyMode,
+        toggleEasyMode,
         toastMessage,
         showToast,
         speakText,

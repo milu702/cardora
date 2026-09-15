@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import InvestmentRiskEvaluator from '../ai/InvestmentRiskEvaluator';
 import { 
   X, ShieldCheck, Award, Eye, Video, Map, Volume2, Globe, Download, Printer, 
   Share2, Bookmark, CheckCircle, AlertTriangle, FileText, User, MessageSquare, 
@@ -388,6 +389,9 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, onEditP
                   <span className="text-base font-black text-[#66BB6A]">STRONGLY RECOMMENDED TO BUY</span>
                 </div>
               </div>
+
+              {/* AI INVESTMENT RISK EVALUATOR WIDGET */}
+              <InvestmentRiskEvaluator listingData={plot} />
             </div>
           )}
 

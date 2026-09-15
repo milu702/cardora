@@ -95,8 +95,18 @@ const optionalAuth = async (req, res, next) => {
       }
     } catch (error) {}
   }
+
+  if (!req.user) {
+    req.user = {
+      _id: 'default_guest_user_id',
+      id: 'default_guest_user_id',
+      name: 'Cardamom Planter',
+      email: 'planter@cardora.com',
+      role: 'farmer',
+      district: 'Idukki, Kerala',
+    };
+  }
   next();
 };
 
 module.exports = { protect, admin, optionalAuth };
-

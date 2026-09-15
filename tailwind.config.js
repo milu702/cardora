@@ -7,17 +7,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#1F5E3B',       // Primary Green
-        secondary: '#5C8D4E',     // Secondary Green
-        sage: '#DDEFD9',          // Light Sage
-        lightSage: '#DDEFD9',
-        bgLight: '#F8FAF7',       // Background
-        cardBg: '#FFFFFF',        // Cards
-        accentGold: '#C9A227',    // Accent Gold
-        heading: '#17331F',       // Heading
-        bodyText: '#4A5568',      // Body Text
-        borderColor: '#D7E6D5',   // Borders
-        darkForest: '#17331F',    // Dark Forest Green
+        primary: '#059669',        // Neon Emerald Primary
+        secondary: '#10B981',      // Vibrant Botanical Emerald
+        accentGold: '#F59E0B',     // Liquid Gold
+        liquidGold: '#D4AF37',     // Pure Gold Accent
+        velvetDark: '#06150D',     // Ultra Deep Velvet Dark Bg
+        forestVelvet: '#0B2B1A',   // Velvet Forest Surface
+        ecoLight: '#F2F7F4',       // Clean Eco Light Bg
+        cardoraEmerald: '#047857', // Deep Emerald Token
+        sage: '#D1E5D7',
+        lightSage: '#E6F4EA',
+        bgLight: '#F2F7F4',
+        cardBg: '#FFFFFF',
+        heading: '#06150D',
+        bodyText: '#374151',
+        borderColor: '#CDE3D5',
+        darkForest: '#06150D',
       },
       fontFamily: {
         poppins: ['Poppins', 'sans-serif'],
@@ -29,10 +34,12 @@ module.exports = {
         '30': '30px',
       },
       boxShadow: {
-        soft: '0 10px 30px -5px rgba(31, 94, 59, 0.08)',
-        cardGlow: '0 0 25px rgba(31, 94, 59, 0.15)',
-        goldGlow: '0 0 20px rgba(201, 162, 39, 0.3)',
-        glass: '0 8px 32px 0 rgba(23, 51, 31, 0.08)',
+        xs: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        soft: '0 10px 30px -5px rgba(5, 150, 105, 0.08)',
+        cardGlow: '0 0 25px rgba(16, 185, 129, 0.2)',
+        goldGlow: '0 0 25px rgba(245, 158, 11, 0.35)',
+        emeraldGlow: '0 0 30px rgba(5, 150, 105, 0.3)',
+        glass: '0 8px 32px 0 rgba(6, 21, 13, 0.1)',
       },
     },
   },

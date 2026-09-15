@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { VoiceNavigationProvider } from './context/VoiceNavigationContext';
+import VoiceNavigationOverlay from './components/voice/VoiceNavigationOverlay';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
@@ -90,7 +92,10 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <MainContent />
+        <VoiceNavigationProvider>
+          <MainContent />
+          <VoiceNavigationOverlay />
+        </VoiceNavigationProvider>
       </AuthProvider>
     </Router>
   );

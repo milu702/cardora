@@ -12,6 +12,7 @@ import {
   MapPin,
   Sparkles,
   User,
+  UserCheck,
   Bell,
   Search,
   Shield,
@@ -20,14 +21,17 @@ import {
   CloudSun,
   MessageSquare,
   ShieldCheck,
-  Gavel
+  Gavel,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useVoiceNavigation } from '../../context/VoiceNavigationContext';
 import { apiService } from '../../services/api';
 import Button from '../ui/Button';
 
 const Navbar = ({ onToggleMobileSidebar }) => {
-  const { isAuthenticated, user, logout, lang, toggleLang, darkMode, toggleDarkMode, notifications = [], clearNotifications, markNotificationsRead } = useAuth();
+  const { isAuthenticated, user, logout, lang, toggleLang, darkMode, toggleDarkMode, easyMode, toggleEasyMode, notifications = [], clearNotifications, markNotificationsRead } = useAuth();
+  const { startListening, isListening } = useVoiceNavigation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
@@ -69,6 +73,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
       { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
       { name: 'Live Auctions', href: '/dashboard?tab=auctions', icon: Gavel },
       { name: 'Live Intelligence', href: '/dashboard?tab=intelligence', icon: Sparkles },
+      { name: 'Expert Consultation', href: '/dashboard?tab=expert', icon: UserCheck },
       { name: 'My Plantation', href: '/dashboard?tab=plantations', icon: Leaf },
       { name: 'Workforce & Workers', href: '/dashboard?tab=workforce', icon: Users },
       { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
@@ -98,7 +103,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
       initial={{ y: -80, scale: 0.98 }}
       animate={{ y: 0, scale: 1 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-slate-800 shadow-sm transition-colors"
+      className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/90 dark:bg-[#06150D]/90 backdrop-blur-xl border-b border-[#CDE3D5] dark:border-[#1A402D] shadow-md transition-colors"
     >
       <div className="h-full w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
 
@@ -107,7 +112,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
           {isAuthenticated && (
             <button
               onClick={handleMobileToggle}
-              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800 transition-colors focus:outline-none"
+              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-[#0D261B] transition-colors focus:outline-none"
               title="Toggle Menu"
             >
               <Menu className="w-5 h-5" />
@@ -116,17 +121,18 @@ const Navbar = ({ onToggleMobileSidebar }) => {
 
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="relative">
-              <div className="absolute inset-0 bg-[#1F5E3B]/20 rounded-xl blur-sm group-hover:scale-105 transition-transform" />
-              <div className="relative bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E] rounded-xl p-2 text-white shadow-xs">
+              <div className="absolute inset-0 bg-[#059669]/30 rounded-xl blur-sm group-hover:scale-110 transition-transform" />
+              <div className="relative bg-gradient-to-br from-[#059669] via-[#047857] to-[#06150D] rounded-xl p-2 text-amber-300 shadow-md border border-amber-400/30">
                 <Leaf className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg md:text-xl font-black tracking-wider text-[#17331F] dark:text-white font-poppins">
+              <span className="text-lg md:text-xl font-black tracking-wider text-[#06150D] dark:text-white font-poppins flex items-center gap-1">
                 CARDORA
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               </span>
-              <span className="text-[8px] uppercase font-bold tracking-widest text-[#5C8D4E] dark:text-emerald-400 -mt-1 hidden sm:inline-block">
-                Smart Agriculture
+              <span className="text-[8px] uppercase font-extrabold tracking-widest text-[#059669] dark:text-emerald-400 -mt-1 hidden sm:inline-block">
+                Smart Agriculture AI
               </span>
             </div>
           </Link>
@@ -136,7 +142,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
         {isAuthenticated ? (
           <div className="flex-1 max-w-lg mx-2 sm:mx-4 hidden sm:block">
             <div className="relative flex items-center">
-              <Search className="w-4 h-4 text-[#5C8D4E] dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
+              <Search className="w-4 h-4 text-[#059669] dark:text-emerald-400 absolute left-3.5 pointer-events-none z-10" />
               <input
                 type="text"
                 value={searchQuery}
@@ -147,7 +153,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                   }
                 }}
                 placeholder={lang === 'ml' ? "ഡാഷ്‌ബോർഡ് അല്ലെങ്കിൽ കർഷകരെ തിരയുക..." : "Search farmers, plantations, workers..."}
-                className="w-full pl-10 pr-4 py-2 text-sm rounded-full bg-[#F4F8F3] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F5E3B] focus:ring-1 focus:ring-[#1F5E3B] transition-all"
+                className="w-full pl-10 pr-4 py-2 text-sm rounded-full bg-[#EAF4EE] dark:bg-[#0B2117] border border-[#CDE3D5] dark:border-[#1A402D] text-[#06150D] dark:text-emerald-100 placeholder:text-slate-400 dark:placeholder:text-emerald-600/70 focus:outline-none focus:border-[#059669] focus:ring-2 focus:ring-[#059669]/30 transition-all shadow-inner"
               />
             </div>
           </div>
@@ -157,7 +163,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-xs font-bold text-[#17331F] dark:text-slate-200 hover:text-[#1F5E3B] dark:hover:text-emerald-400 transition-colors py-1"
+                className="text-xs font-bold text-[#06150D] dark:text-slate-200 hover:text-[#059669] dark:hover:text-emerald-400 transition-colors py-1"
               >
                 {link.name}
               </a>
@@ -168,22 +174,50 @@ const Navbar = ({ onToggleMobileSidebar }) => {
         {/* Right Controls Section */}
         <div className="flex items-center gap-2 sm:gap-3">
 
+          {/* Universal Voice Navigation Button */}
+          <button
+            onClick={startListening}
+            className={`p-1.5 px-3 rounded-full text-xs font-black transition-all flex items-center gap-1.5 border cursor-pointer ${
+              isListening
+                ? 'bg-rose-600 border-rose-500 text-white animate-pulse shadow-lg shadow-rose-900/40'
+                : 'bg-gradient-to-r from-amber-400 to-amber-500 border-amber-300 text-slate-950 hover:scale-105 shadow-md shadow-amber-950/20'
+            }`}
+            title="Voice Navigation (പറയൂ, Cardora ചെയ്യും)"
+          >
+            <Mic className={`w-4 h-4 ${isListening ? 'text-white' : 'text-slate-950'}`} />
+            <span className="hidden md:inline">{isListening ? 'Listening...' : 'Voice 🎙️'}</span>
+          </button>
+
+          {/* Farmer Easy Mode Toggle */}
+          <button
+            onClick={toggleEasyMode}
+            className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 border cursor-pointer ${
+              easyMode
+                ? 'bg-[#059669] border-emerald-400 text-white font-black shadow-md ring-2 ring-emerald-400/40'
+                : 'bg-[#EAF4EE] dark:bg-[#0B2117] border-[#CDE3D5] dark:border-[#1A402D] text-[#06150D] dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-[#0D261B]'
+            }`}
+            title="Farmer Easy Mode / വലിയ അക്ഷരങ്ങൾ"
+          >
+            <span className="text-sm">🌿</span>
+            <span className="hidden sm:inline">{easyMode ? (lang === 'ml' ? 'ഈസി ACTIVE' : 'Easy ON') : (lang === 'ml' ? 'ഈസി' : 'Easy')}</span>
+          </button>
+
           {/* Language Selector Button */}
           <button
             onClick={toggleLang}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#EAF3E8] dark:bg-slate-800 hover:bg-[#DDEFD9] dark:hover:bg-slate-700 text-[#17331F] dark:text-emerald-300 text-xs font-black transition-colors border border-[#5C8D4E]/30 dark:border-slate-700"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#EAF4EE] dark:bg-[#0B2117] hover:bg-emerald-100 dark:hover:bg-[#0D261B] text-[#06150D] dark:text-emerald-300 text-xs font-black transition-colors border border-[#CDE3D5] dark:border-[#1A402D]"
             title="Switch Language / ഭാഷ മാറ്റുക"
           >
-            <Globe className="w-3.5 h-3.5 text-[#1F5E3B] dark:text-emerald-400" />
+            <Globe className="w-3.5 h-3.5 text-[#059669] dark:text-emerald-400" />
             <span>{lang === 'en' ? 'EN' : 'മലയാളം'}</span>
           </button>
 
           {/* Dark/Light Theme Toggle */}
           <button
             onClick={toggleDarkMode}
-            className={`p-1.5 rounded-lg text-xs font-bold transition-colors border ${darkMode
-                ? 'bg-slate-800 border-slate-700 text-amber-300 hover:bg-slate-700'
-                : 'bg-[#EAF3E8] border-[#5C8D4E]/30 text-[#17331F] hover:bg-[#DDEFD9]'
+            className={`p-2 rounded-full text-xs font-bold transition-all border ${darkMode
+                ? 'bg-[#0B2117] border-[#1A402D] text-amber-300 hover:bg-[#0D261B] shadow-inner'
+                : 'bg-[#EAF4EE] border-[#CDE3D5] text-[#06150D] hover:bg-emerald-100 shadow-xs'
               }`}
             title="Toggle Dark / Light Mode"
           >

@@ -17,24 +17,49 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #F8FAF7;
-  color: #4A5568;
+  background-color: #F2F7F4;
+  color: #1F2937;
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
+.dark body {
+  background-color: #06150D;
+  color: #E5E7EB;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Poppins', 'Space Grotesk', sans-serif;
-  color: #17331F;
+  color: #06150D;
+}
+
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #F9FAFB;
 }
 
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #F8FAF7;
+  background: #F2F7F4;
 }
+
+.dark ::-webkit-scrollbar-track {
+  background: #06150D;
+}
+
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #1F5E3B, #5C8D4E);
+  background: linear-gradient(180deg, #059669, #D4AF37);
   border-radius: 9999px;
 }
 
@@ -109,33 +134,77 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Continuous Nature Animation Keyframes (No Opacity Fades!) */
 @keyframes floatLeaf {
-  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
-  50% { transform: translateY(-18px) rotate(12deg) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: translateY(-18px) rotate(12deg) scale(1.05);
+  }
 }
 
 @keyframes swayGrass {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(4deg); }
+
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+
+  50% {
+    transform: rotate(4deg);
+  }
 }
 
 @keyframes flyButterfly {
-  0% { transform: translate(0px, 0px) scale(0.9) rotate(-5deg); }
-  25% { transform: translate(40px, -25px) scale(1.05) rotate(5deg); }
-  50% { transform: translate(80px, 10px) scale(1) rotate(-3deg); }
-  75% { transform: translate(40px, 30px) scale(0.95) rotate(8deg); }
-  100% { transform: translate(0px, 0px) scale(0.9) rotate(-5deg); }
+  0% {
+    transform: translate(0px, 0px) scale(0.9) rotate(-5deg);
+  }
+
+  25% {
+    transform: translate(40px, -25px) scale(1.05) rotate(5deg);
+  }
+
+  50% {
+    transform: translate(80px, 10px) scale(1) rotate(-3deg);
+  }
+
+  75% {
+    transform: translate(40px, 30px) scale(0.95) rotate(8deg);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(0.9) rotate(-5deg);
+  }
 }
 
 @keyframes sunRayPass {
-  0% { transform: translateX(-100%) skewX(-20deg); }
-  50% { transform: translateX(100%) skewX(-20deg); }
-  100% { transform: translateX(200%) skewX(-20deg); }
+  0% {
+    transform: translateX(-100%) skewX(-20deg);
+  }
+
+  50% {
+    transform: translateX(100%) skewX(-20deg);
+  }
+
+  100% {
+    transform: translateX(200%) skewX(-20deg);
+  }
 }
 
 @keyframes pollenDrift {
-  0% { transform: translateY(0) translateX(0) scale(0.8); }
-  50% { transform: translateY(-40px) translateX(20px) scale(1.2); }
-  100% { transform: translateY(-80px) translateX(-10px) scale(0.8); }
+  0% {
+    transform: translateY(0) translateX(0) scale(0.8);
+  }
+
+  50% {
+    transform: translateY(-40px) translateX(20px) scale(1.2);
+  }
+
+  100% {
+    transform: translateY(-80px) translateX(-10px) scale(0.8);
+  }
 }
 
 .animate-float-leaf {
@@ -198,24 +267,49 @@ input[type="datetime-local"],
 input[type="url"],
 select,
 textarea {
-  font-size: 0.9375rem !important; /* 15px */
+  font-size: 0.9375rem !important;
+  /* 15px */
   line-height: 1.5 !important;
-  padding-top: 0.75rem !important; /* 12px */
-  padding-bottom: 0.75rem !important; /* 12px */
-  padding-left: 1rem !important; /* 16px */
-  padding-right: 1rem !important; /* 16px */
+  padding-top: 0.75rem !important;
+  /* 12px */
+  padding-bottom: 0.75rem !important;
+  /* 12px */
+  padding-left: 1rem !important;
+  /* 16px */
+  padding-right: 1rem !important;
+  /* 16px */
   min-height: 48px !important;
-  border-radius: 1rem !important; /* 16px rounded-2xl */
+  border-radius: 1rem !important;
+  /* 16px rounded-2xl */
   font-weight: 500 !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Ensure search inputs with icons maintain left padding clearance */
-input[class*="pl-8"], input.pl-8 { padding-left: 2.25rem !important; }
-input[class*="pl-9"], input.pl-9 { padding-left: 2.6rem !important; }
-input[class*="pl-10"], input.pl-10 { padding-left: 2.85rem !important; }
-input[class*="pl-11"], input.pl-11 { padding-left: 3.1rem !important; }
-input[class*="pl-12"], input.pl-12 { padding-left: 3.35rem !important; }
+input[class*="pl-8"],
+input.pl-8 {
+  padding-left: 2.25rem !important;
+}
+
+input[class*="pl-9"],
+input.pl-9 {
+  padding-left: 2.6rem !important;
+}
+
+input[class*="pl-10"],
+input.pl-10 {
+  padding-left: 2.85rem !important;
+}
+
+input[class*="pl-11"],
+input.pl-11 {
+  padding-left: 3.1rem !important;
+}
+
+input[class*="pl-12"],
+input.pl-12 {
+  padding-left: 3.35rem !important;
+}
 
 /* Focus states for ultimate legibility & aesthetics */
 input[type="text"]:focus,

@@ -15,12 +15,16 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const connectDB = require('./config/db');
 const { getDBStatus } = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const { seedKnowledgeBase } = require('./services/ai/agriculturalKnowledgeSeed');
 
 // Initialize Express App
 const app = express();
 
 // Connect to MongoDB Atlas
-connectDB();
+connectDB().then(() => {
+  seedKnowledgeBase();
+});
+
 
 // Passport Config
 require('./config/passport')(passport);

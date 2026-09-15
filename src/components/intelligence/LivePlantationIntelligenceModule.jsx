@@ -29,6 +29,7 @@ import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import CropYieldPredictor from '../ai/CropYieldPredictor';
 
 const LivePlantationIntelligenceModule = ({ onToast }) => {
   const { user } = useAuth();
@@ -486,6 +487,9 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
             </div>
 
           </div>
+
+          {/* AI CROP YIELD PREDICTOR WIDGET */}
+          <CropYieldPredictor plantationData={selectedPlantationObj} />
 
           {/* ========================================================================= */}
           {/* SECTION 2 & 3: REAL-TIME ENVIRONMENT & SOIL TELEMETRY */}

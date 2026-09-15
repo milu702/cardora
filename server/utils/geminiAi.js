@@ -36,12 +36,10 @@ async function askGemini(prompt, systemInstruction = '', model = 'gemini-3.6-fla
 
   // Model cascade list prioritizing active, supported Gemini API models
   const candidateModels = [
+    'gemini-3.6-flash',
+    'gemini-3.1-pro-preview',
     'gemini-2.5-flash',
     'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro-latest'
   ];
   // Filter duplicates while preserving order
   const modelsToTry = [...new Set(candidateModels.filter(Boolean))];
@@ -87,7 +85,9 @@ async function analyzeDocumentWithGemini(fileBuffer, mimeType, prompt = '') {
     };
   }
 
-  const visionModels = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-2.0-flash-exp', 'gemini-1.5-flash'];
+  const visionModels = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3-flash'];
+
+
   const base64Data = fileBuffer.toString('base64');
   const userPrompt = prompt || 'Analyze this document. Is it a valid Land Ownership Title (Pattayam), Revenue Deed, or Land Survey Sketch in Kerala? Extract survey numbers, owner name, village, and return JSON with keys: isLandDocument (boolean), docType (string), confidenceScore (number 0-100), extractedDetails (object).';
 
@@ -207,8 +207,10 @@ function fallbackAgronomist(prompt) {
 
   // 10. General Knowledge, Farming & Dynamic Query Engine
   const cleanPrompt = (prompt || '').trim();
-  return `🤖 **CARDORA AI Insight for "${cleanPrompt}"**:\n\n` +
-    `Thank you for asking about **"${cleanPrompt}"**.\n\n` +
+  const topicTitle = cleanPrompt ? ` for "${cleanPrompt}"` : '';
+  const topicText = cleanPrompt ? ` about **"${cleanPrompt}"**` : ' Cardora AI Agronomist.';
+  return `🤖 **CARDORA AI Insight${topicTitle}**:\n\n` +
+    `Thank you for asking${topicText}\n\n` +
     `• **Agronomic & Ecosystem Analysis**: Cardora AI has evaluated your query. For optimal cardamom plantation management, ensure proper shade regulation (50-60% light filtration), steady micro-drip irrigation, and routine tiller health monitoring.\n` +
     `• **Expert Action Plan**: If your inquiry relates to crop disease, soil health, or market trading, you can request specific recommendations on NPK fertilization, Azhukal/Thrips remediation, or current Spice Board auction rates.\n\n` +
     `Feel free to ask follow-up questions in English or Malayalam!`;
