@@ -136,9 +136,18 @@ exports.createWorker = async (req, res) => {
 
     const targetPlantationId = authCheck.plantation._id;
 
-    // Auto-generate Worker ID (e.g., WRK-1001)
-    const count = await Worker.countDocuments();
-    const generatedWorkerId = `WRK-${1000 + count + 1}`;
+    // Auto-generate unique Worker ID (e.g., WRK-1842)
+    let generatedWorkerId;
+    let isUnique = false;
+    let attempts = 0;
+    while (!isUnique && attempts < 50) {
+      attempts++;
+      const randNum = Math.floor(1000 + Math.random() * 9000);
+      generatedWorkerId = `WRK-${randNum}`;
+      const existing = await Worker.findOne({ workerId: generatedWorkerId });
+      if (!existing) isUnique = true;
+    }
+    if (!isUnique) generatedWorkerId = `WRK-${Date.now().toString().slice(-6)}`;
 
     const worker = await Worker.create({
       workerId: generatedWorkerId,
@@ -209,23 +218,13 @@ exports.getPlantationWorkers = async (req, res) => {
 
     const targetPlantationId = authCheck.plantation._id;
 
-    // Strict multi-tenant isolation: Owners see their plantation workers; Supervisors see their created/assigned workers
-    let filter = {};
-    if (authCheck.isOwner) {
-      filter = {
-        $or: [
-          { plantationId: targetPlantationId },
-          { supervisorId: req.user._id },
-        ],
-      };
-    } else {
-      filter = {
-        $or: [
-          { supervisorId: req.user._id },
-          { plantationId: targetPlantationId, supervisorId: req.user._id },
-        ],
-      };
-    }
+    // Multi-tenant roster view: Owners and assigned supervisors see all workers for this plantation
+    const filter = {
+      $or: [
+        { plantationId: targetPlantationId },
+        { supervisorId: req.user._id },
+      ],
+    };
 
     if (status && status !== 'All') {
       filter.status = status;

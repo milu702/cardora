@@ -153,15 +153,18 @@ const SupervisorDashboard = ({ plantationId = 'default_plantation_id', showToast
         res = await apiService.createSupervisorWorker(formData);
       }
 
-      if (res.success) {
+      if (res && res.success) {
         if (showToast) showToast(editingWorker ? '🎉 Worker updated' : '🎉 Worker registered!');
         setEditingWorker(null);
         loadWorkersData();
       } else {
-        if (showToast) showToast(`❌ ${res.message}`);
+        const errMsg = res?.message || 'Failed to save worker';
+        if (showToast) showToast(`❌ ${errMsg}`);
+        throw new Error(errMsg);
       }
     } catch (err) {
       if (showToast) showToast(`❌ Error: ${err.message}`);
+      throw err;
     }
   };
 

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const SupervisorAssignment = require('../models/SupervisorAssignment');
 const Plantation = require('../models/Plantation');
 
@@ -28,19 +29,19 @@ const checkSupervisorPermission = (permissionName) => {
           req.params?.id ||
           req.user?.assignedPlantation;
 
-        if (!plantationId) {
+        const isValidId = plantationId && mongoose.Types.ObjectId.isValid(plantationId);
+
+        if (!isValidId) {
           const defaultPlantation = await Plantation.findOne({
-            $or: [{ user: req.user._id }, { supervisor: req.user._id }, { assignedSupervisors: req.user._id }]
+            $or: [{ user: req.user._id }, { supervisorId: req.user._id }, { assignedSupervisors: req.user._id }]
           });
           if (defaultPlantation) {
             plantationId = defaultPlantation._id;
-            req.body.plantationId = plantationId;
+            if (req.body) req.body.plantationId = plantationId;
+          } else {
+            // Pass through if system default can handle creation/linking
+            return next();
           }
-        }
-
-        if (!plantationId) {
-          // Pass through if system default can handle creation
-          return next();
         }
 
         // Find active supervisor assignment
@@ -52,9 +53,13 @@ const checkSupervisorPermission = (permissionName) => {
 
         if (!assignment) {
           // Check if fallback plantation assignment exists
-          const plantation = await Plantation.findById(plantationId);
+          const plantation = mongoose.Types.ObjectId.isValid(plantationId)
+            ? await Plantation.findById(plantationId)
+            : null;
+
           if (!plantation) {
-            return res.status(404).json({ success: false, message: 'Plantation not found' });
+            // Pass through if no valid plantation record exists yet
+            return next();
           }
 
           const isDirectSup = plantation.supervisorId && plantation.supervisorId.toString() === req.user._id.toString();
@@ -86,3 +91,4 @@ const checkSupervisorPermission = (permissionName) => {
 };
 
 module.exports = { checkSupervisorPermission };
+

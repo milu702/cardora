@@ -202,16 +202,16 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
         {/* Worker Avatar & Basic Info */}
         <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700">
           <img
-            src={formData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'Worker')}&background=1F5E3B&color=ffffff`}
+            src={formData.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.fullName || 'Worker')}&background=1F5E3B&color=ffffff`}
             alt="Worker Avatar"
             className="w-14 h-14 rounded-2xl object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0"
           />
           <div className="min-w-0">
             <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
-              {formData.name || 'New Worker Entry'}
+              {formData.fullName || 'New Worker Entry'}
             </h4>
             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-extrabold inline-block mt-0.5">
-              {formData.role || 'Laborer'}
+              {formData.workType || 'Laborer'}
             </span>
             <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
               {formData.phone ? `📱 ${formData.phone}` : 'No phone entered'}
@@ -230,7 +230,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
           <div className="flex justify-between items-center">
             <span className="text-slate-600 dark:text-slate-300 font-medium">Overtime Hourly Rate:</span>
             <strong className="text-slate-800 dark:text-slate-200 font-bold">
-              ₹{Number(formData.overtimeRate || 0).toLocaleString()} / hr
+              ₹{Math.round(Number(formData.dailyWage || 700) / 8).toLocaleString()} / hr
             </strong>
           </div>
           <div className="flex justify-between items-center pt-1.5 border-t border-[#5C8D4E]/20">
