@@ -12,9 +12,8 @@ import NotFound from './pages/NotFound';
 // Protected Route for Dashboard & Sub-pages
 const ProtectedDashboard = () => {
   const { isAuthenticated, loadingUser } = useAuth();
-  const hasToken = Boolean(localStorage.getItem('cardora_token'));
 
-  if (loadingUser && hasToken) {
+  if (loadingUser) {
     return (
       <div className="min-h-screen bg-[#F8FAF7] flex items-center justify-center">
         <div className="text-center space-y-3">
@@ -25,15 +24,14 @@ const ProtectedDashboard = () => {
     );
   }
 
-  return (isAuthenticated || hasToken) ? <Dashboard /> : <Navigate to="/auth?mode=login" replace />;
+  return isAuthenticated ? <Dashboard /> : <Navigate to="/auth?mode=login" replace />;
 };
 
 // Auth Route Redirector (if already logged in, go to dashboard)
 const AuthRoute = () => {
   const { isAuthenticated, loadingUser } = useAuth();
-  const hasToken = Boolean(localStorage.getItem('cardora_token'));
 
-  if (loadingUser && hasToken) {
+  if (loadingUser) {
     return (
       <div className="min-h-screen bg-[#F8FAF7] flex items-center justify-center">
         <div className="text-center space-y-3">
@@ -44,7 +42,7 @@ const AuthRoute = () => {
     );
   }
 
-  return (isAuthenticated || hasToken) ? <Navigate to="/dashboard" replace /> : <Auth />;
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Auth />;
 };
 
 const MainContent = () => {
@@ -79,7 +77,7 @@ const MainContent = () => {
         <Route path="/community" element={<ProtectedDashboard />} />
         <Route path="/marketplace" element={<ProtectedDashboard />} />
         <Route path="/admin" element={<ProtectedDashboard />} />
-        <Route path="/profile" element={<ProtectedDashboard />} />
+        <Route path="/profile" element={<Navigate to="/dashboard" replace />} />
 
         {/* 404 Page Not Found */}
         <Route path="*" element={<NotFound />} />

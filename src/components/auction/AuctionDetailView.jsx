@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Clock, ShieldCheck, Users, ArrowLeft, Gavel, CheckCircle2,
-  AlertTriangle, Sparkles, RefreshCw, FileText
+  AlertTriangle, Sparkles, RefreshCw, FileText, Maximize2, X
 } from 'lucide-react';
 import { getSocket } from '../../utils/socket';
 import axios from 'axios';
@@ -13,8 +13,9 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Gallery state
+  // Gallery & Lightbox state
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Bidding state
   const [bidAmount, setBidAmount] = useState(0);
@@ -49,6 +50,9 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
   }, [auctionId, onToast]);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
     fetchAuctionDetails();
   }, [fetchAuctionDetails]);
 
@@ -195,7 +199,7 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8 font-sans text-slate-800 dark:text-slate-100">
-      
+
       {/* BACK BUTTON & TOP BAR */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <button
@@ -229,24 +233,40 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
 
       {/* MAIN TWO-COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* ========================================================================= */}
         {/* LEFT COLUMN: PLANTATION GALLERY & DETAILED SPECS (col-span-7) */}
         {/* ========================================================================= */}
         <div className="lg:col-span-7 space-y-8">
-          
+
           {/* IMAGE GALLERY WITH THUMBNAIL SELECTOR */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-4 shadow-md space-y-4">
-            <div className="relative h-80 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">
+            <div
+              onClick={() => setIsLightboxOpen(true)}
+              className="relative h-80 sm:h-[420px] w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 cursor-pointer group"
+            >
               <img
                 src={images[activeImageIndex] || images[0]}
                 alt={auction.title}
-                className="w-full h-full object-cover transition-all duration-300"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute top-4 left-4">
+              <div className="absolute top-4 left-4 flex items-center gap-2">
                 <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-black/70 text-white backdrop-blur-md border border-white/20">
                   📷 Photo {activeImageIndex + 1} of {images.length}
                 </span>
+              </div>
+              <div className="absolute bottom-4 right-4">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLightboxOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-2xl bg-black/75 hover:bg-[#1F5E3B] text-white text-xs font-black backdrop-blur-md border border-white/20 flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+                >
+                  <Maximize2 size={14} />
+                  <span>Expand Full View</span>
+                </button>
               </div>
             </div>
 
@@ -257,9 +277,8 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
-                      activeImageIndex === idx ? 'border-[#1F5E3B] scale-105 shadow-md' : 'border-transparent opacity-70 hover:opacity-100'
-                    }`}
+                    className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${activeImageIndex === idx ? 'border-[#1F5E3B] scale-105 shadow-md' : 'border-transparent opacity-70 hover:opacity-100'
+                      }`}
                   >
                     <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
                   </button>
@@ -344,10 +363,10 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
         {/* RIGHT COLUMN: STICKY LIVE BIDDING PANEL (col-span-5) */}
         {/* ========================================================================= */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
-          
+
           {/* STICKY LIVE BIDDING CARD */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border-2 border-[#1F5E3B] dark:border-emerald-500/50 p-7 shadow-xl space-y-6">
-            
+
             {/* CARD HEADER & BADGE */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               {auction.status === 'PENDING_APPROVAL' ? (
@@ -391,9 +410,8 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
               {timeLeft.isExpired ? (
                 <div className="py-2 text-rose-600 font-black text-xl">AUCTION CLOSED</div>
               ) : (
-                <div className={`text-3xl sm:text-4xl font-black font-mono tracking-wider ${
-                  timeLeft.hours === 0 && timeLeft.minutes < 5 ? 'text-amber-600 animate-pulse' : 'text-[#17331F] dark:text-white'
-                }`}>
+                <div className={`text-3xl sm:text-4xl font-black font-mono tracking-wider ${timeLeft.hours === 0 && timeLeft.minutes < 5 ? 'text-amber-600 animate-pulse' : 'text-[#17331F] dark:text-white'
+                  }`}>
                   ⏱ {formatDigit(timeLeft.hours)} : {formatDigit(timeLeft.minutes)} : {formatDigit(timeLeft.seconds)}
                 </div>
               )}
@@ -587,6 +605,58 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* FULL SCREEN LIGHTBOX MODAL */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-8 animate-fadeIn">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between text-white z-10">
+            <div className="flex items-center gap-3">
+              <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-white/20 border border-white/20">
+                📷 Photo {activeImageIndex + 1} of {images.length}
+              </span>
+              <h4 className="text-sm font-black truncate max-w-md hidden sm:block">
+                {auction.title}
+              </h4>
+            </div>
+            <button
+              onClick={() => setIsLightboxOpen(false)}
+              className="p-3 rounded-full bg-white/10 hover:bg-rose-600 text-white transition-all cursor-pointer"
+              title="Close Full Screen View"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Main Full Image View */}
+          <div className="flex-1 flex items-center justify-center relative my-4 overflow-hidden">
+            <img
+              src={images[activeImageIndex] || images[0]}
+              alt={auction.title}
+              className="max-h-[82vh] max-w-full object-contain rounded-2xl shadow-2xl transition-all duration-300"
+            />
+          </div>
+
+          {/* Bottom Thumbnails Strip */}
+          {images.length > 1 && (
+            <div className="flex items-center justify-center gap-3 overflow-x-auto py-2 z-10">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                    activeImageIndex === idx
+                      ? 'border-emerald-400 scale-110 shadow-lg'
+                      : 'border-transparent opacity-50 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

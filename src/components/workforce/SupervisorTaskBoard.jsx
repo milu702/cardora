@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import apiService from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import FullScreenFormModal from '../ui/FullScreenFormModal';
 
 const SupervisorTaskBoard = ({ plantationId, showToast }) => {
   const { user } = useAuth();
@@ -235,49 +236,115 @@ const SupervisorTaskBoard = ({ plantationId, showToast }) => {
         )}
       </div>
 
-      {/* Create Task Modal */}
+      {/* Create Task FullScreen Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white dark:bg-[#1E293B] w-full max-w-lg rounded-3xl shadow-2xl border border-emerald-100 overflow-hidden">
-            <div className="px-6 py-5 bg-[#17331F] text-white flex items-center justify-between">
-              <h3 className="text-lg font-bold">Assign New Task</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-white/80 hover:text-white">
-                ✕
+        <FullScreenFormModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          title="Assign New Field Task"
+          subtitle="Configure task priority, deadline, and detailed instructions for plantation supervisors"
+          badgeText="SUPERVISOR TASK DISPATCH"
+          badgeIcon={CheckSquare}
+          rightPanel={
+            <div className="space-y-4 font-sans">
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <span className="text-xs font-black uppercase text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1.5">
+                    <CheckSquare className="w-4 h-4" />
+                    Task Ticket Preview
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                    {taskForm.priority.toUpperCase()} PRIORITY
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 space-y-3 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Task Title:</span>
+                    <strong className="text-[#17331F] dark:text-white font-black truncate max-w-[160px]">
+                      {taskForm.title || 'Untitled Task'}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Assigned Deadline:</span>
+                    <strong className="text-slate-900 dark:text-slate-200 font-bold flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-[#1F5E3B]" />
+                      {taskForm.deadline || 'No date set'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950/40 border border-[#5C8D4E]/30 space-y-1.5 text-xs">
+                  <h5 className="font-extrabold text-[#1F5E3B] dark:text-emerald-300 flex items-center gap-1">
+                    <ShieldCheck className="w-4 h-4" />
+                    Supervisor Board Sync
+                  </h5>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Once assigned, this task will immediately appear on the supervisor's real-time mobile task board.
+                  </p>
+                </div>
+              </div>
+            </div>
+          }
+          footerActions={
+            <div className="w-full flex items-center justify-between gap-3 font-sans">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs sm:text-sm cursor-pointer transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreateTask}
+                disabled={submitting}
+                className="px-6 py-2.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-2 cursor-pointer transition active:scale-95"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>{submitting ? 'Assigning Task...' : 'Assign Field Task'}</span>
               </button>
             </div>
-
-            <form onSubmit={handleCreateTask} className="p-6 space-y-4 text-xs">
+          }
+        >
+          <form onSubmit={handleCreateTask} className="space-y-6 font-sans">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-[#D7E6D5] dark:border-slate-800 shadow-sm space-y-5">
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Task Title *</label>
+                <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+                  Task Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={taskForm.title}
                   onChange={(e) => setTaskForm((prev) => ({ ...prev, title: e.target.value }))}
-                  placeholder="e.g. Fertilizer Application — Block A"
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
+                  placeholder="e.g. Bio-Fertilizer Application — North Plot 2"
+                  className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-sm font-bold text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Task Description *</label>
+                <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+                  Task Description & Specific Instructions <span className="text-red-500">*</span>
+                </label>
                 <textarea
-                  rows="3"
+                  rows={4}
                   required
                   value={taskForm.description}
                   onChange={(e) => setTaskForm((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Detailed instructions for the supervisor..."
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
-                ></textarea>
+                  placeholder="Provide detailed step-by-step field instructions for the supervisor..."
+                  className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-medium text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
+                />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">Task Priority</label>
                   <select
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm((prev) => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold"
+                    className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold text-[#17331F] dark:text-white"
                   >
                     <option value="Low">Low Priority</option>
                     <option value="Medium">Medium Priority</option>
@@ -287,36 +354,19 @@ const SupervisorTaskBoard = ({ plantationId, showToast }) => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Due Date *</label>
+                  <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">Due Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     required
                     value={taskForm.deadline}
                     onChange={(e) => setTaskForm((prev) => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold"
+                    className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold text-[#17331F] dark:text-white"
                   />
                 </div>
               </div>
-
-              <div className="flex justify-end space-x-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl font-bold text-gray-600 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md"
-                >
-                  {submitting ? 'Assigning...' : 'Assign Task'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </FullScreenFormModal>
       )}
 
       {/* Add Progress Update Modal */}

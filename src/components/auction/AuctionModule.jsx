@@ -9,14 +9,22 @@ const AuctionModule = ({ user, onToast }) => {
   const [selectedAuctionId, setSelectedAuctionId] = useState(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTop = 0;
+  };
+
   const handleSelectAuction = (auction) => {
     setSelectedAuctionId(auction._id || auction.id);
     setView('detail');
+    scrollToTop();
   };
 
   const handleBack = () => {
     setSelectedAuctionId(null);
     setView('list');
+    scrollToTop();
   };
 
   return (

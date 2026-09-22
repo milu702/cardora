@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  MapPin, Leaf, Thermometer, Droplets, Gauge, Users, 
-  Sparkles, CloudSun, Eye, Edit3, Trash2, ShieldCheck, Activity, Layers, Mountain
+  MapPin, Leaf, Thermometer, Droplets, Users, 
+  Sparkles, CloudSun, Eye, Edit3, Trash2, ShieldCheck
 } from 'lucide-react';
 
 const PlantationCard = ({ plantation, onViewDetails, onEdit, onDelete }) => {
@@ -23,7 +23,9 @@ const PlantationCard = ({ plantation, onViewDetails, onEdit, onDelete }) => {
   const workersPresent = p.workers?.presentToday ?? 8;
   const totalWorkers = p.workers?.totalWorkers ?? 10;
   const lastUpdated = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Today';
-  const image = p.image || (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80';
+  const fallbackImage = 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80';
+  const rawImage = p.image || (p.images && p.images[0]);
+  const image = (rawImage && rawImage.length > 5) ? rawImage : fallbackImage;
 
   const isIdealRegion = district.toLowerCase().includes('idukki') || district.toLowerCase().includes('wayanad');
 
@@ -31,52 +33,56 @@ const PlantationCard = ({ plantation, onViewDetails, onEdit, onDelete }) => {
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -6, boxShadow: '0 20px 40px rgba(31,94,59,0.12)' }}
+      whileHover={{ y: -6, boxShadow: '0 25px 45px rgba(31,94,59,0.16)' }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-[20px] border border-[#D7E6D5] overflow-hidden flex flex-col justify-between shadow-soft group"
+      className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 overflow-hidden flex flex-col justify-between shadow-md hover:shadow-2xl transition-all group font-sans"
     >
       {/* CARD IMAGE & HEADER BADGES */}
-      <div className="relative h-48 overflow-hidden bg-[#17331F]">
+      <div className="relative h-52 overflow-hidden bg-[#0A2315]">
         <img 
           src={image} 
-          alt={name} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+          alt={name}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = fallbackImage;
+          }}
+          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700" 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
 
         {/* Variety & Health Score Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17331F]/90 backdrop-blur-md border border-[#5C8D4E]/50 text-[#DDEFD9] text-xs font-bold shadow-sm">
-            <Leaf className="w-3.5 h-3.5 text-[#5C8D4E]" />
+        <div className="absolute top-3.5 left-3.5 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-emerald-400/40 text-emerald-200 text-xs font-black shadow-md">
+            <Leaf className="w-3.5 h-3.5 text-emerald-400" />
             {variety} Variety
           </span>
           {isIdealRegion ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#1F5E3B]/90 backdrop-blur-md text-white text-[11px] font-bold">
-              <ShieldCheck className="w-3 h-3 text-[#C9A227]" />
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#1F5E3B]/90 backdrop-blur-md text-white text-[11px] font-black shadow-md border border-white/20">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
               Prime Region
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md text-white text-[11px] font-bold">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-600/90 backdrop-blur-md text-white text-[11px] font-black shadow-md">
               Unsuitable Region
             </span>
           )}
         </div>
 
         {/* Health Score Circular Badge */}
-        <div className="absolute top-3 right-3 flex items-center justify-center w-11 h-11 rounded-2xl bg-white/95 backdrop-blur-md border border-[#D7E6D5] shadow-md">
+        <div className="absolute top-3.5 right-3.5 flex items-center justify-center w-12 h-12 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-emerald-500/40 shadow-xl">
           <div className="text-center">
-            <span className="block text-xs font-black text-[#1F5E3B] leading-none">{healthScore}%</span>
-            <span className="text-[8px] font-extrabold text-[#4A5568] uppercase">Health</span>
+            <span className="block text-xs font-black text-[#1F5E3B] dark:text-emerald-400 leading-none">{healthScore}%</span>
+            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Health</span>
           </div>
         </div>
 
         {/* Plantation Title & Location Overlay */}
-        <div className="absolute bottom-3 left-3 right-3 text-white">
-          <h3 className="text-lg font-black font-poppins text-white leading-tight drop-shadow-md truncate">
+        <div className="absolute bottom-3.5 left-3.5 right-3.5 text-white">
+          <h3 className="text-xl font-black font-poppins text-white leading-tight drop-shadow-md truncate group-hover:text-emerald-300 transition-colors">
             {name}
           </h3>
-          <p className="text-xs text-[#DDEFD9] font-medium flex items-center gap-1 mt-0.5 opacity-90 truncate">
-            <MapPin className="w-3.5 h-3.5 text-[#C9A227] flex-shrink-0" />
+          <p className="text-xs text-emerald-200 font-bold flex items-center gap-1 mt-0.5 opacity-90 truncate">
+            <MapPin className="w-3.5 h-3.5 text-amber-300 shrink-0" />
             <span>{village}, {district}</span>
           </p>
         </div>

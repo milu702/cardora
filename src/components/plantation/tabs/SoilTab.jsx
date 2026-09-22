@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Database, Edit3 } from 'lucide-react';
+import { SOIL_TYPES } from '../../../utils/soilTypes';
 
 const SoilTab = ({ plantation, onUpdateSoil }) => {
   const p = plantation;
@@ -77,6 +78,20 @@ const SoilTab = ({ plantation, onUpdateSoil }) => {
         <form onSubmit={handleSave} className="p-5 rounded-2xl bg-[#DDEFD9]/40 border border-[#5C8D4E]/50 space-y-4">
           <h4 className="text-xs font-extrabold text-[#1F5E3B] uppercase tracking-wider">Update Soil Telemetry Readings</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="col-span-2 sm:col-span-2">
+              <label className="block text-[11px] font-bold text-[#17331F] mb-1">Soil Type</label>
+              <select
+                value={soilForm.soilType}
+                onChange={(e) => setSoilForm({ ...soilForm, soilType: e.target.value })}
+                className="w-full p-2 rounded-xl text-xs border border-[#D7E6D5] bg-white font-bold text-[#17331F]"
+              >
+                {SOIL_TYPES.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-[11px] font-bold text-[#17331F] mb-1">Moisture (%)</label>
               <input
@@ -133,12 +148,12 @@ const SoilTab = ({ plantation, onUpdateSoil }) => {
                 className="w-full p-2 rounded-xl text-xs border border-[#D7E6D5] bg-white font-bold"
               />
             </div>
-            <div className="col-span-2 flex items-end justify-end">
+            <div className="col-span-2 sm:col-span-1 flex items-end justify-end">
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#1F5E3B] text-white text-xs font-bold hover:bg-[#17331F]"
+                className="px-4 py-2 rounded-xl bg-[#1F5E3B] text-white text-xs font-bold hover:bg-[#17331F] w-full"
               >
-                Save New Readings
+                Save Readings
               </button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Users, Clock, ArrowRight } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Users } from 'lucide-react';
 
 const LiveAuctionCard = ({ auction, onSelect }) => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0, isExpired: false });
@@ -67,8 +67,11 @@ const LiveAuctionCard = ({ auction, onSelect }) => {
       : 'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=800&q=80';
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col group font-sans">
-      
+    <div
+      onClick={() => onSelect(auction)}
+      className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col group font-sans cursor-pointer transform hover:-translate-y-1"
+    >
+
       {/* CARD IMAGE & OVERLAY BADGES */}
       <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
         <img
@@ -101,7 +104,7 @@ const LiveAuctionCard = ({ auction, onSelect }) => {
 
       {/* CARD BODY CONTENT */}
       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-        
+
         {/* Specs Grid */}
         <div className="grid grid-cols-3 gap-2 py-1 text-center bg-[#F8FAF7] dark:bg-slate-800/80 rounded-2xl p-3 border border-[#D7E6D5] dark:border-slate-700">
           <div>
@@ -122,7 +125,7 @@ const LiveAuctionCard = ({ auction, onSelect }) => {
 
         {/* Price & Countdown Bar */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-          
+
           {/* Current Highest Bid */}
           <div>
             <span className="text-[11px] font-black uppercase text-gray-400 block">Current Highest Bid</span>
@@ -140,9 +143,8 @@ const LiveAuctionCard = ({ auction, onSelect }) => {
             {timeLeft.isExpired ? (
               <span className="text-xs font-black text-gray-400">Auction Closed</span>
             ) : (
-              <span className={`text-base font-black font-mono tracking-tight ${
-                timeLeft.hours === 0 && timeLeft.minutes < 5 ? 'text-amber-500 animate-pulse' : 'text-[#17331F] dark:text-slate-200'
-              }`}>
+              <span className={`text-base font-black font-mono tracking-tight ${timeLeft.hours === 0 && timeLeft.minutes < 5 ? 'text-amber-500 animate-pulse' : 'text-[#17331F] dark:text-slate-200'
+                }`}>
                 ⏱ {formatDigit(timeLeft.hours)}:{formatDigit(timeLeft.minutes)}:{formatDigit(timeLeft.seconds)}
               </span>
             )}

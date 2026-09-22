@@ -81,7 +81,7 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
 
   return (
     <div className="space-y-8 font-sans">
-      
+
       {/* MODULE HEADER BANNER */}
       <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -126,7 +126,7 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
 
       {/* FILTER & CONTROL BAR */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-5 shadow-md space-y-4">
-        
+
         {/* Status Tabs */}
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 overflow-x-auto">
           <div className="flex items-center gap-2 text-xs sm:text-sm font-bold">
@@ -140,11 +140,10 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
               <button
                 key={tab.id}
                 onClick={() => setStatusTab(tab.id)}
-                className={`px-4 py-2.5 rounded-2xl transition-all cursor-pointer font-extrabold shrink-0 ${
-                  statusTab === tab.id
-                    ? 'bg-[#1F5E3B] text-white shadow-md'
-                    : 'bg-[#F8FAF7] dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#DDEFD9]'
-                }`}
+                className={`px-4 py-2.5 rounded-2xl transition-all cursor-pointer font-extrabold shrink-0 ${statusTab === tab.id
+                  ? 'bg-[#1F5E3B] text-white shadow-md'
+                  : 'bg-[#F8FAF7] dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#DDEFD9]'
+                  }`}
               >
                 {tab.label}
               </button>
@@ -161,7 +160,7 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
 
         {/* Search & Secondary Filters Grid */}
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          
+
           {/* Search Bar */}
           <div className="lg:col-span-2 relative">
             <input

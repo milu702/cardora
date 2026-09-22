@@ -8,9 +8,12 @@ const {
   deletePlantation,
   addExpense,
   analyzePlantation,
+  uploadPlantationImage,
 } = require('../controllers/plantationController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
+
+router.post('/upload', protect, upload.any(), uploadPlantationImage);
 
 router.route('/')
   .post(protect, upload.array('images', 5), createPlantation)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Leaf, Lock, Mail, User, ArrowRight, ShieldCheck, Sparkles,
@@ -83,16 +83,34 @@ const decodeJwt = (token) => {
 const Auth = () => {
   const { isAuthenticated, login, signup, googleSignIn, showToast } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const modeParam = searchParams.get('mode') || 'login';
-  const [authMode, setAuthMode] = useState(modeParam);
+  const getModeFromUrl = (params, pathname) => {
+    const mode = params.get('mode');
+    if (mode === 'login' || mode === 'signup' || mode === 'forgot' || mode === 'reset') {
+      return mode;
+    }
+    if (pathname.includes('/signup')) return 'signup';
+    if (pathname.includes('/forgot')) return 'forgot';
+    if (pathname.includes('/reset')) return 'reset';
+    return 'login';
+  };
+
+  const currentUrlMode = getModeFromUrl(searchParams, location.pathname);
+  const [authMode, setAuthMode] = useState(currentUrlMode);
   const [showPassword, setShowPassword] = useState(false);
 
   const [resetEmail, setResetEmail] = useState('');
   const [resetOtp, setResetOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [resetSuccessMessage, setResetSuccessMessage] = useState('');
+
+  useEffect(() => {
+    setAuthMode(currentUrlMode);
+    setFieldErrors({});
+    setFormGlobalError('');
+  }, [currentUrlMode]);
 
   const switchAuthMode = (newMode) => {
     setAuthMode(newMode);
@@ -104,8 +122,7 @@ const Auth = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const queryToken = urlParams.get('token');
-    const storedToken = localStorage.getItem('cardora_token');
-    if (isAuthenticated || queryToken || storedToken) {
+    if (isAuthenticated || queryToken) {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate]);
@@ -302,16 +319,8 @@ const Auth = () => {
       } catch (e) { }
     }
 
-    // 3. Fallback: Direct Google Session Authorization
-    const userEmail = (formData.email && formData.email.includes('@')) ? formData.email.trim() : 'cardora702@gmail.com';
-    const res = await googleSignIn({
-      name: formData.fullName || 'Cardora Planter',
-      email: userEmail,
-      googleId: `google_${Date.now()}`,
-    });
-    if (res && res.success) {
-      navigate('/dashboard', { replace: true });
-    }
+    // 3. If Google SDK is not loaded or blocked by browser extensions
+    setFormGlobalError('Google Sign-In SDK is initializing or blocked. Please enter your email and password above.');
   };
 
   const handleForgotPassword = async (e) => {

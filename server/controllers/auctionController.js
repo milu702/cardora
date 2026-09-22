@@ -19,6 +19,38 @@ const getMaskedBidderId = (userId) => {
 // @desc    Get all auctions with filters, search, tabs, & sorting
 // @route   GET /api/auctions
 // @access  Public
+// @desc    Upload auction gallery images
+// @route   POST /api/auctions/upload
+// @access  Private
+exports.uploadAuctionImages = async (req, res) => {
+  try {
+    const files = req.files || (req.file ? [req.file] : []);
+    if (!files || files.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please attach image file(s) to upload' });
+    }
+
+    const imageUrls = files.map((file) => {
+      if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
+        return file.path;
+      }
+      if (file.secure_url) {
+        return file.secure_url;
+      }
+      return `/uploads/${file.filename}`;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${imageUrls.length} image(s) uploaded successfully`,
+      imageUrls,
+      imageUrl: imageUrls[0],
+    });
+  } catch (error) {
+    console.error('Error uploading auction images:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Image upload failed' });
+  }
+};
+
 exports.getAuctions = async (req, res) => {
   try {
     const {
@@ -108,7 +140,7 @@ exports.getAuctions = async (req, res) => {
     if (totalCount === 0) {
       const User = require('../models/User');
       const defaultUser = (await User.findOne({ role: 'admin' })) || (await User.findOne()) || { _id: new mongoose.Types.ObjectId() };
-      
+
       const sampleAuctions = [
         {
           title: '🌿 Premium Idukki Cardamom Estate (5.5 Acres)',
@@ -350,8 +382,8 @@ exports.createAuction = async (req, res) => {
       images: (req.body.images && req.body.images.length > 0)
         ? req.body.images
         : (plantation.images && plantation.images.length > 0
-            ? plantation.images
-            : ['https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80']),
+          ? plantation.images
+          : ['https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&w=1000&q=80']),
       startingPrice: Number(startingPrice) || 50000,
       currentBid: Number(startingPrice) || 50000,
       minIncrement: Number(minIncrement) || 1000,
@@ -371,7 +403,7 @@ exports.createAuction = async (req, res) => {
             message: `Planter ${req.user.name || req.user.fullName || 'Farmer'} submitted auction "${auction.title}" for admin approval.`,
             type: 'AUCTION_PENDING',
             link: '/dashboard?tab=admin&view=auctions',
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } catch (err) {
         console.log('Admin notification skipped:', err.message);

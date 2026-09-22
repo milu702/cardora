@@ -11,6 +11,38 @@ const calculateHealthScore = (moisture = 72, ph = 6.2, district = '') => {
   return Math.max(30, Math.min(100, Math.round(score)));
 };
 
+// @desc    Upload plantation image
+// @route   POST /api/plantations/upload
+// @access  Private
+exports.uploadPlantationImage = async (req, res) => {
+  try {
+    const files = req.files || (req.file ? [req.file] : []);
+    if (!files || files.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please select an image file to upload' });
+    }
+
+    const imageUrls = files.map((file) => {
+      if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
+        return file.path;
+      }
+      if (file.secure_url) {
+        return file.secure_url;
+      }
+      return `/uploads/${file.filename}`;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Plantation image uploaded successfully',
+      imageUrl: imageUrls[0],
+      imageUrls,
+    });
+  } catch (error) {
+    console.error('Error uploading plantation image:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Image upload failed' });
+  }
+};
+
 // @desc    Add a new plantation
 // @route   POST /api/plantations
 // @access  Private

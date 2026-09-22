@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gavel, Plus, ArrowRight, RefreshCw } from 'lucide-react';
+import { ArrowRight, Gavel, Plus, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -57,7 +57,7 @@ const MyAuctionsTab = ({ onSelectAuction, onCreateClick, onToast }) => {
 
   return (
     <div className="space-y-6 font-sans">
-      
+
       {/* HEADER & CREATE CTA */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>

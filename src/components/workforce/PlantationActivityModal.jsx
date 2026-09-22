@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Leaf, Calendar, Layers, FileText, CheckCircle } from 'lucide-react';
+import { Leaf, Calendar, Layers, FileText, CheckCircle, Clock } from 'lucide-react';
 import apiService from '../../services/api';
+import FullScreenFormModal from '../ui/FullScreenFormModal';
 
 const ACTIVITY_TYPES = [
   'Fertilizer application',
@@ -19,172 +20,187 @@ const ACTIVITY_TYPES = [
 
 const PlantationActivityModal = ({ isOpen, onClose, plantationId, onSaved, showToast }) => {
   const [formData, setFormData] = useState({
+    title: '',
     activityType: 'Fertilizer application',
-    date: new Date().toISOString().split('T')[0],
-    block: 'Main Block',
     description: '',
-    materialsUsed: '',
     quantity: '',
-    workersInvolved: 5,
-    weatherCondition: 'Clear',
-    notes: '',
   });
-
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.description.trim()) {
-      if (showToast) showToast('Please enter a description for the activity.');
+    if (e) e.preventDefault();
+    if (!formData.title.trim()) {
+      const msg = 'Please enter an activity title';
+      if (showToast) showToast(msg, 'error');
+      else alert(msg);
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await apiService.recordPlantationActivity({
-        ...formData,
-        plantationId,
-      });
+      const payload = {
+        plantationId: plantationId || undefined,
+        title: formData.title.trim(),
+        activityType: formData.activityType,
+        type: formData.activityType,
+        description: formData.description.trim() || formData.title.trim(),
+        quantity: formData.quantity.trim(),
+      };
 
+      const res = await apiService.logPlantationActivity(payload);
       if (res && res.success) {
-        if (showToast) showToast('🎉 Plantation activity recorded successfully!');
+        const msg = 'Plantation activity logged successfully!';
+        if (showToast) showToast(msg);
+        else alert(msg);
+        if (onSaved) onSaved(res.activity || res);
         onClose();
-        if (onSaved) onSaved();
       } else {
-        if (showToast) showToast(`❌ ${res?.message || 'Failed to record activity'}`);
+        const errMsg = res?.message || 'Failed to log activity';
+        if (showToast) showToast(errMsg, 'error');
+        else alert(errMsg);
       }
     } catch (err) {
-      if (showToast) showToast(`❌ Error: ${err.message}`);
+      const errMsg = err?.message || 'Error logging activity';
+      if (showToast) showToast(errMsg, 'error');
+      else alert(errMsg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white dark:bg-[#1E293B] w-full max-w-lg rounded-3xl shadow-2xl border border-emerald-100 overflow-hidden space-y-4">
-        {/* Header */}
-        <div className="px-6 py-5 bg-[#17331F] text-white flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Leaf className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-lg font-bold">Record Plantation Activity</h3>
-          </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
-            ✕
-          </button>
+  const rightActivityPreview = (
+    <div className="space-y-4 font-sans">
+      <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-black uppercase text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1.5">
+            <Leaf className="w-4 h-4" />
+            Activity Log Summary
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            FIELD LOG ENTRY
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 space-y-3 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Activity Category:</span>
+            <strong className="text-[#17331F] dark:text-emerald-300 font-bold">{formData.activityType}</strong>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Entry Title:</span>
+            <strong className="text-slate-900 dark:text-white font-extrabold truncate max-w-[160px]">
+              {formData.title || 'Untitled Log'}
+            </strong>
+          </div>
+          <div className="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-700">
+            <span className="text-slate-500 font-medium">Logged Date:</span>
+            <strong className="text-slate-800 dark:text-slate-200 font-bold flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#1F5E3B]" />
+              Today
+            </strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const footerActions = (
+    <div className="w-full flex items-center justify-between gap-3 font-sans">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs sm:text-sm cursor-pointer transition"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="px-6 py-2.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-2 cursor-pointer transition active:scale-95"
+      >
+        <CheckCircle className="w-4 h-4" />
+        <span>{submitting ? 'Saving Log...' : 'Save Activity Log'}</span>
+      </button>
+    </div>
+  );
+
+  return (
+    <FullScreenFormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Record Plantation Field Activity"
+      subtitle="Log field work, fertigation tasks, harvesting, or crop care telemetry to plantation history"
+      badgeText="PLANTATION ACTIVITY LOG"
+      badgeIcon={Leaf}
+      rightPanel={rightActivityPreview}
+      footerActions={footerActions}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6 font-sans">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-[#D7E6D5] dark:border-slate-800 shadow-sm space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+              Activity Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+              placeholder="e.g. Bio-N P K Fertigation Application — Plot 2"
+              className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-sm font-bold text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Activity Type *</label>
+              <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+                Activity Category
+              </label>
               <select
                 value={formData.activityType}
                 onChange={(e) => setFormData((prev) => ({ ...prev, activityType: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-gray-900 dark:text-white outline-none"
+                className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold text-[#17331F] dark:text-white"
               >
-                {ACTIVITY_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                {ACTIVITY_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Date *</label>
-              <input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none font-bold"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Block / Section Area</label>
+              <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+                Quantity / Dosage (Optional)
+              </label>
               <input
                 type="text"
-                value={formData.block}
-                onChange={(e) => setFormData((prev) => ({ ...prev, block: e.target.value }))}
-                placeholder="e.g. Block A, North Plot"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Workers Involved</label>
-              <input
-                type="number"
-                min="0"
-                value={formData.workersInvolved}
-                onChange={(e) => setFormData((prev) => ({ ...prev, workersInvolved: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
+                value={formData.quantity}
+                onChange={(e) => setFormData((prev) => ({ ...prev, quantity: e.target.value }))}
+                placeholder="e.g. 250 kg or 50 Liters"
+                className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold text-[#17331F] dark:text-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Description *</label>
+            <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+              Activity Description & Field Observations
+            </label>
             <textarea
-              rows="3"
-              required
+              rows={4}
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="e.g. Applied 500g organic NPK fertilizer per cardamom clump."
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
-            ></textarea>
+              placeholder="Enter field notes, fertilizer ratio, worker observations, weather conditions..."
+              className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-medium text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
+            />
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Materials Used</label>
-              <input
-                type="text"
-                value={formData.materialsUsed}
-                onChange={(e) => setFormData((prev) => ({ ...prev, materialsUsed: e.target.value }))}
-                placeholder="e.g. Organic NPK, Neem Cake"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
-              <input
-                type="text"
-                value={formData.quantity}
-                onChange={(e) => setFormData((prev) => ({ ...prev, quantity: e.target.value }))}
-                placeholder="e.g. 250 kg"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl font-bold text-gray-600 hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-2 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md flex items-center space-x-2"
-            >
-              <CheckCircle className="w-4 h-4" />
-              <span>{submitting ? 'Saving...' : 'Save Activity'}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </FullScreenFormModal>
   );
 };
 

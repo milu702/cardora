@@ -21,7 +21,7 @@ const checkSupervisorPermission = (permissionName) => {
 
       if (role === 'supervisor') {
         // Resolve target plantation ID from body, params, query, or req.plantation
-        const plantationId =
+        let plantationId =
           req.body?.plantationId ||
           req.params?.plantationId ||
           req.query?.plantationId ||
@@ -29,7 +29,18 @@ const checkSupervisorPermission = (permissionName) => {
           req.user?.assignedPlantation;
 
         if (!plantationId) {
-          return res.status(400).json({ success: false, message: 'Plantation ID context is required' });
+          const defaultPlantation = await Plantation.findOne({
+            $or: [{ user: req.user._id }, { supervisor: req.user._id }, { assignedSupervisors: req.user._id }]
+          });
+          if (defaultPlantation) {
+            plantationId = defaultPlantation._id;
+            req.body.plantationId = plantationId;
+          }
+        }
+
+        if (!plantationId) {
+          // Pass through if system default can handle creation
+          return next();
         }
 
         // Find active supervisor assignment

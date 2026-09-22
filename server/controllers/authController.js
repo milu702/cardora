@@ -140,7 +140,7 @@ exports.signup = async (req, res) => {
           }));
           await Notification.insertMany(adminNotifs);
         }
-      } catch (e) {}
+      } catch (e) { }
     })();
 
     res.status(201).json({
@@ -179,51 +179,28 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please enter your email/username and password.' });
     }
 
-    const escaped = targetIdentifier.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    // 1. Try exact case-insensitive match on email or username
-    let user = await User.findOne({
+    // Exact case-insensitive match on email or username ONLY
+    const user = await User.findOne({
       $or: [
-        { email: new RegExp('^' + escaped + '$', 'i') },
-        { username: new RegExp('^' + escaped + '$', 'i') },
+        { email: targetIdentifier },
+        { username: targetIdentifier },
       ],
     }).select('+password');
 
-    // 2. Try prefix match on email, username, or display name (e.g. "maria" -> "maria@gmail.com" or "Maria")
     if (!user) {
-      user = await User.findOne({
-        $or: [
-          { email: new RegExp('^' + escaped, 'i') },
-          { username: new RegExp('^' + escaped, 'i') },
-          { name: new RegExp('^' + escaped, 'i') },
-        ],
-      }).select('+password');
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email/username or password. Please try again.',
+      });
     }
 
-    // 3. Ultra-resilient Auto-Provisioning for any new identifier (e.g. "maria") so login NEVER fails
-    if (!user) {
-      const cleanEmail = targetIdentifier.includes('@') ? targetIdentifier : `${targetIdentifier}@cardora.com`;
-      const rawName = targetIdentifier.split('@')[0].replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
-      const cleanName = rawName.replace(/\b\w/g, (c) => c.toUpperCase()) || 'Cardora Planter';
-
-      user = await User.create({
-        name: cleanName,
-        username: targetIdentifier,
-        email: cleanEmail,
-        password: targetPassword || 'user123',
-        role: targetIdentifier.toLowerCase().includes('admin') ? 'admin' : 'Farmer',
-        district: 'Idukki, Kerala',
-        location: 'Idukki, Kerala',
-        isVerified: true,
+    // Strictly verify password using bcrypt compare
+    const isMatch = await user.matchPassword(targetPassword);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email/username or password. Please try again.',
       });
-      console.log(`✨ Auto-registered & authenticated login for account: ${user.email}`);
-    } else {
-      // Validate or update password so user is never locked out during presentation
-      const isMatch = await user.matchPassword(targetPassword);
-      if (!isMatch) {
-        user.password = targetPassword;
-        await user.save({ validateBeforeSave: false });
-      }
     }
 
     const token = generateToken(user._id);
@@ -259,7 +236,7 @@ exports.login = async (req, res) => {
           }));
           await Notification.insertMany(adminNotifs);
         }
-      } catch (e) {}
+      } catch (e) { }
     })();
 
     res.status(200).json({

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, MapPin, Leaf, Thermometer, Droplets, Gauge, Users, 
-  Sparkles, CloudSun, ShieldCheck, Database, TrendingUp, FileText, Clock, Edit3, Trash2
+  ArrowLeft, MapPin, Leaf, Users, 
+  Sparkles, CloudSun, Database, TrendingUp, FileText, Clock, Edit3, Trash2
 } from 'lucide-react';
 
 import OverviewTab from './tabs/OverviewTab';
@@ -30,9 +30,9 @@ const PlantationDetailsDashboard = ({ plantation, onBack, onEdit, onDelete, onUp
   const altitude = p.altitude || 950;
   const healthScore = p.healthScore ?? p.health ?? 92;
   const lastUpdated = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today';
-  const image = p.image || (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80';
-
-  const isIdealRegion = district.toLowerCase().includes('idukki') || district.toLowerCase().includes('wayanad');
+  const fallbackImage = 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80';
+  const rawImage = p.image || (p.images && p.images[0]);
+  const image = (rawImage && rawImage.length > 5) ? rawImage : fallbackImage;
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Leaf },
@@ -87,6 +87,10 @@ const PlantationDetailsDashboard = ({ plantation, onBack, onEdit, onDelete, onUp
           <img 
             src={image} 
             alt={name} 
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = fallbackImage;
+            }}
             className="w-full h-full object-cover opacity-80" 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#17331F] via-[#17331F]/40 to-transparent" />

@@ -215,8 +215,8 @@ export const VOICE_NAV_REGISTRY = [
     id: 'profile',
     labelEn: 'User Profile & Account',
     labelMl: 'പ്രൊഫൈൽ',
-    route: '/dashboard?tab=profile',
-    tabId: 'profile',
+    route: '/dashboard?tab=dashboard',
+    tabId: 'dashboard',
     keywords: [
       'profile', 'account', 'my profile', 'user info', 'my details', 'user', 'me', 'info',
       'പ്രൊഫൈൽ', 'അക്കൗണ്ട്', 'എന്റെ വിവരങ്ങൾ',

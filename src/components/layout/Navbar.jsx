@@ -66,7 +66,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
     ? [
       { name: 'Supervisor Hub', href: '/dashboard?tab=workforce', icon: ShieldCheck },
       { name: 'Messages', href: '/dashboard?tab=messages', icon: MessageSquare },
-      { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+      { name: 'Profile', href: '/dashboard?tab=dashboard', icon: User },
     ]
     : [
       ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
@@ -81,7 +81,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
       { name: 'AI Recommendations', href: '/dashboard?tab=ai', icon: Sparkles },
       { name: 'Marketplace', href: '/dashboard?tab=plots', icon: MapPin },
       { name: 'Community', href: '/dashboard?tab=community', icon: Users },
-      { name: 'Profile', href: '/dashboard?tab=profile', icon: User },
+      { name: 'Profile', href: '/dashboard?tab=dashboard', icon: User },
     ];
 
   const handleLogout = async () => {
@@ -226,10 +226,11 @@ const Navbar = ({ onToggleMobileSidebar }) => {
 
           {!isAuthenticated ? (
             <div className="flex items-center gap-2">
-              <Link to="/auth?mode=login">
-                <button className="px-3 py-1.5 text-xs font-bold text-[#17331F] dark:text-slate-200 hover:text-[#1F5E3B]">
-                  Login
-                </button>
+              <Link
+                to="/auth?mode=login"
+                className="px-3 py-1.5 text-xs font-bold text-[#06150D] dark:text-slate-200 hover:text-[#059669] dark:hover:text-emerald-400 transition-colors"
+              >
+                Login
               </Link>
               <Link to="/auth?mode=signup">
                 <Button variant="primary" size="sm">
@@ -334,7 +335,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
               </div>
 
               {/* User Avatar Badge & Link */}
-              <Link to="/dashboard?tab=profile" className="flex items-center gap-2 p-1 rounded-xl hover:bg-[#F4F8F3] dark:hover:bg-slate-800 transition-colors">
+              <Link to="/dashboard?tab=dashboard" className="flex items-center gap-2 p-1 rounded-xl hover:bg-[#F4F8F3] dark:hover:bg-slate-800 transition-colors">
                 <img
                   src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
                   alt={user?.fullName || 'User avatar'}

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, admin } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 const {
   getAuctions,
   getAuctionById,
@@ -10,7 +11,10 @@ const {
   getMyAuctions,
   adminApproveRejectAuction,
   seedSampleAuctions,
+  uploadAuctionImages,
 } = require('../controllers/auctionController');
+
+router.post('/upload', protect, upload.any(), uploadAuctionImages);
 
 router.route('/')
   .get(getAuctions)

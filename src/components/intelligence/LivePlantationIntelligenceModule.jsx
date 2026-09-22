@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SOIL_TYPES } from '../../utils/soilTypes';
 import {
   Sparkles,
   RefreshCw,
@@ -1284,11 +1285,11 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
                       onChange={(e) => setSoilForm({ ...soilForm, soilType: e.target.value })}
                       className="w-full p-3 rounded-2xl text-sm font-bold bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                     >
-                      <option value="Loamy Forest Soil">Loamy Forest Soil (Rich Humus)</option>
-                      <option value="Red Clay Loam">Red Clay Loam</option>
-                      <option value="Sandy Loam">Sandy Loam</option>
-                      <option value="Laterite Soil">Laterite Soil</option>
-                      <option value="Clay Loam">Clay Loam</option>
+                      {SOIL_TYPES.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

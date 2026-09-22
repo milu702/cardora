@@ -5,7 +5,7 @@ let activeHost = '127.0.0.1';
 let activeDB = 'cardora';
 
 // Suppress unhandled mongoose connection error events from crashing Node process
-mongoose.connection.on('error', () => {});
+mongoose.connection.on('error', () => { });
 
 const connectDB = async () => {
   const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb+srv://milujiji2027_db_user:8ZODK6ONzNuKEqbr@cluster0.g3pxvi3.mongodb.net/cardora?retryWrites=true&w=majority&appName=Cluster0';
@@ -28,7 +28,7 @@ const connectDB = async () => {
 
   // 2. Fallback to Local MongoDB instance
   try {
-    await mongoose.disconnect().catch(() => {});
+    await mongoose.disconnect().catch(() => { });
     const conn = await mongoose.connect(localUri, {
       serverSelectionTimeoutMS: 3000,
     });

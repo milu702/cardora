@@ -8,6 +8,7 @@ import {
 import { KERALA_DISTRICTS } from '../../utils/districts';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
+import FullScreenFormModal from '../ui/FullScreenFormModal';
 
 const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang }) => {
   const { user } = useAuth();
@@ -329,41 +330,96 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
   const altitudePresets = ['950m (Mid-Hills)', '1,150m (High-Altitude)', '1,320m (Peak Slope)'];
   const yieldPresets = ['350 kg / acre', '420 kg / acre', '480 kg / acre', '550 kg / acre'];
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-[#2E7D32]/40 flex flex-col max-h-[92vh]"
-      >
-        {/* Header Strip */}
-        <div className="bg-[#1B5E20] text-white p-4 px-6 flex items-center justify-between border-b border-[#66BB6A]/30">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-[#66BB6A] text-slate-950 shadow-md">
-              <Plus className="w-5 h-5 font-black" />
-            </div>
-            <div>
-              <h3 className="text-base font-black font-poppins text-white">
-                {editPlot 
-                  ? (lang === 'ml' ? 'ഏലത്തോട്ടം വിവരങ്ങൾ എഡിറ്റ് ചെയ്യുക' : 'Edit Plantation Plot Listing')
-                  : (lang === 'ml' ? 'ഏലത്തോട്ടം വിൽപ്പനയ്ക്ക്/പാട്ടത്തിന് ചേർക്കുക' : 'Publish Cardamom Estate for Sale or Lease')}
-              </h3>
-              <p className="text-xs text-emerald-200">
-                {step === 1 && 'Step 1 of 2: Plot Specifications & Contact Info'}
-                {step === 2 && 'Step 2 of 2: Legal Scan & Live Preview'}
-                {step === 3 && (editPlot ? 'Updates Saved & PDF Email Dispatched' : 'Verification Complete & PDF Email Dispatched')}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/20 text-white transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+  // RIGHT PANEL MARKETPLACE CARD PREVIEW
+  const rightMarketplacePreview = (
+    <div className="space-y-4 font-sans">
+      <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-black uppercase text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1.5">
+            <Eye className="w-4 h-4" />
+            Live Marketplace Card Preview
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            {formData.listingType === 'Lease' ? 'FOR LEASE' : 'FOR SALE'}
+          </span>
         </div>
+
+        {/* Plot Cover Image */}
+        <div className="relative h-44 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700">
+          <img
+            src={formData.image || (formData.galleryImages && formData.galleryImages[0]) || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80'}
+            alt="Plot Preview"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute top-3 left-3">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-[#1F5E3B] text-white shadow-xs flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-amber-300" />
+              VERIFIED ESTATE
+            </span>
+          </div>
+          <div className="absolute bottom-3 left-3 right-3 text-white">
+            <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1 mb-0.5">
+              <MapPin className="w-3 h-3" />
+              📍 {formData.location || 'Idukki, Kerala'}
+            </span>
+            <h4 className="text-sm font-black truncate">{formData.title || 'Prime Cardamom Estate Listing'}</h4>
+          </div>
+        </div>
+
+        {/* Price & Spec Pills */}
+        <div className="p-3.5 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950/40 border border-[#5C8D4E]/30 space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-600 dark:text-slate-300 font-medium">Asking Listing Price:</span>
+            <strong className="text-emerald-800 dark:text-emerald-300 font-black text-base">
+              ₹{formData.price || (formData.listingType === 'Lease' ? '5 Lakhs/Yr' : '50 Lakhs')}
+            </strong>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-600 dark:text-slate-300 font-medium">Plot Area & Variety:</span>
+            <strong className="text-slate-800 dark:text-slate-200 font-bold">
+              {formData.area || 5.0} Acres • {formData.variety || 'Njallani'}
+            </strong>
+          </div>
+          <div className="flex justify-between items-center text-xs pt-1 border-t border-[#5C8D4E]/20">
+            <span className="text-slate-700 dark:text-slate-300 font-medium">Est. Yield & Elevation:</span>
+            <strong className="text-[#17331F] dark:text-emerald-300 font-bold">
+              {formData.estimatedYield || '420 kg/acre'} • {formData.altitude || '950m'}
+            </strong>
+          </div>
+        </div>
+
+        {/* Verification Check Badges */}
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 space-y-1.5 text-xs">
+          <h5 className="font-extrabold text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Included Services & Features
+          </h5>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">✓ PDF Dossier Auto-Generated</span>
+            <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">✓ Satellite Telemetry Scan</span>
+            <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">✓ Direct Seller Contact</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <FullScreenFormModal
+      isOpen={true}
+      onClose={onClose}
+      title={editPlot ? (lang === 'ml' ? 'ഏലത്തോട്ടം വിവരങ്ങൾ എഡിറ്റ് ചെയ്യുക' : 'Edit Plantation Plot Listing') : (lang === 'ml' ? 'ഏലത്തോട്ടം വിൽപ്പനയ്ക്ക്/പാട്ടത്തിന് ചേർക്കുക' : 'Publish Cardamom Estate for Sale or Lease')}
+      subtitle="Broadcast your cardamom land to verified planters, buyers, and investors on Cardora Marketplace"
+      badgeText="MARKETPLACE LAND PUBLISHER"
+      badgeIcon={MapPin}
+      currentStep={step}
+      totalSteps={2}
+      steps={['Plot Specs & Pricing', 'Verification & Preview']}
+      onStepClick={(s) => setStep(s)}
+      rightPanel={rightMarketplacePreview}
+    >
+      <div className="space-y-6 font-sans">
 
         {/* Content Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -972,27 +1028,11 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
               </div>
             </form>
           )}
-
-          {step === 3 && (
-            <div className="p-8 text-center space-y-4">
-              <CheckCircle2 className="w-16 h-16 text-[#66BB6A] mx-auto animate-bounce" />
-              <h3 className="text-2xl font-black font-poppins text-[#1B5E20] dark:text-white">
-                {editPlot ? 'Plantation Listing Updated!' : 'Plantation Published Successfully!'}
-              </h3>
-              <p className="text-xs text-gray-600 dark:text-slate-300">
-                {editPlot 
-                  ? 'Your plot listing modifications have been saved and verified by CARDORA AI Trust Engine.' 
-                  : 'Your plantation plot has been verified by CARDORA AI Trust Engine and is now live on the interactive Satellite Map marketplace.'}
-              </p>
-              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-slate-800 border border-[#66BB6A]/40 text-xs font-bold text-[#1B5E20] dark:text-emerald-300 flex items-center justify-center gap-2">
-                <Mail className="w-4 h-4 text-[#1B5E20] dark:text-emerald-400" />
-                <span>{editPlot ? 'Updated PDF report generated & dispatched to' : 'Official PDF plot report generated & dispatched to'} <strong>{formData.ownerEmail || user?.email || 'your email'}</strong>!</span>
-              </div>
-            </div>
-          )}
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </FullScreenFormModal>
+
+
   );
 };
 

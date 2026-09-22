@@ -7,7 +7,7 @@ import {
   Sparkles, CheckCircle, Plus, Trash2, Edit, X, AlertCircle,
   Camera, Lock, Key, Bell, Upload, CornerDownRight, Shield, CloudSun,
   Droplets, TrendingUp, BarChart3, Calendar, ChevronRight, ChevronLeft,
-  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw, Gavel, Mic, Volume2
+  Clock, Sliders, UserCheck, ShieldCheck, FileText, Send, Filter, Tag, Award, Activity, RefreshCw, Gavel, Mic
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useVoiceNavigation } from '../context/VoiceNavigationContext';
@@ -34,11 +34,13 @@ import AuctionModule from '../components/auction/AuctionModule';
 import ExpertConsultationPortal from '../components/community/ExpertConsultationPortal';
 import { getTimeBasedGreeting } from '../utils/timeGreeting';
 import { KERALA_DISTRICTS } from '../utils/districts';
+import FullScreenFormModal from '../components/ui/FullScreenFormModal';
+import PlantationVisitsManager from '../components/plantation/PlantationVisitsManager';
 
 
 const Dashboard = () => {
-  const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification, easyMode, toggleEasyMode } = useAuth();
-  const { isListening, startListening, statusMessage, recognitionStatus } = useVoiceNavigation();
+  const { user, updateProfile, showToast, darkMode, setDarkMode, lang, toggleLang, addNotification, easyMode } = useAuth();
+  const { isListening, startListening, statusMessage } = useVoiceNavigation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isAdminAccount = (user?.role || '').toLowerCase().includes('admin') || (user?.email || '').toLowerCase().includes('admin');
@@ -46,11 +48,23 @@ const Dashboard = () => {
   const defaultTab = isAdminAccount ? 'admin' : isSupervisorUser ? 'supervisor' : 'dashboard';
 
   const rawTab = searchParams.get('tab') || defaultTab;
-  const activeTab = (isSupervisorUser && rawTab !== 'profile' && rawTab !== 'messages') ? 'supervisor' : rawTab;
+  const activeTab = rawTab === 'profile' ? 'dashboard' : ((isSupervisorUser && rawTab !== 'messages') ? 'supervisor' : rawTab);
   const isAdminUser = isAdminAccount || activeTab === 'admin';
 
   const setActiveTab = (tabName) => {
     setSearchParams({ tab: tabName });
+  };
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('cardora_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('cardora_sidebar_collapsed', String(next));
+      return next;
+    });
   };
 
   const [profileEditOpen, setProfileEditOpen] = useState(false);
@@ -264,14 +278,6 @@ const Dashboard = () => {
     : 0;
 
   const [newPlantationModalOpen, setNewPlantationModalOpen] = useState(false);
-  const [plantationForm, setPlantationForm] = useState({
-    name: '',
-    location: 'Idukki, Kerala',
-    area: '',
-    plants: '',
-    variety: 'Malabar',
-  });
-  const [plantationErrors, setPlantationErrors] = useState({});
 
   // Dashboard Messaging Center State
   const [dashboardConversations, setDashboardConversations] = useState([]);
@@ -296,62 +302,7 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserIdVal]);
 
-  const validatePlantationForm = () => {
-    const errs = {};
-    if (!plantationForm.name.trim() || plantationForm.name.trim().length < 3) {
-      errs.name = 'Estate name must be at least 3 characters.';
-    }
-    if (!plantationForm.area || Number(plantationForm.area) <= 0) {
-      errs.area = 'Please enter a valid plot area greater than 0 acres.';
-    }
-    if (!plantationForm.plants || Number(plantationForm.plants) <= 0) {
-      errs.plants = 'Please enter valid plant count greater than 0.';
-    }
-    setPlantationErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
 
-  const handleAddPlantation = async (e) => {
-    e.preventDefault();
-    if (!validatePlantationForm()) return;
-
-    const payload = {
-      name: plantationForm.name.trim(),
-      location: plantationForm.location,
-      area: Number(plantationForm.area),
-      plantsCount: Number(plantationForm.plants),
-      variety: plantationForm.variety,
-      moisture: 72,
-      soilPh: 6.2,
-      history: 'Plantation registered today',
-    };
-
-    const res = await apiService.createPlantation(payload);
-    if (res && res.success) {
-      const saved = res.plantation;
-      setPlantations((prev) => [
-        {
-          id: saved?._id || Date.now(),
-          name: saved?.name || payload.name,
-          location: saved?.location || payload.location,
-          area: saved?.area || payload.area,
-          plants: saved?.plantsCount || payload.plantsCount,
-          variety: saved?.variety || payload.variety,
-          moisture: saved?.moisture || 72,
-          ph: saved?.soilPh || 6.2,
-          health: saved?.healthScore || 94,
-          history: saved?.history || payload.history,
-        },
-        ...prev,
-      ]);
-      setPlantationForm({ name: '', location: 'Idukki, Kerala', area: '', plants: '', variety: 'Malabar' });
-      setPlantationErrors({});
-      setNewPlantationModalOpen(false);
-      showToast('Plantation registered & saved to MongoDB Atlas!');
-    } else {
-      showToast(res?.message || 'Failed to save plantation');
-    }
-  };
 
   // Legacy delete helper
   // const handleDeletePlantation = async (id) => { ... }
@@ -867,14 +818,14 @@ const Dashboard = () => {
       { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
       { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
       { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Share2 },
-      { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
+      { id: 'dashboard', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
       { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
     ]
     : isSupervisorUser
       ? [
         { id: 'supervisor', label: lang === 'ml' ? 'സൂപ്പർവൈസർ പോർട്ടൽ' : 'Supervisor Portal', icon: ShieldCheck },
         { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
-        { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
+        { id: 'dashboard', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
       ]
       : [
         { id: 'dashboard', label: lang === 'ml' ? 'ഹോം' : 'Dashboard', icon: Home },
@@ -888,7 +839,7 @@ const Dashboard = () => {
         { id: 'messages', label: lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages', icon: MessageSquare, isAction: true },
         { id: 'plots', label: lang === 'ml' ? 'മാർക്കറ്റ് പ്ലേസ്' : 'Marketplace', icon: MapPin },
         { id: 'community', label: lang === 'ml' ? 'കമ്മ്യൂണിറ്റി' : 'Community', icon: Share2 },
-        { id: 'profile', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
+        { id: 'dashboard', label: lang === 'ml' ? 'പ്രൊഫൈൽ' : 'Profile', icon: User },
         { id: 'settings', label: lang === 'ml' ? 'ക്രമീകരണങ്ങൾ' : 'Settings', icon: Settings },
       ];
 
@@ -897,29 +848,52 @@ const Dashboard = () => {
       <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       {/* FIXED DESKTOP LEFT SIDEBAR NAVIGATION */}
-      <aside className="hidden lg:flex fixed top-16 left-0 w-60 h-[calc(100vh-4rem)] bg-white/90 dark:bg-[#06150D]/95 backdrop-blur-xl border-r border-[#CDE3D5] dark:border-[#1A402D] z-30 flex-col justify-between p-4 overflow-y-auto shadow-md">
-        <div className="space-y-4">
+      <aside className={`hidden lg:flex fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white/95 dark:bg-[#06150D]/95 backdrop-blur-xl border-r border-[#CDE3D5] dark:border-[#1A402D] z-30 flex-col justify-between p-3 overflow-y-auto shadow-md transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-20' : 'w-60'}`}>
+        <div className="space-y-3">
+
+          {/* Toggle Sidebar Collapse Button Header */}
+          <div className="flex items-center justify-between pb-1 border-b border-[#CDE3D5]/60 dark:border-[#1A402D]/60">
+            {!sidebarCollapsed && (
+              <span className="text-[10px] font-black uppercase text-slate-400 dark:text-emerald-400/70 tracking-widest px-1">
+                Navigation
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={toggleSidebarCollapse}
+              className={`p-1.5 rounded-xl bg-[#EAF4EE] dark:bg-[#0D261B] hover:bg-[#1F5E3B] hover:text-white text-[#1F5E3B] dark:text-emerald-400 border border-[#CDE3D5] dark:border-[#1A402D] transition-all cursor-pointer shadow-xs ${sidebarCollapsed ? 'mx-auto' : 'ml-auto'}`}
+              title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+          </div>
 
           {/* Admin / Planter Info Card */}
-          <div className="p-3 bg-[#EAF4EE] dark:bg-[#0D261B] rounded-2xl border border-[#CDE3D5] dark:border-[#1A402D] flex items-center gap-3 shadow-inner">
+          <div
+            onClick={() => setActiveTab('dashboard')}
+            className={`p-2 bg-[#EAF4EE] dark:bg-[#0D261B] rounded-2xl border border-[#CDE3D5] dark:border-[#1A402D] flex items-center shadow-inner cursor-pointer hover:bg-[#E2F0E7] dark:hover:bg-[#123324] transition-colors ${sidebarCollapsed ? 'justify-center' : 'gap-3 p-3'}`}
+            title={sidebarCollapsed ? (isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')) : 'Click to go to Dashboard'}
+          >
             <img
               src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Admin')}&background=059669&color=ffffff`}
               alt=""
-              className="w-9 h-9 rounded-full object-cover border-2 border-[#059669] flex-shrink-0"
+              className="w-9 h-9 rounded-full object-cover border-2 border-[#059669] shrink-0"
             />
-            <div className="overflow-hidden">
-              <p className="text-xs font-black text-slate-900 dark:text-white truncate font-poppins">
-                {isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')}
-              </p>
-              <p className="text-[10px] text-[#059669] dark:text-emerald-400 font-extrabold truncate">
-                {isAdminUser ? 'Admin • Idukki, Kerala' : `${user?.role || 'Farmer'} • ${user?.district || 'Idukki'}`}
-              </p>
-            </div>
+            {!sidebarCollapsed && (
+              <div className="overflow-hidden">
+                <p className="text-xs font-black text-slate-900 dark:text-white truncate font-poppins">
+                  {isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')}
+                </p>
+                <p className="text-[10px] text-[#059669] dark:text-emerald-400 font-extrabold truncate">
+                  {isAdminUser ? 'Admin • Idukki, Kerala' : `${user?.role || 'Farmer'} • ${user?.district || 'Idukki'}`}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Grouped Sidebar Navigation for Admin */}
           {isAdminUser ? (
-            <nav className="space-y-4">
+            <nav className="space-y-3">
               {[
                 {
                   title: 'OVERVIEW',
@@ -962,9 +936,13 @@ const Dashboard = () => {
                 },
               ].map((group) => (
                 <div key={group.title} className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1">
-                    {group.title}
-                  </p>
+                  {!sidebarCollapsed ? (
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1">
+                      {group.title}
+                    </p>
+                  ) : (
+                    <div className="h-px bg-slate-200 dark:bg-slate-800/80 my-1.5" />
+                  )}
                   {group.items.map((link) => {
                     const Icon = link.icon;
                     const currentView = searchParams.get('view') || 'all';
@@ -987,13 +965,14 @@ const Dashboard = () => {
                             setSearchParams({ tab: link.id });
                           }
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-all border-l-3 ${isActive
+                        title={link.label}
+                        className={`w-full flex items-center rounded-xl transition-all ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2 text-xs font-bold border-l-3'} ${isActive
                           ? 'bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-2xs'
                           : 'text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900'
                           }`}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                        <span className="truncate">{link.label}</span>
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                        {!sidebarCollapsed && <span className="truncate">{link.label}</span>}
                       </button>
                     );
                   })}
@@ -1017,14 +996,15 @@ const Dashboard = () => {
                         setActiveTab(link.id);
                       }
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all ${isActive
+                    title={link.label}
+                    className={`w-full flex items-center rounded-xl transition-all ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5 text-xs font-extrabold'} ${isActive
                       ? 'bg-gradient-to-r from-[#059669] via-[#047857] to-[#06150D] text-white shadow-md shadow-emerald-950/30 border-l-4 border-amber-400 font-black'
                       : 'text-slate-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-[#0D261B]'
                       }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-amber-300' : 'text-[#059669] dark:text-emerald-400'}`} />
-                    <span className="truncate">{link.label}</span>
-                    {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-amber-300" />}
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-300' : 'text-[#059669] dark:text-emerald-400'}`} />
+                    {!sidebarCollapsed && <span className="truncate">{link.label}</span>}
+                    {!sidebarCollapsed && isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-amber-300" />}
                   </button>
                 );
               })}
@@ -1033,17 +1013,25 @@ const Dashboard = () => {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="pt-3 border-t border-[#CDE3D5] dark:border-[#1A402D] text-[10px] text-slate-500 dark:text-emerald-400/80 font-medium space-y-1">
-          <p className="flex items-center gap-1.5 font-bold text-[#059669] dark:text-emerald-400">
-            <Leaf className="w-3.5 h-3.5" />
-            <span>Cardora Agriculture Platform</span>
-          </p>
-          <p className="flex items-center gap-1.5 text-slate-400">
-            <span>System status:</span>
-            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              Operational <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            </span>
-          </p>
+        <div className={`pt-3 border-t border-[#CDE3D5] dark:border-[#1A402D] text-[10px] text-slate-500 dark:text-emerald-400/80 font-medium ${sidebarCollapsed ? 'flex flex-col items-center' : 'space-y-1'}`}>
+          {!sidebarCollapsed ? (
+            <>
+              <p className="flex items-center gap-1.5 font-bold text-[#059669] dark:text-emerald-400">
+                <Leaf className="w-3.5 h-3.5" />
+                <span>Cardora Agriculture Platform</span>
+              </p>
+              <p className="flex items-center gap-1.5 text-slate-400">
+                <span>System status:</span>
+                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  Operational <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </span>
+              </p>
+            </>
+          ) : (
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-[#059669] dark:text-emerald-400 flex items-center justify-center" title="Cardora Operational">
+              <Leaf className="w-4 h-4" />
+            </div>
+          )}
         </div>
       </aside>
 
@@ -1127,1021 +1115,1063 @@ const Dashboard = () => {
       </AnimatePresence>
 
       {/* MAIN CONTENT AREA */}
-      <main className="lg:pl-64 pt-16 flex-1 p-4 sm:p-6 lg:p-8 space-y-6 w-full max-w-none min-h-[calc(100vh-4rem)] overflow-x-hidden">
+      <main className={`pt-20 sm:pt-22 flex-1 p-4 sm:p-6 lg:p-8 space-y-6 w-full max-w-none min-h-[calc(100vh-4rem)] overflow-x-hidden transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
         {(activeTab === 'dashboard' || activeTab === 'overview' || !activeTab) && (
           <div className="space-y-6">
             {/* COMPACT WELCOME CARD */}
-              <div className="bg-gradient-to-r from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/40 shadow-xs">
-                        🌱 Farmer First Portal
-                      </span>
-                      {easyMode && (
-                        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm">
-                          🌿 Easy Mode Active
-                        </span>
-                      )}
-                      <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Cardamom Management</span>
-                    </div>
-                    <h1 className="text-xl sm:text-2xl font-black font-poppins text-white flex items-center gap-2">
-                      {getTimeBasedGreeting(user?.fullName || user?.name || user?.username || 'Planter', lang)} 🌱
-                    </h1>
-                    <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1">
-                      {lang === 'ml'
-                        ? 'ഇന്ന് നിങ്ങളുടെ തോട്ടത്തിൽ എന്താണ് നടക്കുന്നത്? Cardora-യോട് ചോദിക്കാം.'
-                        : "What is happening in your plantation today? Ask Cardora."}
-                    </p>
-                  </div>
-
-                  {/* Location & Date Badges */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-black/30 backdrop-blur-md p-2.5 rounded-2xl border border-white/15 self-start md:self-auto">
-                    <div className="flex items-center gap-1.5 text-xs text-white font-bold px-2.5 py-1 rounded-xl bg-white/10">
-                      <MapPin className="w-3.5 h-3.5 text-amber-300" />
-                      <span>{user?.district || user?.location || 'Idukki, Kerala'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-200 font-medium px-2 py-1">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-300" />
-                      <span>{new Date().toLocaleDateString(lang === 'ml' ? 'ml-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-amber-300 font-black px-2.5 py-1 bg-amber-400/20 rounded-xl border border-amber-400/40">
-                      <CloudSun className="w-3.5 h-3.5 text-amber-300" />
-                      <span>28°C • Sunny</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 🎙️ PROMINENT CARDORA VOICE HERO CARD */}
-              <div className="bg-gradient-to-br from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-emerald-500/40 relative overflow-hidden space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                        <Mic className="w-3.5 h-3.5" />
-                        {lang === 'ml' ? 'പറഞ്ഞാൽ മതി. Cardora വഴികാട്ടും' : 'Voice-First Assistant'}
-                      </span>
-                      <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Malayalam, Manglish & English</span>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl font-black font-poppins text-white flex items-center gap-2">
-                      {lang === 'ml' ? 'SPEAK TO CARDORA 🎙️' : 'Speak to Cardora 🎙️'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-emerald-100 font-medium">
-                      {lang === 'ml' ? 'എന്താണ് വേണ്ടത്? Just tell Cardora what you want.' : 'Just tell Cardora what you want, it will navigate automatically.'}
-                    </p>
-                  </div>
-
-                  {/* Big 64px Tap Target Microphone Button */}
-                  <div className="flex flex-col items-center gap-2 shrink-0 self-center md:self-auto">
-                    <button
-                      onClick={startListening}
-                      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white font-black shadow-2xl transition-all cursor-pointer ${
-                        isListening
-                          ? 'bg-rose-600 border-4 border-white animate-pulse scale-105 shadow-rose-900/50'
-                          : 'bg-gradient-to-br from-[#F59E0B] via-[#D4AF37] to-[#FBBF24] hover:scale-105 border-4 border-amber-300/60 text-slate-950 shadow-amber-950/50'
-                      }`}
-                      title={lang === 'ml' ? 'സംസാരിക്കാൻ ടാപ്പ് ചെയ്യുക' : 'Tap to Speak'}
-                    >
-                      <Mic className={`w-8 h-8 sm:w-10 sm:h-10 ${isListening ? 'text-white' : 'text-slate-950'}`} />
-                    </button>
-                    <span className="text-xs font-extrabold text-amber-300">
-                      {isListening ? (lang === 'ml' ? '🎙️ കേൾക്കുന്നു...' : 'Listening...') : (lang === 'ml' ? '[ 🎙️ സംസാരിക്കുക ]' : '[ Tap to Speak ]')}
+            <div className="bg-gradient-to-r from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/40 shadow-xs">
+                      🌱 Farmer First Portal
                     </span>
-                  </div>
-                </div>
-
-                {/* Status Message Display */}
-                {statusMessage && (
-                  <div className="p-3 rounded-2xl bg-black/30 border border-white/20 text-xs font-extrabold text-amber-300 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                    <span>{statusMessage}</span>
-                  </div>
-                )}
-
-                {/* Voice Prompts Hints */}
-                <div className="pt-3 border-t border-white/15 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-200/90">{lang === 'ml' ? 'ഉദാഹരണം:' : 'Examples:'}</span>
-                  {[
-                    { text: lang === 'ml' ? '"എന്റെ തോട്ടം കാണിക്കൂ"' : '"Show my plantation"', tab: 'plantations' },
-                    { text: lang === 'ml' ? '"ലൈവ് ലേലം തുറക്കൂ"' : '"Open live auctions"', tab: 'auctions' },
-                    { text: lang === 'ml' ? '"കാലാവസ്ഥ കാണിക്കൂ"' : '"Check weather"', tab: 'weather' },
-                    { text: lang === 'ml' ? '"രോഗം പരിശോധിക്കണം"' : '"Plant health scanner"', tab: 'ai' },
-                    { text: lang === 'ml' ? '"തൊഴിലാളികൾ കാണിക്കൂ"' : '"Labour workforce"', tab: 'workforce' },
-                  ].map((hint, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveTab(hint.tab)}
-                      className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/30 text-emerald-100 text-xs font-bold border border-white/20 transition-all cursor-pointer"
-                    >
-                      {hint.text}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ⚡ HIGH-VISIBILITY QUICK ACTION TILES */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 font-poppins flex items-center gap-2">
-                  <span>{lang === 'ml' ? 'നിങ്ങൾക്ക് എന്ത് ചെയ്യണം?' : 'Quick Actions'}</span>
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                  <button
-                    onClick={() => setActiveTab('plantations')}
-                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
-                      🌱
-                    </div>
-                    <div>
-                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
-                        {lang === 'ml' ? 'തോട്ടം കാണുക' : 'My Plantation'}
+                    {easyMode && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                        🌿 Easy Mode Active
                       </span>
-                      <span className="text-[11px] font-extrabold text-[#059669] dark:text-emerald-400">
-                        {lang === 'ml' ? 'തോട്ടം മാനേജ് ചെയ്യുക' : 'Manage Plots'}
-                      </span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('ai')}
-                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
-                      🔬
-                    </div>
-                    <div>
-                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
-                        {lang === 'ml' ? 'രോഗം പരിശോധിക്കുക' : 'Plant Scanner'}
-                      </span>
-                      <span className="text-[11px] font-extrabold text-rose-600 dark:text-rose-400">
-                        {lang === 'ml' ? 'ഇല സ്കാൻ ചെയ്യുക' : 'Scan Leaf Health'}
-                      </span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('weather')}
-                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
-                      ☁
-                    </div>
-                    <div>
-                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
-                        {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather'}
-                      </span>
-                      <span className="text-[11px] font-extrabold text-sky-600 dark:text-sky-400">
-                        {lang === 'ml' ? 'മഴ പ്രവചനം' : 'Rain Forecast'}
-                      </span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('auctions')}
-                    className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
-                      🔨
-                    </div>
-                    <div>
-                      <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
-                        {lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions'}
-                      </span>
-                      <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400">
-                        {lang === 'ml' ? 'ഏലക്കായ് വില' : 'Daily Spice Prices'}
-                      </span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* 4 OVERVIEW STATISTICS CARDS */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {/* Active Plantations */}
-                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400">
-                      <Leaf className="w-4 h-4" />
-                    </span>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
-                      {plantations.length > 0 ? (lang === 'ml' ? 'സജീവം' : 'Active') : (lang === 'ml' ? 'ഇല്ല' : 'No Plots')}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {plantations.length}
-                    </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
-                      {lang === 'ml' ? 'സജീവ തോട്ടങ്ങൾ' : 'Active Plantations'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Soil Moisture */}
-                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400">
-                      <Droplets className="w-4 h-4" />
-                    </span>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300">
-                      {plantations.length > 0 ? (lang === 'ml' ? 'ഉചിതം' : 'Optimal') : 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {plantations.length > 0 ? `${avgMoisture}%` : '0%'}
-                    </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
-                      {lang === 'ml' ? 'മണ്ണിലെ ഈർപ്പം' : 'Soil Moisture'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Plantation Health */}
-                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400">
-                      <Sparkles className="w-4 h-4" />
-                    </span>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
-                      {plantations.length > 0 ? (lang === 'ml' ? 'ആരോഗ്യം' : 'Healthy') : 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {plantations.length > 0 ? `${avgHealth}%` : '0%'}
-                    </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
-                      {lang === 'ml' ? 'തോട്ടം ആരോഗ്യം' : 'Plantation Health'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Predicted Yield */}
-                <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400">
-                      <TrendingUp className="w-4 h-4" />
-                    </span>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
-                      {plantations.length > 0 ? (lang === 'ml' ? 'വിളവെടുപ്പ്' : 'Est. Harvest') : 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
-                      {plantations.length > 0 ? `${predictedYield} kg` : '0 kg'}
-                    </div>
-                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
-                      {lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* MAIN DASHBOARD 2-COLUMN GRID */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* LEFT COLUMN: MY PLANTATION SUMMARY CARD */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
-                  {plantations.length === 0 ? (
-                    <div className="py-8 px-4 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center mx-auto">
-                        <Leaf className="w-6 h-6" />
-                      </div>
-                      <h4 className="text-base font-black text-slate-900 dark:text-white font-poppins">
-                        No Plantations Added Yet
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto font-medium">
-                        You have not registered any cardamom plantations under your account. Register your estate to view real-time micro-climate telemetry, soil pH, and yield predictions.
-                      </p>
-                      <button
-                        onClick={() => setNewPlantationModalOpen(true)}
-                        className="mt-2 px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black transition-all shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Plantation</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
-                        <div className="flex items-center gap-2.5">
-                          <div className="p-2 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400">
-                            <Leaf className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-base font-black text-slate-900 dark:text-white">
-                              {lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation Summary'}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                              {plantations[0]?.name} • {plantations[0]?.location}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setActiveTab('plantations')}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1"
-                        >
-                          <span>{lang === 'ml' ? 'തോട്ടം കാണുക' : 'View Plantation'}</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Metric Badges Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                            {lang === 'ml' ? 'വിസ്തീർണ്ണം' : 'Plot Area'}
-                          </span>
-                          <span className="text-sm font-black text-slate-900 dark:text-white">
-                            {plantations[0]?.area} Acres
-                          </span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                            {lang === 'ml' ? 'മണ്ണിന്റെ അവസ്ഥ' : 'Soil Condition'}
-                          </span>
-                          <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
-                            pH {plantations[0]?.ph || 6.2} (Balanced)
-                          </span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                            {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Current Weather'}
-                          </span>
-                          <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                            28°C Sunny
-                          </span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                            {lang === 'ml' ? 'ഈർപ്പം തലം' : 'Moisture Level'}
-                          </span>
-                          <span className="text-sm font-black text-blue-600 dark:text-blue-400">
-                            {plantations[0]?.moisture || 72}% Optimal
-                          </span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                            {lang === 'ml' ? 'ആരോഗ്യ സ്കോർ' : 'Health Score'}
-                          </span>
-                          <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
-                            {plantations[0]?.health || 94}% Healthy
-                          </span>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
-                            {lang === 'ml' ? 'അവസാന പ്രവർത്തനം' : 'Recent Activity'}
-                          </span>
-                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
-                            Irrigated 2 days ago
-                          </span>
-                        </div>
-                      </div>
-
-                      {plantations.length > 1 && (
-                        <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                          <span>Registered Estates: <strong>{plantations.length} Plots</strong></span>
-                          <button onClick={() => setActiveTab('plantations')} className="text-[#1F5E3B] dark:text-emerald-400 font-bold hover:underline">Manage All Plots →</button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* RIGHT COLUMN: MESSAGES CARD (CRITICAL - IMMEDIATELY VISIBLE ON DASHBOARD TOP RIGHT) */}
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
-                        <MessageSquare className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-black text-slate-900 dark:text-white">
-                          {lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages'}
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Recent farm conversations</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
-                      className="px-3 py-1.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-xs transition"
-                    >
-                      <span>{lang === 'ml' ? 'തുറക്കുക' : 'Open Messages'}</span>
-                    </button>
-                  </div>
-
-                  {/* Conversations List */}
-                  <div className="space-y-2.5">
-                    {dashboardConversations.length > 0 ? (
-                      dashboardConversations.slice(0, 4).map((conv) => {
-                        const u = conv.user || {};
-                        const lastMsg = conv.lastMessage || {};
-                        return (
-                          <div
-                            key={u._id || u.id}
-                            onClick={() => { setChatTargetUser(u); setChatModalOpen(true); }}
-                            className="p-2.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 hover:border-[#1F5E3B] transition cursor-pointer flex items-center justify-between gap-3"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="relative flex-shrink-0">
-                                <img
-                                  src={u.avatar || u.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=1F5E3B&color=ffffff`}
-                                  alt=""
-                                  className="w-9 h-9 rounded-full object-cover border border-[#1F5E3B]"
-                                />
-                                {conv.unreadCount > 0 && (
-                                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
-                                    {conv.unreadCount}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{u.name}</h4>
-                                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-bold">{u.role || 'Worker'}</span>
-                                </div>
-                                <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-0.5">{lastMsg.text || 'Latest update...'}</p>
-                              </div>
-                            </div>
-                            <span className="text-[9px] font-bold text-slate-400 whitespace-nowrap">
-                              {lastMsg.createdAt ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '2m ago'}
-                            </span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      /* Default Quick Farmer Previews */
-                      [
-                        { name: 'Anil Kumar', role: 'Worker', text: "Today's attendance has been updated", time: '2 min ago', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
-                        { name: 'Joseph M.', role: 'Labor Contractor', text: 'Workers are available tomorrow for harvest', time: '15 min ago', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200' },
-                        { name: 'Dr. Suresh', role: 'Agronomy Expert', text: 'Check drip pulse schedule for plot #1', time: '1 hr ago', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200' }
-                      ].map((item, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => { setChatTargetUser({ name: item.name, role: item.role, avatar: item.avatar }); setChatModalOpen(true); }}
-                          className="p-2.5 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 hover:border-[#1F5E3B] transition cursor-pointer flex items-center justify-between gap-2"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <img src={item.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0" />
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1">
-                                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{item.name}</h4>
-                                <span className="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[8px] font-bold">{item.role}</span>
-                              </div>
-                              <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-0.5">"{item.text}"</p>
-                            </div>
-                          </div>
-                          <span className="text-[9px] font-bold text-slate-400 flex-shrink-0">{item.time}</span>
-                        </div>
-                      ))
                     )}
+                    <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Cardamom Management</span>
                   </div>
-                </div>
-
-              </div>
-
-              {/* IMPORTANT QUICK ACTIONS SECTION */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-[#E2E8F0] dark:border-slate-800 shadow-xs space-y-3">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />
-                  <span>{lang === 'ml' ? 'ത്വരിത നടപടികൾ' : 'Important Quick Actions'}</span>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-                  {/* Action 1: Add Plantation */}
-                  <button
-                    onClick={() => setNewPlantationModalOpen(true)}
-                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="p-1.5 rounded-lg bg-[#1F5E3B] text-white">
-                        <Plus className="w-4 h-4" />
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-[#5C8D4E] group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'തോട്ടം ചേർക്കുക' : 'Add Plantation'}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Register a cardamom plot</p>
-                    </div>
-                  </button>
-
-                  {/* Action 2: Manage Workers */}
-                  <button
-                    onClick={() => setActiveTab('workforce')}
-                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="p-1.5 rounded-lg bg-blue-600 text-white">
-                        <Users className="w-4 h-4" />
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Manage Workers'}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">View roster & tasks</p>
-                    </div>
-                  </button>
-
-                  {/* Action 3: Mark Attendance */}
-                  <button
-                    onClick={() => setActiveTab('workforce')}
-                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="p-1.5 rounded-lg bg-emerald-600 text-white">
-                        <CheckCircle className="w-4 h-4" />
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'ഹാജർ രേഖപ്പെടുത്തുക' : 'Mark Attendance'}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Track labor hours</p>
-                    </div>
-                  </button>
-
-                  {/* Action 4: Get AI Recommendation */}
-                  <button
-                    onClick={() => setActiveTab('ai')}
-                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="p-1.5 rounded-lg bg-purple-600 text-white">
-                        <Sparkles className="w-4 h-4" />
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-purple-500 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendation'}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Soil & disease advice</p>
-                    </div>
-                  </button>
-
-                  {/* Action 5: Live Auctions */}
-                  <button
-                    onClick={() => setActiveTab('auctions')}
-                    className="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-800 hover:scale-102 border-2 border-rose-300 dark:border-rose-800 text-left transition-all group flex flex-col justify-between h-24 shadow-sm cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="p-1.5 rounded-lg bg-rose-600 text-white shadow-xs">
-                        <Gavel className="w-4 h-4" />
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-600 text-white animate-pulse">🔴 LIVE</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1">
-                        {lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨'}
-                      </p>
-                      <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">Real-time estate bidding</p>
-                    </div>
-                  </button>
-
-                  {/* Action 6: Send Message */}
-                  <button
-                    onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
-                    className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="p-1.5 rounded-lg bg-amber-500 text-white">
-                        <MessageSquare className="w-4 h-4" />
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-amber-500 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'സന്ദേശം അയക്കുക' : 'Send Message'}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Chat with team & buyers</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* WEATHER MODULE SNIPPET ON DASHBOARD */}
-              <WeatherModule
-                userLocation={user?.district || user?.location || 'Idukki, Kerala'}
-                onToast={showToast}
-              />
-
-              {/* CARDORA AI SOIL & FERTILIZER ADVISOR ON DASHBOARD */}
-              <CardoraFertilizerAdvisor
-                plantation={plantations[0]}
-                onToast={showToast}
-              />
-
-              {/* AI ANALYSIS MODULE SNIPPET ON DASHBOARD */}
-              <AiAnalysisModule
-                plantation={plantations[0]}
-                onToast={showToast}
-              />
-
-            </div>
-          )}
-
-          {/* ===== TAB: WEATHER INTELLIGENCE ===== */}
-          {activeTab === 'weather' && (
-            <div className="space-y-6">
-              <WeatherModule
-                userLocation={user?.district || user?.location || 'Idukki, Kerala'}
-                onToast={showToast}
-              />
-            </div>
-          )}
-
-          {/* ===== TAB 2: MY PLANTATION ===== */}
-          {activeTab === 'plantations' && (
-            <PlantationModule onToast={showToast} />
-          )}
-
-
-          {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
-          {activeTab === 'ai' && (
-            <div className="space-y-6 w-full max-w-none">
-              <CardoraFertilizerAdvisor
-                plantation={plantations[0]}
-                onToast={showToast}
-              />
-              <AiAnalysisModule
-                plantation={plantations[0]}
-                onToast={showToast}
-              />
-            </div>
-          )}
-
-          {/* ===== DEDICATED SUPERVISOR PORTAL HUB ===== */}
-          {(activeTab === 'supervisor' || (isSupervisorUser && activeTab !== 'messages' && activeTab !== 'profile')) && (
-            <div className="w-full">
-              <SupervisorDashboard
-                plantationId={
-                  (typeof user?.assignedPlantation === 'object'
-                    ? user?.assignedPlantation?._id || user?.assignedPlantation?.id
-                    : user?.assignedPlantation) ||
-                  plantations[0]?._id ||
-                  plantations[0]?.id ||
-                  'default_plantation_id'
-                }
-                showToast={showToast}
-                onNavigateTab={(targetTab) => {
-                  if (targetTab === 'messages') {
-                    setChatTargetUser(null);
-                    setChatModalOpen(true);
-                  } else {
-                    setActiveTab(targetTab);
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {/* ===== WORKFORCE & WORKER CONNECTION SYSTEM ===== */}
-          {activeTab === 'workforce' && (
-            <WorkforceModule
-              onOpenChat={(targetUserId) => {
-                setChatTargetUser(targetUserId);
-                setChatModalOpen(true);
-              }}
-            />
-          )}
-
-          {/* ===== TAB: DEDICATED MESSAGES DASHBOARD ===== */}
-          {activeTab === 'messages' && (
-            <div className="w-full">
-              <MessagingModule
-                initialTargetUser={searchParams.get('userId') || chatTargetUser}
-                onToast={showToast}
-              />
-            </div>
-          )}
-
-          {/* ===== TAB: REAL-TIME NOTIFICATIONS CENTER ===== */}
-          {activeTab === 'notifications' && (
-            <div className="w-full">
-              <NotificationModule />
-            </div>
-          )}
-
-          {/* ===== TAB: CARDORA LIVE AUCTION MODULE ===== */}
-          {(activeTab === 'auctions' || activeTab === 'auction') && (
-            <div className="w-full">
-              <AuctionModule user={user} onToast={showToast} />
-            </div>
-          )}
-
-          {/* ===== TAB: EXPERT CONSULTATION PORTAL ===== */}
-          {activeTab === 'expert' && (
-            <div className="w-full max-w-7xl mx-auto">
-              <ExpertConsultationPortal />
-            </div>
-          )}
-
-          {/* ===== TAB 4: COMMUNITY ===== */}
-          {activeTab === 'community' && (
-            <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4">
-              {/* Expert Consultation Entry Banner */}
-              <div className="bg-[#EAF3E8] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 rounded-3xl p-5 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#1F5E3B] text-white flex items-center justify-center font-bold">
-                    <UserCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-[#1F5E3B] dark:text-emerald-400 text-sm">Need Agricultural Advice for your Cardamom Plantation?</h4>
-                    <p className="text-xs text-gray-600 dark:text-slate-300">Consult with verified Cardora agronomists, ask questions in Malayalam or English.</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveTab('expert')}
-                  className="px-4 py-2.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-black hover:bg-[#17331F] transition-all cursor-pointer whitespace-nowrap shadow-sm"
-                >
-                  Ask an Agronomist →
-                </button>
-              </div>
-              {/* Header Title & DB Sync Banner */}
-              <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="space-y-2 relative z-10">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black tracking-wider uppercase border border-emerald-400/30 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Planter Social Hub
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-emerald-100 text-xs font-bold backdrop-blur-md">
-                      🌿 1,420+ Planters Online
-                    </span>
-                  </div>
-                  <h2 className="text-3xl sm:text-4xl font-black font-poppins tracking-tight text-white">
-                    Cardamom Planters Community Feed
-                  </h2>
-                  <p className="text-emerald-100/90 text-sm max-w-xl font-medium">
-                    Connect with estate owners, share live harvest yields, discover organic spice tips, and ask farming experts in real time.
+                  <h1 className="text-xl sm:text-2xl font-black font-poppins text-white flex items-center gap-2">
+                    {getTimeBasedGreeting(user?.fullName || user?.name || user?.username || 'Planter', lang)} 🌱
+                  </h1>
+                  <p className="text-xs sm:text-sm text-emerald-100/90 font-medium mt-1">
+                    {lang === 'ml'
+                      ? 'ഇന്ന് നിങ്ങളുടെ തോട്ടത്തിൽ എന്താണ് നടക്കുന്നത്? Cardora-യോട് ചോദിക്കാം.'
+                      : "What is happening in your plantation today? Ask Cardora."}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 relative z-10">
+                {/* Location & Date Badges */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-black/30 backdrop-blur-md p-2.5 rounded-2xl border border-white/15 self-start md:self-auto">
+                  <div className="flex items-center gap-1.5 text-xs text-white font-bold px-2.5 py-1 rounded-xl bg-white/10">
+                    <MapPin className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{user?.district || user?.location || 'Idukki, Kerala'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-200 font-medium px-2 py-1">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>{new Date().toLocaleDateString(lang === 'ml' ? 'ml-IN' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300 font-black px-2.5 py-1 bg-amber-400/20 rounded-xl border border-amber-400/40">
+                    <CloudSun className="w-3.5 h-3.5 text-amber-300" />
+                    <span>28°C • Sunny</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 🎙️ PROMINENT CARDORA VOICE HERO CARD */}
+            <div className="bg-gradient-to-br from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-emerald-500/40 relative overflow-hidden space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                      <Mic className="w-3.5 h-3.5" />
+                      {lang === 'ml' ? 'പറഞ്ഞാൽ മതി. Cardora വഴികാട്ടും' : 'Voice-First Assistant'}
+                    </span>
+                    <span className="text-xs text-emerald-200 font-bold hidden sm:inline-block">• Malayalam, Manglish & English</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black font-poppins text-white flex items-center gap-2">
+                    {lang === 'ml' ? 'SPEAK TO CARDORA 🎙️' : 'Speak to Cardora 🎙️'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-emerald-100 font-medium">
+                    {lang === 'ml' ? 'എന്താണ് വേണ്ടത്? Just tell Cardora what you want.' : 'Just tell Cardora what you want, it will navigate automatically.'}
+                  </p>
+                </div>
+
+                {/* Big 64px Tap Target Microphone Button */}
+                <div className="flex flex-col items-center gap-2 shrink-0 self-center md:self-auto">
                   <button
-                    onClick={() => {
-                      fetchPosts();
-                      showToast('🔄 Live sync complete! Synced directly with Cardora DB.');
-                    }}
-                    className="px-5 py-3 rounded-2xl bg-white text-[#17331F] hover:bg-emerald-50 text-xs font-black transition-all border border-white/20 flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
-                    title="Fetch live posts directly from MongoDB Database"
+                    onClick={startListening}
+                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white font-black shadow-2xl transition-all cursor-pointer ${isListening
+                      ? 'bg-rose-600 border-4 border-white animate-pulse scale-105 shadow-rose-900/50'
+                      : 'bg-gradient-to-br from-[#F59E0B] via-[#D4AF37] to-[#FBBF24] hover:scale-105 border-4 border-amber-300/60 text-slate-950 shadow-amber-950/50'
+                      }`}
+                    title={lang === 'ml' ? 'സംസാരിക്കാൻ ടാപ്പ് ചെയ്യുക' : 'Tap to Speak'}
                   >
-                    <RefreshCw className="w-4 h-4 text-[#1F5E3B]" />
-                    <span>Sync Live DB</span>
+                    <Mic className={`w-8 h-8 sm:w-10 sm:h-10 ${isListening ? 'text-white' : 'text-slate-950'}`} />
                   </button>
-                </div>
-              </div>
-
-              {/* Main Search & Category Filter Navigation Bar */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
-                {/* Search Bar */}
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="flex-1 w-full relative">
-                    <Search className="w-5 h-5 text-[#1F5E3B] absolute left-4 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={communitySearchQuery}
-                      onChange={(e) => setCommunitySearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && communitySearchQuery.trim()) {
-                          showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
-                        }
-                      }}
-                      placeholder="Search planter name (e.g. Rajesh, Ananya, Suresh), district, or post topics..."
-                      className="w-full pl-12 pr-4 py-3.5 text-sm sm:text-base rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 font-bold focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 transition-all placeholder:text-gray-400 placeholder:font-normal"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                    <button
-                      onClick={() => {
-                        if (communitySearchQuery.trim()) {
-                          showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
-                        }
-                      }}
-                      className="flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 cursor-pointer"
-                    >
-                      <Search className="w-4 h-4" />
-                      <span>Search Community</span>
-                    </button>
-                    {communitySearchQuery && (
-                      <button
-                        onClick={() => {
-                          setCommunitySearchQuery('');
-                          setSearchParams({ tab: 'community' });
-                        }}
-                        className="px-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 text-gray-700 dark:text-slate-300 text-sm font-bold transition-colors cursor-pointer"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Category Pills Filter Row */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-2 border-t border-[#D7E6D5]/60 dark:border-slate-800">
-                  <span className="text-xs font-black text-gray-500 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
-                    <Filter className="w-3.5 h-3.5 text-[#1F5E3B]" />
-                    Filter Feed:
+                  <span className="text-xs font-extrabold text-amber-300">
+                    {isListening ? (lang === 'ml' ? '🎙️ കേൾക്കുന്നു...' : 'Listening...') : (lang === 'ml' ? '[ 🎙️ സംസാരിക്കുക ]' : '[ Tap to Speak ]')}
                   </span>
-                  {[
-                    { id: 'All', label: 'All Updates', icon: '🌐' },
-                    { id: 'Plantation Update', label: 'Plantation Updates', icon: '🌿' },
-                    { id: 'Farming Tip', label: 'Organic Tips', icon: '💡' },
-                    { id: 'Expert Advice', label: 'Expert Advice', icon: '🎓' },
-                    { id: 'Question', label: 'Farmer Questions', icon: '❓' },
-                  ].map((cat) => {
-                    const isActive = selectedCategoryFilter === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategoryFilter(cat.id)}
-                        className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0 ${isActive
-                          ? 'bg-[#1F5E3B] text-white shadow-md shadow-[#1F5E3B]/20 scale-105'
-                          : 'bg-[#F8FAF7] dark:bg-slate-800/60 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700'
-                          }`}
-                      >
-                        <span>{cat.icon}</span>
-                        <span>{cat.label}</span>
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
 
-              {/* Responsive Main Layout: 2 Columns on Desktop (Feed 8 cols, Sidebar 4 cols) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Status Message Display */}
+              {statusMessage && (
+                <div className="p-3 rounded-2xl bg-black/30 border border-white/20 text-xs font-extrabold text-amber-300 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                  <span>{statusMessage}</span>
+                </div>
+              )}
 
-                {/* LEFT MAIN FEED COLUMN (col-span-8) */}
-                <div className="lg:col-span-8 space-y-6">
+              {/* Voice Prompts Hints */}
+              <div className="pt-3 border-t border-white/15 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-emerald-200/90">{lang === 'ml' ? 'ഉദാഹരണം:' : 'Examples:'}</span>
+                {[
+                  { text: lang === 'ml' ? '"എന്റെ തോട്ടം കാണിക്കൂ"' : '"Show my plantation"', tab: 'plantations' },
+                  { text: lang === 'ml' ? '"ലൈവ് ലേലം തുറക്കൂ"' : '"Open live auctions"', tab: 'auctions' },
+                  { text: lang === 'ml' ? '"കാലാവസ്ഥ കാണിക്കൂ"' : '"Check weather"', tab: 'weather' },
+                  { text: lang === 'ml' ? '"രോഗം പരിശോധിക്കണം"' : '"Plant health scanner"', tab: 'ai' },
+                  { text: lang === 'ml' ? '"തൊഴിലാളികൾ കാണിക്കൂ"' : '"Labour workforce"', tab: 'workforce' },
+                ].map((hint, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveTab(hint.tab)}
+                    className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/30 text-emerald-100 text-xs font-bold border border-white/20 transition-all cursor-pointer"
+                  >
+                    {hint.text}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                  {/* Matching Planter Profiles Banner (Live Search Results) */}
-                  {communitySearchQuery.trim() && (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-base font-black text-[#17331F] dark:text-emerald-400 flex items-center gap-2">
-                          <Users className="w-5 h-5 text-[#1F5E3B]" />
-                          <span>Matching Planter Profiles ({searchedPlanters.length})</span>
-                        </h3>
-                        <span className="px-3 py-1 rounded-full bg-emerald-50 text-[#1F5E3B] text-xs font-bold border border-emerald-200">
-                          Live Planter Search
+            {/* ⚡ HIGH-VISIBILITY QUICK ACTION TILES */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 font-poppins flex items-center gap-2">
+                <span>{lang === 'ml' ? 'നിങ്ങൾക്ക് എന്ത് ചെയ്യണം?' : 'Quick Actions'}</span>
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <button
+                  onClick={() => setActiveTab('plantations')}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                    🌱
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                      {lang === 'ml' ? 'തോട്ടം കാണുക' : 'My Plantation'}
+                    </span>
+                    <span className="text-[11px] font-extrabold text-[#059669] dark:text-emerald-400">
+                      {lang === 'ml' ? 'തോട്ടം മാനേജ് ചെയ്യുക' : 'Manage Plots'}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('ai')}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                    🔬
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                      {lang === 'ml' ? 'രോഗം പരിശോധിക്കുക' : 'Plant Scanner'}
+                    </span>
+                    <span className="text-[11px] font-extrabold text-rose-600 dark:text-rose-400">
+                      {lang === 'ml' ? 'ഇല സ്കാൻ ചെയ്യുക' : 'Scan Leaf Health'}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('weather')}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                    ☁
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                      {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Weather'}
+                    </span>
+                    <span className="text-[11px] font-extrabold text-sky-600 dark:text-sky-400">
+                      {lang === 'ml' ? 'മഴ പ്രവചനം' : 'Rain Forecast'}
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('auctions')}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#0D261B] border-2 border-[#CDE3D5] dark:border-[#1A402D] hover:border-[#059669] transition-all text-left shadow-md hover:shadow-xl hover:shadow-emerald-950/20 group cursor-pointer flex flex-col justify-between h-28"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xl group-hover:scale-110 transition-transform shadow-xs">
+                    🔨
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black text-slate-900 dark:text-white font-poppins">
+                      {lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions'}
+                    </span>
+                    <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400">
+                      {lang === 'ml' ? 'ഏലക്കായ് വില' : 'Daily Spice Prices'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* 4 OVERVIEW STATISTICS CARDS */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {/* Active Plantations */}
+              <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400">
+                    <Leaf className="w-4 h-4" />
+                  </span>
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+                    {plantations.length > 0 ? (lang === 'ml' ? 'സജീവം' : 'Active') : (lang === 'ml' ? 'ഇല്ല' : 'No Plots')}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                    {plantations.length}
+                  </div>
+                  <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
+                    {lang === 'ml' ? 'സജീവ തോട്ടങ്ങൾ' : 'Active Plantations'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Soil Moisture */}
+              <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400">
+                    <Droplets className="w-4 h-4" />
+                  </span>
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300">
+                    {plantations.length > 0 ? (lang === 'ml' ? 'ഉചിതം' : 'Optimal') : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                    {plantations.length > 0 ? `${avgMoisture}%` : '0%'}
+                  </div>
+                  <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
+                    {lang === 'ml' ? 'മണ്ണിലെ ഈർപ്പം' : 'Soil Moisture'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Plantation Health */}
+              <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400">
+                    <Sparkles className="w-4 h-4" />
+                  </span>
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                    {plantations.length > 0 ? (lang === 'ml' ? 'ആരോഗ്യം' : 'Healthy') : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                    {plantations.length > 0 ? `${avgHealth}%` : '0%'}
+                  </div>
+                  <p className="text-xs font-bold text-slate-600 dark:text-emerald-200 mt-0.5">
+                    {lang === 'ml' ? 'തോട്ടം ആരോഗ്യം' : 'Plantation Health'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Predicted Yield */}
+              <div className="bg-white dark:bg-[#0D261B] rounded-2xl p-4 border border-[#CDE3D5] dark:border-[#1A402D] shadow-md hover:border-[#059669] transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </span>
+                  <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+                    {plantations.length > 0 ? (lang === 'ml' ? 'വിളവെടുപ്പ്' : 'Est. Harvest') : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins">
+                    {plantations.length > 0 ? `${predictedYield} kg` : '0 kg'}
+                  </div>
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-0.5">
+                    {lang === 'ml' ? 'പ്രതീക്ഷിക്കുന്ന വിളവ്' : 'Predicted Yield'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* MAIN DASHBOARD 2-COLUMN GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+              {/* LEFT COLUMN: MY PLANTATION SUMMARY CARD */}
+              <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+                {plantations.length === 0 ? (
+                  <div className="py-8 px-4 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center mx-auto">
+                      <Leaf className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-base font-black text-slate-900 dark:text-white font-poppins">
+                      No Plantations Added Yet
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto font-medium">
+                      You have not registered any cardamom plantations under your account. Register your estate to view real-time micro-climate telemetry, soil pH, and yield predictions.
+                    </p>
+                    <button
+                      onClick={() => setNewPlantationModalOpen(true)}
+                      className="mt-2 px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black transition-all shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Plantation</span>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400">
+                          <Leaf className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-900 dark:text-white">
+                            {lang === 'ml' ? 'എന്റെ തോട്ടം' : 'My Plantation Summary'}
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            {plantations[0]?.name} • {plantations[0]?.location}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('plantations')}
+                        className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                      >
+                        <span>{lang === 'ml' ? 'തോട്ടം കാണുക' : 'View Plantation'}</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Metric Badges Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                          {lang === 'ml' ? 'വിസ്തീർണ്ണം' : 'Plot Area'}
+                        </span>
+                        <span className="text-sm font-black text-slate-900 dark:text-white">
+                          {plantations[0]?.area} Acres
                         </span>
                       </div>
 
-                      {searchedPlanters.length === 0 ? (
-                        <p className="text-sm text-gray-500 py-2">No planter accounts found matching "{communitySearchQuery}".</p>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {searchedPlanters.map((planter) => (
-                            <div
-                              key={planter._id || planter.id}
-                              onClick={() => setSelectedPublicUser({
-                                author: planter.name,
-                                username: planter.username,
-                                avatar: planter.avatar || planter.profileImage || planter.profilePhoto,
-                                role: planter.role,
-                                location: planter.location || planter.district,
-                                district: planter.district || planter.location,
-                                bio: planter.bio,
-                              })}
-                              className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/70 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all shadow-xs hover:shadow-md"
-                            >
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <img
-                                  src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`}
-                                  alt=""
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0"
-                                />
-                                <div className="overflow-hidden">
-                                  <h4 className="text-sm font-extrabold text-[#17331F] dark:text-slate-100 flex items-center gap-1.5 truncate">
-                                    <span className="truncate">{planter.name}</span>
-                                    <CheckCircle className="w-4 h-4 text-[#1F5E3B] flex-shrink-0" />
-                                  </h4>
-                                  <p className="text-xs text-[#5C8D4E] font-bold truncate">@{planter.username || 'planter'} • {planter.role || 'Farmer'}</p>
-                                </div>
-                              </div>
-                              <button className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0 cursor-pointer">
-                                View Profile
-                              </button>
+                      <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                          {lang === 'ml' ? 'മണ്ണിന്റെ അവസ്ഥ' : 'Soil Condition'}
+                        </span>
+                        <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                          pH {plantations[0]?.ph || 6.2} (Balanced)
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                          {lang === 'ml' ? 'കാലാവസ്ഥ' : 'Current Weather'}
+                        </span>
+                        <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                          28°C Sunny
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                          {lang === 'ml' ? 'ഈർപ്പം തലം' : 'Moisture Level'}
+                        </span>
+                        <span className="text-sm font-black text-blue-600 dark:text-blue-400">
+                          {plantations[0]?.moisture || 72}% Optimal
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                          {lang === 'ml' ? 'ആരോഗ്യ സ്കോർ' : 'Health Score'}
+                        </span>
+                        <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                          {plantations[0]?.health || 94}% Healthy
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase block mb-1">
+                          {lang === 'ml' ? 'അവസാന പ്രവർത്തനം' : 'Recent Activity'}
+                        </span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                          Irrigated 2 days ago
+                        </span>
+                      </div>
+                    </div>
+
+                    {plantations.length > 1 && (
+                      <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        <span>Registered Estates: <strong>{plantations.length} Plots</strong></span>
+                        <button onClick={() => setActiveTab('plantations')} className="text-[#1F5E3B] dark:text-emerald-400 font-bold hover:underline">Manage All Plots →</button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* RIGHT COLUMN: MESSAGES CARD (CRITICAL - IMMEDIATELY VISIBLE ON DASHBOARD TOP RIGHT) */}
+              <div className="lg:col-span-1 bg-white dark:bg-slate-900 rounded-2xl p-5 border border-[#E2E8F0] dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900 dark:text-white">
+                        {lang === 'ml' ? 'സന്ദേശങ്ങൾ' : 'Messages'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Recent farm conversations</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
+                    className="px-3 py-1.5 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-xs transition"
+                  >
+                    <span>{lang === 'ml' ? 'തുറക്കുക' : 'Open Messages'}</span>
+                  </button>
+                </div>
+
+                {/* Conversations List */}
+                <div className="space-y-2.5">
+                  {dashboardConversations.length > 0 ? (
+                    dashboardConversations.slice(0, 4).map((conv) => {
+                      const u = conv.user || {};
+                      const lastMsg = conv.lastMessage || {};
+                      return (
+                        <div
+                          key={u._id || u.id}
+                          onClick={() => { setChatTargetUser(u); setChatModalOpen(true); }}
+                          className="p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 hover:border-[#1F5E3B] dark:hover:border-emerald-500 hover:shadow-sm transition cursor-pointer flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="relative flex-shrink-0">
+                              <img
+                                src={u.avatar || u.profilePhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=1F5E3B&color=ffffff`}
+                                alt=""
+                                className="w-10 h-10 rounded-full object-cover border border-[#1F5E3B] shadow-xs"
+                              />
+                              {conv.unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                  {conv.unreadCount}
+                                </span>
+                              )}
                             </div>
-                          ))}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">{u.name}</h4>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-extrabold">{u.role || 'Planter'}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-0.5">{lastMsg.text || 'Latest update...'}</p>
+                            </div>
+                          </div>
+                          <span className="text-[9px] font-extrabold text-slate-400 whitespace-nowrap">
+                            {lastMsg.createdAt ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+                          </span>
                         </div>
-                      )}
+                      );
+                    })
+                  ) : (
+                    /* Clean Dynamic Empty State for Conversations */
+                    <div className="py-6 px-4 text-center rounded-2xl bg-[#F8FAF7]/80 dark:bg-slate-800/40 border border-[#D7E6D5]/80 dark:border-slate-800 space-y-3">
+                      <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
+                        <MessageSquare className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white font-poppins">
+                          {lang === 'ml' ? 'സന്ദേശങ്ങൾ ഒന്നുമില്ല' : 'No Active Conversations'}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium max-w-[220px] mx-auto leading-relaxed">
+                          {lang === 'ml' ? 'തോട്ടം തൊഴിലാളികൾ, വിതരണക്കാർ അല്ലെങ്കിൽ അഗ്രോണമിസ്റ്റുകളുമായി തത്സമയം ചാറ്റ് ചെയ്യുക.' : 'Start messaging farmers, labor contractors, or experts in your network.'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
+                        className="px-4 py-2 bg-[#1F5E3B] hover:bg-[#17482D] text-white text-xs font-black rounded-xl inline-flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>{lang === 'ml' ? 'പുതിയ സന്ദേശം' : 'Start New Message'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ON-SITE PLANTATION VISIT REQUESTS MANAGER (FULL WIDTH) */}
+            <div className="w-full my-6 font-sans">
+              <PlantationVisitsManager
+                onToast={showToast}
+                onOpenChat={(targetUser) => {
+                  setChatTargetUser(targetUser);
+                  setChatModalOpen(true);
+                }}
+              />
+            </div>
+
+
+
+            {/* IMPORTANT QUICK ACTIONS SECTION */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-[#E2E8F0] dark:border-slate-800 shadow-xs space-y-3">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />
+                <span>{lang === 'ml' ? 'ത്വരിത നടപടികൾ' : 'Important Quick Actions'}</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                {/* Action 1: Add Plantation */}
+                <button
+                  onClick={() => setNewPlantationModalOpen(true)}
+                  className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="p-1.5 rounded-lg bg-[#1F5E3B] text-white">
+                      <Plus className="w-4 h-4" />
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-[#5C8D4E] group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'തോട്ടം ചേർക്കുക' : 'Add Plantation'}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Register a cardamom plot</p>
+                  </div>
+                </button>
+
+                {/* Action 2: Manage Workers */}
+                <button
+                  onClick={() => setActiveTab('workforce')}
+                  className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="p-1.5 rounded-lg bg-blue-600 text-white">
+                      <Users className="w-4 h-4" />
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'തൊഴിലാളികൾ' : 'Manage Workers'}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">View roster & tasks</p>
+                  </div>
+                </button>
+
+                {/* Action 3: Mark Attendance */}
+                <button
+                  onClick={() => setActiveTab('workforce')}
+                  className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="p-1.5 rounded-lg bg-emerald-600 text-white">
+                      <CheckCircle className="w-4 h-4" />
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'ഹാജർ രേഖപ്പെടുത്തുക' : 'Mark Attendance'}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Track labor hours</p>
+                  </div>
+                </button>
+
+                {/* Action 4: Get AI Recommendation */}
+                <button
+                  onClick={() => setActiveTab('ai')}
+                  className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="p-1.5 rounded-lg bg-purple-600 text-white">
+                      <Sparkles className="w-4 h-4" />
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-purple-500 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'AI നിർദ്ദേശങ്ങൾ' : 'AI Recommendation'}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Soil & disease advice</p>
+                  </div>
+                </button>
+
+                {/* Action 5: Live Auctions */}
+                <button
+                  onClick={() => setActiveTab('auctions')}
+                  className="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-slate-800 dark:to-slate-800 hover:scale-102 border-2 border-rose-300 dark:border-rose-800 text-left transition-all group flex flex-col justify-between h-24 shadow-sm cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="p-1.5 rounded-lg bg-rose-600 text-white shadow-xs">
+                      <Gavel className="w-4 h-4" />
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-600 text-white animate-pulse">🔴 LIVE</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1">
+                      {lang === 'ml' ? 'ലൈവ് ലേലം' : 'Live Auctions 🔨'}
+                    </p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">Real-time estate bidding</p>
+                  </div>
+                </button>
+
+                {/* Action 6: Send Message */}
+                <button
+                  onClick={() => { setChatTargetUser(null); setChatModalOpen(true); }}
+                  className="p-4 rounded-xl bg-[#F4F8F3] dark:bg-slate-800/80 hover:bg-[#EAF3E8] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-left transition-all group flex flex-col justify-between h-24"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="p-1.5 rounded-lg bg-amber-500 text-white">
+                      <MessageSquare className="w-4 h-4" />
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-amber-500 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{lang === 'ml' ? 'സന്ദേശം അയക്കുക' : 'Send Message'}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Chat with team & buyers</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* WEATHER MODULE SNIPPET ON DASHBOARD */}
+            <WeatherModule
+              userLocation={user?.district || user?.location || 'Idukki, Kerala'}
+              onToast={showToast}
+            />
+
+            {/* CARDORA AI SOIL & FERTILIZER ADVISOR ON DASHBOARD */}
+            <CardoraFertilizerAdvisor
+              plantation={plantations[0]}
+              onToast={showToast}
+            />
+
+            {/* AI ANALYSIS MODULE SNIPPET ON DASHBOARD */}
+            <AiAnalysisModule
+              plantation={plantations[0]}
+              onToast={showToast}
+            />
+
+          </div>
+        )}
+
+        {/* ===== TAB: WEATHER INTELLIGENCE ===== */}
+        {activeTab === 'weather' && (
+          <div className="space-y-6">
+            <WeatherModule
+              userLocation={user?.district || user?.location || 'Idukki, Kerala'}
+              onToast={showToast}
+            />
+          </div>
+        )}
+
+        {/* ===== TAB 2: MY PLANTATION ===== */}
+        {activeTab === 'plantations' && (
+          <PlantationModule onToast={showToast} />
+        )}
+
+
+        {/* ===== TAB 3: AI RECOMMENDATION PAGE ===== */}
+        {activeTab === 'ai' && (
+          <div className="space-y-6 w-full max-w-none">
+            <CardoraFertilizerAdvisor
+              plantation={plantations[0]}
+              onToast={showToast}
+            />
+            <AiAnalysisModule
+              plantation={plantations[0]}
+              onToast={showToast}
+            />
+          </div>
+        )}
+
+        {/* ===== DEDICATED SUPERVISOR PORTAL HUB ===== */}
+        {(activeTab === 'supervisor' || (isSupervisorUser && activeTab !== 'messages' && activeTab !== 'profile')) && (
+          <div className="w-full">
+            <SupervisorDashboard
+              plantationId={
+                (typeof user?.assignedPlantation === 'object'
+                  ? user?.assignedPlantation?._id || user?.assignedPlantation?.id
+                  : user?.assignedPlantation) ||
+                plantations[0]?._id ||
+                plantations[0]?.id ||
+                'default_plantation_id'
+              }
+              showToast={showToast}
+              onNavigateTab={(targetTab) => {
+                if (targetTab === 'messages') {
+                  setChatTargetUser(null);
+                  setChatModalOpen(true);
+                } else {
+                  setActiveTab(targetTab);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* ===== WORKFORCE & WORKER CONNECTION SYSTEM ===== */}
+        {activeTab === 'workforce' && (
+          <WorkforceModule
+            onOpenChat={(targetUserId) => {
+              setChatTargetUser(targetUserId);
+              setChatModalOpen(true);
+            }}
+          />
+        )}
+
+        {/* ===== TAB: DEDICATED MESSAGES DASHBOARD ===== */}
+        {activeTab === 'messages' && (
+          <div className="w-full">
+            <MessagingModule
+              initialTargetUser={searchParams.get('userId') || chatTargetUser}
+              onToast={showToast}
+            />
+          </div>
+        )}
+
+        {/* ===== TAB: REAL-TIME NOTIFICATIONS CENTER ===== */}
+        {activeTab === 'notifications' && (
+          <div className="w-full">
+            <NotificationModule />
+          </div>
+        )}
+
+        {/* ===== TAB: CARDORA LIVE AUCTION MODULE ===== */}
+        {(activeTab === 'auctions' || activeTab === 'auction') && (
+          <div className="w-full">
+            <AuctionModule user={user} onToast={showToast} />
+          </div>
+        )}
+
+        {/* ===== TAB: EXPERT CONSULTATION PORTAL ===== */}
+        {activeTab === 'expert' && (
+          <div className="w-full max-w-7xl mx-auto">
+            <ExpertConsultationPortal />
+          </div>
+        )}
+
+        {/* ===== TAB 4: COMMUNITY ===== */}
+        {activeTab === 'community' && (
+          <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4">
+            {/* Expert Consultation Entry Banner */}
+            <div className="bg-[#EAF3E8] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 rounded-3xl p-5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#1F5E3B] text-white flex items-center justify-center font-bold">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-[#1F5E3B] dark:text-emerald-400 text-sm">Need Agricultural Advice for your Cardamom Plantation?</h4>
+                  <p className="text-xs text-gray-600 dark:text-slate-300">Consult with verified Cardora agronomists, ask questions in Malayalam or English.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab('expert')}
+                className="px-4 py-2.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-black hover:bg-[#17331F] transition-all cursor-pointer whitespace-nowrap shadow-sm"
+              >
+                Ask an Agronomist →
+              </button>
+            </div>
+            {/* Header Title & DB Sync Banner */}
+            <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black tracking-wider uppercase border border-emerald-400/30 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Planter Social Hub
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-white/10 text-emerald-100 text-xs font-bold backdrop-blur-md">
+                    🌿 1,420+ Planters Online
+                  </span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-black font-poppins tracking-tight text-white">
+                  Cardamom Planters Community Feed
+                </h2>
+                <p className="text-emerald-100/90 text-sm max-w-xl font-medium">
+                  Connect with estate owners, share live harvest yields, discover organic spice tips, and ask farming experts in real time.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 relative z-10">
+                <button
+                  onClick={() => {
+                    fetchPosts();
+                    showToast('🔄 Live sync complete! Synced directly with Cardora DB.');
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-white text-[#17331F] hover:bg-emerald-50 text-xs font-black transition-all border border-white/20 flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+                  title="Fetch live posts directly from MongoDB Database"
+                >
+                  <RefreshCw className="w-4 h-4 text-[#1F5E3B]" />
+                  <span>Sync Live DB</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Main Search & Category Filter Navigation Bar */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+              {/* Search Bar */}
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="flex-1 w-full relative">
+                  <Search className="w-5 h-5 text-[#1F5E3B] absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={communitySearchQuery}
+                    onChange={(e) => setCommunitySearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && communitySearchQuery.trim()) {
+                        showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
+                      }
+                    }}
+                    placeholder="Search planter name (e.g. Rajesh, Ananya, Suresh), district, or post topics..."
+                    className="w-full pl-12 pr-4 py-3.5 text-sm sm:text-base rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 text-[#17331F] dark:text-slate-100 font-bold focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 transition-all placeholder:text-gray-400 placeholder:font-normal"
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => {
+                      if (communitySearchQuery.trim()) {
+                        showToast(`Showing search results for "${communitySearchQuery.trim()}"`);
+                      }
+                    }}
+                    className="flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 whitespace-nowrap active:scale-95 cursor-pointer"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search Community</span>
+                  </button>
+                  {communitySearchQuery && (
+                    <button
+                      onClick={() => {
+                        setCommunitySearchQuery('');
+                        setSearchParams({ tab: 'community' });
+                      }}
+                      className="px-4 py-3.5 rounded-2xl bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 text-gray-700 dark:text-slate-300 text-sm font-bold transition-colors cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Category Pills Filter Row */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-2 border-t border-[#D7E6D5]/60 dark:border-slate-800">
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
+                  <Filter className="w-3.5 h-3.5 text-[#1F5E3B]" />
+                  Filter Feed:
+                </span>
+                {[
+                  { id: 'All', label: 'All Updates', icon: '🌐' },
+                  { id: 'Plantation Update', label: 'Plantation Updates', icon: '🌿' },
+                  { id: 'Farming Tip', label: 'Organic Tips', icon: '💡' },
+                  { id: 'Expert Advice', label: 'Expert Advice', icon: '🎓' },
+                  { id: 'Question', label: 'Farmer Questions', icon: '❓' },
+                ].map((cat) => {
+                  const isActive = selectedCategoryFilter === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategoryFilter(cat.id)}
+                      className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0 ${isActive
+                        ? 'bg-[#1F5E3B] text-white shadow-md shadow-[#1F5E3B]/20 scale-105'
+                        : 'bg-[#F8FAF7] dark:bg-slate-800/60 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700'
+                        }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Responsive Main Layout: 2 Columns on Desktop (Feed 8 cols, Sidebar 4 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+              {/* LEFT MAIN FEED COLUMN (col-span-8) */}
+              <div className="lg:col-span-8 space-y-6">
+
+                {/* Matching Planter Profiles Banner (Live Search Results) */}
+                {communitySearchQuery.trim() && (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-black text-[#17331F] dark:text-emerald-400 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-[#1F5E3B]" />
+                        <span>Matching Planter Profiles ({searchedPlanters.length})</span>
+                      </h3>
+                      <span className="px-3 py-1 rounded-full bg-emerald-50 text-[#1F5E3B] text-xs font-bold border border-emerald-200">
+                        Live Planter Search
+                      </span>
+                    </div>
+
+                    {searchedPlanters.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-2">No planter accounts found matching "{communitySearchQuery}".</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {searchedPlanters.map((planter) => (
+                          <div
+                            key={planter._id || planter.id}
+                            onClick={() => setSelectedPublicUser({
+                              author: planter.name,
+                              username: planter.username,
+                              avatar: planter.avatar || planter.profileImage || planter.profilePhoto,
+                              role: planter.role,
+                              location: planter.location || planter.district,
+                              district: planter.district || planter.location,
+                              bio: planter.bio,
+                            })}
+                            className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/70 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all shadow-xs hover:shadow-md"
+                          >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <img
+                                src={(planter.avatar || planter.profileImage || planter.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(planter.name || 'Planter')}&background=1F5E3B&color=ffffff`}
+                                alt=""
+                                className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform flex-shrink-0"
+                              />
+                              <div className="overflow-hidden">
+                                <h4 className="text-sm font-extrabold text-[#17331F] dark:text-slate-100 flex items-center gap-1.5 truncate">
+                                  <span className="truncate">{planter.name}</span>
+                                  <CheckCircle className="w-4 h-4 text-[#1F5E3B] flex-shrink-0" />
+                                </h4>
+                                <p className="text-xs text-[#5C8D4E] font-bold truncate">@{planter.username || 'planter'} • {planter.role || 'Farmer'}</p>
+                              </div>
+                            </div>
+                            <button className="px-3.5 py-1.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0 cursor-pointer">
+                              View Profile
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Create New Post Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'P')}&background=1F5E3B&color=ffffff`}
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0"
+                    />
+                    <div>
+                      <h3 className="text-base font-black text-[#17331F] dark:text-slate-100">Publish a Community Post</h3>
+                      <p className="text-xs text-gray-500 font-medium">Share updates, ask questions, or recommend farming practices</p>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows="4"
+                    value={newPostText}
+                    onChange={(e) => {
+                      setNewPostText(e.target.value);
+                      if (postError) setPostError('');
+                    }}
+                    placeholder="Write your cardamom plantation update, ask a question, or share an organic farming tip..."
+                    className={`w-full p-4 rounded-2xl text-sm sm:text-base leading-relaxed focus:outline-none resize-none border font-medium ${postError ? 'border-red-400 bg-red-50/50' : 'border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 text-[#17331F] dark:text-slate-100'
+                      }`}
+                  />
+
+                  {/* Image Preview Box if set */}
+                  {newPostImage && (
+                    <div className="relative rounded-2xl overflow-hidden border border-[#D7E6D5] max-h-60 group">
+                      <img src={newPostImage} alt="Post attachment preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setNewPostImage('')}
+                        className="absolute top-3 right-3 p-2 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold transition-transform hover:scale-110 cursor-pointer"
+                        title="Remove Image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   )}
 
-                  {/* Create New Post Card */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'P')}&background=1F5E3B&color=ffffff`}
-                        alt=""
-                        className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0"
-                      />
-                      <div>
-                        <h3 className="text-base font-black text-[#17331F] dark:text-slate-100">Publish a Community Post</h3>
-                        <p className="text-xs text-gray-500 font-medium">Share updates, ask questions, or recommend farming practices</p>
-                      </div>
-                    </div>
-
-                    <textarea
-                      rows="4"
-                      value={newPostText}
-                      onChange={(e) => {
-                        setNewPostText(e.target.value);
-                        if (postError) setPostError('');
-                      }}
-                      placeholder="Write your cardamom plantation update, ask a question, or share an organic farming tip..."
-                      className={`w-full p-4 rounded-2xl text-sm sm:text-base leading-relaxed focus:outline-none resize-none border font-medium ${postError ? 'border-red-400 bg-red-50/50' : 'border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20 text-[#17331F] dark:text-slate-100'
-                        }`}
-                    />
-
-                    {/* Image Preview Box if set */}
-                    {newPostImage && (
-                      <div className="relative rounded-2xl overflow-hidden border border-[#D7E6D5] max-h-60 group">
-                        <img src={newPostImage} alt="Post attachment preview" className="w-full h-full object-cover" />
-                        <button
-                          onClick={() => setNewPostImage('')}
-                          className="absolute top-3 right-3 p-2 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold transition-transform hover:scale-110 cursor-pointer"
-                          title="Remove Image"
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                      {/* Category Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-[#1F5E3B]" />
+                        <select
+                          value={newPostCategory}
+                          onChange={(e) => setNewPostCategory(e.target.value)}
+                          className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B]"
                         >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-                        {/* Category Dropdown */}
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4 text-[#1F5E3B]" />
-                          <select
-                            value={newPostCategory}
-                            onChange={(e) => setNewPostCategory(e.target.value)}
-                            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B]"
-                          >
-                            <option value="Plantation Update">🌿 Plantation Update</option>
-                            <option value="Farming Tip">💡 Organic Tip</option>
-                            <option value="Question">❓ Farmer Question</option>
-                            <option value="Expert Advice">🎓 Expert Advice</option>
-                          </select>
-                        </div>
-
-                        {/* Image Upload Input */}
-                        <div className="flex items-center gap-2 flex-1">
-                          <input
-                            type="text"
-                            value={newPostImage}
-                            onChange={(e) => setNewPostImage(e.target.value)}
-                            placeholder="Paste image URL (optional)..."
-                            className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B]"
-                          />
-                          <input
-                            type="file"
-                            id="post-photo-upload-main"
-                            accept="image/*"
-                            onChange={handlePostFileChange}
-                            className="hidden"
-                          />
-                          <label
-                            htmlFor="post-photo-upload-main"
-                            className="cursor-pointer px-3.5 py-2 rounded-xl bg-[#DDEFD9] dark:bg-emerald-950/60 border border-[#5C8D4E]/40 text-[#1F5E3B] dark:text-emerald-300 text-xs font-extrabold hover:bg-[#1F5E3B] hover:text-white transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
-                          >
-                            <Camera className="w-4 h-4" />
-                            <span>Upload Image</span>
-                          </label>
-                        </div>
+                          <option value="Plantation Update">🌿 Plantation Update</option>
+                          <option value="Farming Tip">💡 Organic Tip</option>
+                          <option value="Question">❓ Farmer Question</option>
+                          <option value="Expert Advice">🎓 Expert Advice</option>
+                        </select>
                       </div>
 
-                      <button
-                        onClick={handleAddPost}
-                        className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#1F5E3B] to-[#17331F] hover:from-[#17331F] hover:to-[#0f2415] text-white text-sm font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer active:scale-95"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>Publish Post</span>
-                      </button>
+                      {/* Image Upload Input */}
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="text"
+                          value={newPostImage}
+                          onChange={(e) => setNewPostImage(e.target.value)}
+                          placeholder="Paste image URL (optional)..."
+                          className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B]"
+                        />
+                        <input
+                          type="file"
+                          id="post-photo-upload-main"
+                          accept="image/*"
+                          onChange={handlePostFileChange}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="post-photo-upload-main"
+                          className="cursor-pointer px-3.5 py-2 rounded-xl bg-[#DDEFD9] dark:bg-emerald-950/60 border border-[#5C8D4E]/40 text-[#1F5E3B] dark:text-emerald-300 text-xs font-extrabold hover:bg-[#1F5E3B] hover:text-white transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Upload Image</span>
+                        </label>
+                      </div>
                     </div>
 
-                    {postError && (
-                      <p className="text-xs text-red-600 font-bold flex items-center gap-1.5 pt-1">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{postError}</span>
-                      </p>
-                    )}
+                    <button
+                      onClick={handleAddPost}
+                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#1F5E3B] to-[#17331F] hover:from-[#17331F] hover:to-[#0f2415] text-white text-sm font-black transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer active:scale-95"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>Publish Post</span>
+                    </button>
                   </div>
 
-                  {/* Feed Posts List */}
-                  {feedPosts.filter((post) => {
-                    // Category Filter
+                  {postError && (
+                    <p className="text-xs text-red-600 font-bold flex items-center gap-1.5 pt-1">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{postError}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Feed Posts List */}
+                {feedPosts.filter((post) => {
+                  // Category Filter
+                  if (selectedCategoryFilter !== 'All') {
+                    const catMatch = (post.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim() ||
+                      (selectedCategoryFilter === 'Farming Tip' && (post.category || '').toLowerCase().includes('tip')) ||
+                      (selectedCategoryFilter === 'Question' && (post.category || '').toLowerCase().includes('question'));
+                    if (!catMatch) return false;
+                  }
+                  // Search Query Filter
+                  if (!communitySearchQuery.trim()) return true;
+                  const q = communitySearchQuery.toLowerCase().trim();
+                  return (
+                    (post.author && post.author.toLowerCase().includes(q)) ||
+                    (post.username && post.username.toLowerCase().includes(q)) ||
+                    (post.content && post.content.toLowerCase().includes(q)) ||
+                    (post.description && post.description.toLowerCase().includes(q)) ||
+                    (post.category && post.category.toLowerCase().includes(q))
+                  );
+                }).length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-12 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto text-2xl">
+                      🍃
+                    </div>
+                    <h4 className="text-lg font-black text-[#17331F] dark:text-slate-100">No community posts match your filter.</h4>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">Try clearing search filters or selecting another category above to view updates from other planters.</p>
+                    <button
+                      onClick={() => {
+                        setCommunitySearchQuery('');
+                        setSelectedCategoryFilter('All');
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-extrabold hover:bg-[#17331F] transition-colors cursor-pointer"
+                    >
+                      Reset All Filters
+                    </button>
+                  </div>
+                ) : (
+                  feedPosts.filter((post) => {
                     if (selectedCategoryFilter !== 'All') {
                       const catMatch = (post.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim() ||
                         (selectedCategoryFilter === 'Farming Tip' && (post.category || '').toLowerCase().includes('tip')) ||
                         (selectedCategoryFilter === 'Question' && (post.category || '').toLowerCase().includes('question'));
                       if (!catMatch) return false;
                     }
-                    // Search Query Filter
                     if (!communitySearchQuery.trim()) return true;
                     const q = communitySearchQuery.toLowerCase().trim();
                     return (
@@ -2151,974 +2181,978 @@ const Dashboard = () => {
                       (post.description && post.description.toLowerCase().includes(q)) ||
                       (post.category && post.category.toLowerCase().includes(q))
                     );
-                  }).length === 0 ? (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-12 text-center space-y-3">
-                      <div className="w-16 h-16 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto text-2xl">
-                        🍃
-                      </div>
-                      <h4 className="text-lg font-black text-[#17331F] dark:text-slate-100">No community posts match your filter.</h4>
-                      <p className="text-sm text-gray-500 max-w-md mx-auto">Try clearing search filters or selecting another category above to view updates from other planters.</p>
-                      <button
-                        onClick={() => {
-                          setCommunitySearchQuery('');
-                          setSelectedCategoryFilter('All');
-                        }}
-                        className="px-5 py-2.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-extrabold hover:bg-[#17331F] transition-colors cursor-pointer"
-                      >
-                        Reset All Filters
-                      </button>
-                    </div>
-                  ) : (
-                    feedPosts.filter((post) => {
-                      if (selectedCategoryFilter !== 'All') {
-                        const catMatch = (post.category || '').toLowerCase().trim() === selectedCategoryFilter.toLowerCase().trim() ||
-                          (selectedCategoryFilter === 'Farming Tip' && (post.category || '').toLowerCase().includes('tip')) ||
-                          (selectedCategoryFilter === 'Question' && (post.category || '').toLowerCase().includes('question'));
-                        if (!catMatch) return false;
-                      }
-                      if (!communitySearchQuery.trim()) return true;
-                      const q = communitySearchQuery.toLowerCase().trim();
-                      return (
-                        (post.author && post.author.toLowerCase().includes(q)) ||
-                        (post.username && post.username.toLowerCase().includes(q)) ||
-                        (post.content && post.content.toLowerCase().includes(q)) ||
-                        (post.description && post.description.toLowerCase().includes(q)) ||
-                        (post.category && post.category.toLowerCase().includes(q))
-                      );
-                    }).map((post) => (
-                      <div key={post.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 sm:p-7 shadow-md space-y-4 hover:shadow-lg transition-all">
-                        {/* Author Header Row */}
-                        <div className="flex items-center justify-between gap-4">
-                          <div
-                            onClick={() => setSelectedPublicUser(post)}
-                            className="flex items-center gap-3.5 cursor-pointer group"
-                            title="Click to view planter profile"
-                          >
-                            <img
-                              src={post.avatar}
-                              alt=""
-                              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform shadow-xs flex-shrink-0"
-                            />
-                            <div>
-                              <h4 className="text-sm sm:text-base font-extrabold text-[#17331F] dark:text-slate-100 group-hover:text-[#1F5E3B] flex items-center gap-2">
-                                <span>{post.author}</span>
-                                <CheckCircle className="w-4 h-4 text-[#1F5E3B]" />
-                              </h4>
-                              <p className="text-xs text-[#5C8D4E] font-semibold flex items-center gap-2 mt-0.5">
-                                <span>@{post.username || 'planter'}</span>
-                                <span>•</span>
-                                <span className="text-gray-400 font-normal">{post.time}</span>
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3.5 py-1 rounded-full text-xs font-black tracking-wide border ${post.category === 'Expert Advice'
-                              ? 'bg-purple-100 text-purple-800 border-purple-300'
-                              : post.category === 'Farming Tip'
-                                ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                : post.category === 'Question'
-                                  ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                  : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
-                              }`}>
-                              {post.category}
-                            </span>
-
-                            {((user?.role || '').toLowerCase() === 'admin' || user?.username === post.username || user?.fullName === post.author) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePost(post.id);
-                                }}
-                                className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                                title="Delete Post (Admin / Owner)"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            )}
+                  }).map((post) => (
+                    <div key={post.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 sm:p-7 shadow-md space-y-4 hover:shadow-lg transition-all">
+                      {/* Author Header Row */}
+                      <div className="flex items-center justify-between gap-4">
+                        <div
+                          onClick={() => setSelectedPublicUser(post)}
+                          className="flex items-center gap-3.5 cursor-pointer group"
+                          title="Click to view planter profile"
+                        >
+                          <img
+                            src={post.avatar}
+                            alt=""
+                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-[#1F5E3B] group-hover:scale-105 transition-transform shadow-xs flex-shrink-0"
+                          />
+                          <div>
+                            <h4 className="text-sm sm:text-base font-extrabold text-[#17331F] dark:text-slate-100 group-hover:text-[#1F5E3B] flex items-center gap-2">
+                              <span>{post.author}</span>
+                              <CheckCircle className="w-4 h-4 text-[#1F5E3B]" />
+                            </h4>
+                            <p className="text-xs text-[#5C8D4E] font-semibold flex items-center gap-2 mt-0.5">
+                              <span>@{post.username || 'planter'}</span>
+                              <span>•</span>
+                              <span className="text-gray-400 font-normal">{post.time}</span>
+                            </p>
                           </div>
                         </div>
 
-                        {/* Post Description Body Text */}
-                        <p className="text-sm sm:text-base text-[#17331F] dark:text-slate-200 leading-relaxed font-medium whitespace-pre-line">
-                          {post.description || post.content}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-3.5 py-1 rounded-full text-xs font-black tracking-wide border ${post.category === 'Expert Advice'
+                            ? 'bg-purple-100 text-purple-800 border-purple-300'
+                            : post.category === 'Farming Tip'
+                              ? 'bg-amber-100 text-amber-800 border-amber-300'
+                              : post.category === 'Question'
+                                ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                : 'bg-[#DDEFD9] text-[#1F5E3B] border-[#5C8D4E]/30'
+                            }`}>
+                            {post.category}
+                          </span>
 
-                        {/* Attached Image Preview */}
-                        {post.image && (
-                          <div className="rounded-2xl overflow-hidden border border-[#D7E6D5] dark:border-slate-800 max-h-96 w-full shadow-xs">
-                            <img src={post.image} alt="Post media asset" className="w-full h-full object-cover hover:scale-101 transition-transform duration-300" />
-                          </div>
-                        )}
-
-                        {/* Interaction Bar: Heart, Comment, Share */}
-                        <div className="flex items-center justify-between pt-4 border-t border-[#D7E6D5]/70 dark:border-slate-800 text-xs sm:text-sm font-extrabold">
-                          <div className="flex items-center gap-2 sm:gap-4">
+                          {((user?.role || '').toLowerCase() === 'admin' || user?.username === post.username || user?.fullName === post.author) && (
                             <button
-                              onClick={() => handleLikePost(post.id)}
-                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${post.liked
-                                ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200'
-                                : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-transparent'
-                                }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePost(post.id);
+                              }}
+                              className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                              title="Delete Post (Admin / Owner)"
                             >
-                              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.liked ? 'fill-red-500 text-red-500' : ''}`} />
-                              <span>{post.likes} Likes</span>
+                              <Trash2 size={18} />
                             </button>
+                          )}
+                        </div>
+                      </div>
 
-                            <button
-                              onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)}
-                              className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${activeCommentPostId === post.id
-                                ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30'
-                                : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-[#DDEFD9] hover:text-[#1F5E3B] border border-transparent'
-                                }`}
-                            >
-                              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-[#1F5E3B]" />
-                              <span>{post.comments} Comments</span>
-                            </button>
-                          </div>
+                      {/* Post Description Body Text */}
+                      <p className="text-sm sm:text-base text-[#17331F] dark:text-slate-200 leading-relaxed font-medium whitespace-pre-line">
+                        {post.description || post.content}
+                      </p>
+
+                      {/* Attached Image Preview */}
+                      {post.image && (
+                        <div className="rounded-2xl overflow-hidden border border-[#D7E6D5] dark:border-slate-800 max-h-96 w-full shadow-xs">
+                          <img src={post.image} alt="Post media asset" className="w-full h-full object-cover hover:scale-101 transition-transform duration-300" />
+                        </div>
+                      )}
+
+                      {/* Interaction Bar: Heart, Comment, Share */}
+                      <div className="flex items-center justify-between pt-4 border-t border-[#D7E6D5]/70 dark:border-slate-800 text-xs sm:text-sm font-extrabold">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          <button
+                            onClick={() => handleLikePost(post.id)}
+                            className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${post.liked
+                              ? 'bg-red-50 dark:bg-red-950/50 text-red-600 border border-red-200'
+                              : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-transparent'
+                              }`}
+                          >
+                            <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${post.liked ? 'fill-red-500 text-red-500' : ''}`} />
+                            <span>{post.likes} Likes</span>
+                          </button>
 
                           <button
-                            onClick={() => showToast('Post link copied to clipboard!')}
-                            className="px-4 py-2 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:text-[#1F5E3B] hover:bg-[#DDEFD9] transition-all flex items-center gap-2 border border-transparent cursor-pointer"
+                            onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : post.id)}
+                            className={`px-4 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer ${activeCommentPostId === post.id
+                              ? 'bg-[#DDEFD9] dark:bg-emerald-950/50 text-[#1F5E3B] dark:text-emerald-300 border border-[#5C8D4E]/30'
+                              : 'bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:bg-[#DDEFD9] hover:text-[#1F5E3B] border border-transparent'
+                              }`}
                           >
-                            <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                            <span className="hidden sm:inline">Share</span>
+                            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-[#1F5E3B]" />
+                            <span>{post.comments} Comments</span>
                           </button>
                         </div>
 
-                        {/* Interactive Comment Input & Threaded Comments Drawer */}
-                        {activeCommentPostId === post.id && (
-                          <div className="mt-4 pt-4 border-t border-[#D7E6D5] dark:border-slate-800 space-y-4">
-                            {/* Comment Input Box */}
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={commentInputText}
-                                onChange={(e) => setCommentInputText(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post.id); }}
-                                placeholder="Add a comment to this discussion..."
-                                className="flex-1 px-4 py-3 rounded-2xl text-xs sm:text-sm border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20"
-                              />
-                              <button
-                                onClick={() => handleAddComment(post.id)}
-                                className="px-5 py-3 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs sm:text-sm font-black transition-colors shadow-sm cursor-pointer"
-                              >
-                                Comment
-                              </button>
-                            </div>
+                        <button
+                          onClick={() => showToast('Post link copied to clipboard!')}
+                          className="px-4 py-2 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 text-gray-600 hover:text-[#1F5E3B] hover:bg-[#DDEFD9] transition-all flex items-center gap-2 border border-transparent cursor-pointer"
+                        >
+                          <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span className="hidden sm:inline">Share</span>
+                        </button>
+                      </div>
 
-                            {/* Comments List Thread */}
-                            {commentsMap[post.id] && commentsMap[post.id].length > 0 && (
-                              <div className="space-y-3 pt-2">
-                                {commentsMap[post.id].map((c) => {
-                                  const currentUserName = user?.fullName || user?.name || user?.username || '';
-                                  const isPostAuthor = currentUserName.toLowerCase().trim() === (post.author || post.username || '').toLowerCase().trim();
-                                  return (
-                                    <div key={c.id} className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 space-y-2">
-                                      <div className="flex justify-between items-start">
-                                        <div className="flex gap-3 items-start flex-1">
-                                          <img src={c.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0 mt-0.5" />
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="font-extrabold text-[#17331F] dark:text-slate-100 text-xs sm:text-sm">{c.author}</span>
-                                              {c.author === post.author && (
-                                                <span className="px-2 py-0.5 rounded bg-[#1F5E3B] text-white text-[10px] font-black tracking-wide uppercase">
-                                                  POST OWNER
-                                                </span>
-                                              )}
-                                              <span className="text-xs text-gray-400 font-normal">{c.time}</span>
-                                            </div>
+                      {/* Interactive Comment Input & Threaded Comments Drawer */}
+                      {activeCommentPostId === post.id && (
+                        <div className="mt-4 pt-4 border-t border-[#D7E6D5] dark:border-slate-800 space-y-4">
+                          {/* Comment Input Box */}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={commentInputText}
+                              onChange={(e) => setCommentInputText(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post.id); }}
+                              placeholder="Add a comment to this discussion..."
+                              className="flex-1 px-4 py-3 rounded-2xl text-xs sm:text-sm border border-[#D7E6D5] dark:border-slate-700 bg-[#F8FAF7] dark:bg-slate-800 text-[#17331F] dark:text-slate-100 focus:outline-none focus:border-[#1F5E3B] focus:ring-2 focus:ring-[#1F5E3B]/20"
+                            />
+                            <button
+                              onClick={() => handleAddComment(post.id)}
+                              className="px-5 py-3 rounded-2xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs sm:text-sm font-black transition-colors shadow-sm cursor-pointer"
+                            >
+                              Comment
+                            </button>
+                          </div>
 
-                                            {editingCommentId === c.id ? (
-                                              <div className="flex items-center gap-2 mt-2">
-                                                <input
-                                                  type="text"
-                                                  value={editingCommentText}
-                                                  onChange={(e) => setEditingCommentText(e.target.value)}
-                                                  className="flex-1 px-3 py-1.5 rounded-xl border border-[#1F5E3B] text-xs sm:text-sm bg-white dark:bg-slate-900 focus:outline-none"
-                                                />
-                                                <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-3 py-1.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-bold hover:bg-[#17331F] cursor-pointer">
-                                                  Save
-                                                </button>
-                                                <button onClick={() => setEditingCommentId(null)} className="px-3 py-1.5 rounded-xl bg-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-300 cursor-pointer">
-                                                  Cancel
-                                                </button>
-                                              </div>
-                                            ) : (
-                                              <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-300 mt-1 font-medium leading-relaxed">{c.text}</p>
+                          {/* Comments List Thread */}
+                          {commentsMap[post.id] && commentsMap[post.id].length > 0 && (
+                            <div className="space-y-3 pt-2">
+                              {commentsMap[post.id].map((c) => {
+                                const currentUserName = user?.fullName || user?.name || user?.username || '';
+                                const isPostAuthor = currentUserName.toLowerCase().trim() === (post.author || post.username || '').toLowerCase().trim();
+                                return (
+                                  <div key={c.id} className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 border border-[#D7E6D5] dark:border-slate-700 space-y-2">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex gap-3 items-start flex-1">
+                                        <img src={c.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-[#1F5E3B] flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-extrabold text-[#17331F] dark:text-slate-100 text-xs sm:text-sm">{c.author}</span>
+                                            {c.author === post.author && (
+                                              <span className="px-2 py-0.5 rounded bg-[#1F5E3B] text-white text-[10px] font-black tracking-wide uppercase">
+                                                POST OWNER
+                                              </span>
                                             )}
+                                            <span className="text-xs text-gray-400 font-normal">{c.time}</span>
                                           </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            onClick={() => {
-                                              setActiveReplyCommentId(activeReplyCommentId === c.id ? null : c.id);
-                                              setReplyInputText('');
-                                            }}
-                                            className="text-xs font-extrabold text-[#1F5E3B] hover:bg-[#DDEFD9] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                                          >
-                                            <CornerDownRight className="w-3.5 h-3.5" />
-                                            <span>Reply</span>
-                                          </button>
-
-                                          {editingCommentId !== c.id && (
-                                            <button
-                                              onClick={() => {
-                                                setEditingCommentId(c.id);
-                                                setEditingCommentText(c.text);
-                                              }}
-                                              className="text-xs font-bold text-gray-400 hover:text-[#1F5E3B] px-1 py-1 cursor-pointer"
-                                            >
-                                              <Edit className="w-3.5 h-3.5" />
-                                            </button>
+                                          {editingCommentId === c.id ? (
+                                            <div className="flex items-center gap-2 mt-2">
+                                              <input
+                                                type="text"
+                                                value={editingCommentText}
+                                                onChange={(e) => setEditingCommentText(e.target.value)}
+                                                className="flex-1 px-3 py-1.5 rounded-xl border border-[#1F5E3B] text-xs sm:text-sm bg-white dark:bg-slate-900 focus:outline-none"
+                                              />
+                                              <button onClick={() => handleSaveEditComment(post.id, c.id)} className="px-3 py-1.5 rounded-xl bg-[#1F5E3B] text-white text-xs font-bold hover:bg-[#17331F] cursor-pointer">
+                                                Save
+                                              </button>
+                                              <button onClick={() => setEditingCommentId(null)} className="px-3 py-1.5 rounded-xl bg-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-300 cursor-pointer">
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-300 mt-1 font-medium leading-relaxed">{c.text}</p>
                                           )}
                                         </div>
                                       </div>
 
-                                      {/* Inline Reply Input */}
-                                      {activeReplyCommentId === c.id && (
-                                        <div className="mt-3 pl-8 flex gap-2 items-center">
-                                          <input
-                                            type="text"
-                                            value={replyInputText}
-                                            onChange={(e) => setReplyInputText(e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(post.id, c.id); }}
-                                            placeholder={isPostAuthor ? "Reply as Post Owner..." : `Replying to @${c.author}...`}
-                                            className="flex-1 px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[#1F5E3B] bg-white dark:bg-slate-900 focus:outline-none"
-                                            autoFocus
-                                          />
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setActiveReplyCommentId(activeReplyCommentId === c.id ? null : c.id);
+                                            setReplyInputText('');
+                                          }}
+                                          className="text-xs font-extrabold text-[#1F5E3B] hover:bg-[#DDEFD9] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <CornerDownRight className="w-3.5 h-3.5" />
+                                          <span>Reply</span>
+                                        </button>
+
+                                        {editingCommentId !== c.id && (
                                           <button
-                                            onClick={() => handleSendReply(post.id, c.id)}
-                                            className="px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs font-extrabold transition-colors whitespace-nowrap cursor-pointer"
+                                            onClick={() => {
+                                              setEditingCommentId(c.id);
+                                              setEditingCommentText(c.text);
+                                            }}
+                                            className="text-xs font-bold text-gray-400 hover:text-[#1F5E3B] px-1 py-1 cursor-pointer"
                                           >
-                                            Send Reply
+                                            <Edit className="w-3.5 h-3.5" />
                                           </button>
-                                        </div>
-                                      )}
-
-                                      {/* Nested Replies List */}
-                                      {c.replies && c.replies.length > 0 && (
-                                        <div className="pl-8 space-y-2 mt-3 pt-3 border-t border-[#D7E6D5]/60 dark:border-slate-700">
-                                          {c.replies.map((r) => (
-                                            <div key={r.id} className="p-3 rounded-xl bg-[#EAF3E8] dark:bg-slate-800 border-l-4 border-[#1F5E3B] text-xs sm:text-sm flex items-start gap-3">
-                                              <img src={r.avatar} alt="" className="w-7 h-7 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
-                                              <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                  <span className="font-extrabold text-[#17331F] dark:text-slate-100">{r.author}</span>
-                                                  {(r.isPostOwner || r.author === post.author) && (
-                                                    <span className="px-2 py-0.5 rounded bg-[#C9A227] text-white text-[9px] font-black uppercase tracking-wider">
-                                                      👑 POST OWNER REPLY
-                                                    </span>
-                                                  )}
-                                                  <span className="text-[10px] text-[#5C8D4E] font-medium ml-auto">{r.time}</span>
-                                                </div>
-                                                <p className="text-[#334155] dark:text-slate-300 text-xs sm:text-sm mt-1 font-medium">{r.text}</p>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
+                                        )}
+                                      </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
 
-                {/* RIGHT SIDEBAR COLUMN (col-span-4) */}
-                <div className="lg:col-span-4 space-y-6">
-                  {/* Cardora Community Pulse Widget */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
-                    <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-[#1F5E3B]" />
-                      <span>Community Pulse Metrics</span>
-                    </h3>
+                                    {/* Inline Reply Input */}
+                                    {activeReplyCommentId === c.id && (
+                                      <div className="mt-3 pl-8 flex gap-2 items-center">
+                                        <input
+                                          type="text"
+                                          value={replyInputText}
+                                          onChange={(e) => setReplyInputText(e.target.value)}
+                                          onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(post.id, c.id); }}
+                                          placeholder={isPostAuthor ? "Reply as Post Owner..." : `Replying to @${c.author}...`}
+                                          className="flex-1 px-3.5 py-2 rounded-xl text-xs sm:text-sm border border-[#1F5E3B] bg-white dark:bg-slate-900 focus:outline-none"
+                                          autoFocus
+                                        />
+                                        <button
+                                          onClick={() => handleSendReply(post.id, c.id)}
+                                          className="px-4 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white text-xs font-extrabold transition-colors whitespace-nowrap cursor-pointer"
+                                        >
+                                          Send Reply
+                                        </button>
+                                      </div>
+                                    )}
 
-                    <div className="grid grid-cols-2 gap-3 pt-1">
-                      <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-center">
-                        <div className="w-10 h-10 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto mb-2">
-                          <Users className="w-5 h-5" />
-                        </div>
-                        <p className="text-xl font-black text-[#17331F] dark:text-slate-100">1,420</p>
-                        <p className="text-xs text-gray-500 font-bold">Active Planters</p>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-center">
-                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-[#1F5E3B] flex items-center justify-center mx-auto mb-2">
-                          <MessageSquare className="w-5 h-5" />
-                        </div>
-                        <p className="text-xl font-black text-[#17331F] dark:text-slate-100">{feedPosts.length}</p>
-                        <p className="text-xs text-gray-500 font-bold">Live Feed Updates</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1F5E3B] to-[#17331F] text-white space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">Top Cardamom Hubs</span>
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <p className="text-xs text-emerald-100 font-medium">
-                        Idukki • Vandanmedu • Kattappana • Kumily • Munnar
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Trending Spice Topics Widget */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
-                    <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-[#1F5E3B]" />
-                      <span>Trending Spice Topics</span>
-                    </h3>
-
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {[
-                        { tag: '#Njallani777', count: '142 posts' },
-                        { tag: '#OrganicNeemCake', count: '89 posts' },
-                        { tag: '#MonsoonCare', count: '64 posts' },
-                        { tag: '#CardamomAuctions', count: '110 posts' },
-                        { tag: '#CapsuleGrade8mm', count: '75 posts' },
-                        { tag: '#DripFertigation', count: '53 posts' },
-                      ].map((item) => (
-                        <button
-                          key={item.tag}
-                          onClick={() => {
-                            setCommunitySearchQuery(item.tag.replace('#', ''));
-                            showToast(`Filtered feed by topic: ${item.tag}`);
-                          }}
-                          className="px-3.5 py-2 rounded-xl bg-[#F8FAF7] dark:bg-slate-800 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <span className="text-[#1F5E3B] font-black">{item.tag}</span>
-                          <span className="text-[10px] text-gray-400 font-normal">({item.count})</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Featured Cardamom Experts & Planters */}
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
-                        <Award className="w-5 h-5 text-[#1F5E3B]" />
-                        <span>Featured Planters</span>
-                      </h3>
-                      <span className="text-xs text-[#5C8D4E] font-bold">Verified</span>
-                    </div>
-
-                    <div className="space-y-3 pt-1">
-                      {[
-                        {
-                          name: 'Rajesh Nair',
-                          username: 'rajesh_nair',
-                          role: 'High Altitude Planter',
-                          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-                          location: 'Kattappana, Idukki',
-                        },
-                        {
-                          name: 'Dr. Suresh Kumar',
-                          username: 'suresh_agro',
-                          role: 'Agronomy Specialist',
-                          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-                          location: 'Spices Board Advisory',
-                        },
-                        {
-                          name: 'Ananya Ramesh',
-                          username: 'ananya_planter',
-                          role: 'Organic Spice Grower',
-                          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-                          location: 'Munnar Estate',
-                        },
-                      ].map((planter) => (
-                        <div
-                          key={planter.username}
-                          onClick={() => setSelectedPublicUser({
-                            author: planter.name,
-                            username: planter.username,
-                            avatar: planter.avatar,
-                            role: planter.role,
-                            location: planter.location,
-                          })}
-                          className="p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all"
-                        >
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <img src={planter.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B] flex-shrink-0" />
-                            <div className="overflow-hidden">
-                              <h4 className="text-xs sm:text-sm font-extrabold text-[#17331F] dark:text-slate-100 truncate group-hover:text-[#1F5E3B]">
-                                {planter.name}
-                              </h4>
-                              <p className="text-[11px] text-gray-500 font-medium truncate">{planter.role}</p>
+                                    {/* Nested Replies List */}
+                                    {c.replies && c.replies.length > 0 && (
+                                      <div className="pl-8 space-y-2 mt-3 pt-3 border-t border-[#D7E6D5]/60 dark:border-slate-700">
+                                        {c.replies.map((r) => (
+                                          <div key={r.id} className="p-3 rounded-xl bg-[#EAF3E8] dark:bg-slate-800 border-l-4 border-[#1F5E3B] text-xs sm:text-sm flex items-start gap-3">
+                                            <img src={r.avatar} alt="" className="w-7 h-7 rounded-full object-cover mt-0.5 border border-[#1F5E3B]" />
+                                            <div className="flex-1">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-extrabold text-[#17331F] dark:text-slate-100">{r.author}</span>
+                                                {(r.isPostOwner || r.author === post.author) && (
+                                                  <span className="px-2 py-0.5 rounded bg-[#C9A227] text-white text-[9px] font-black uppercase tracking-wider">
+                                                    👑 POST OWNER REPLY
+                                                  </span>
+                                                )}
+                                                <span className="text-[10px] text-[#5C8D4E] font-medium ml-auto">{r.time}</span>
+                                              </div>
+                                              <p className="text-[#334155] dark:text-slate-300 text-xs sm:text-sm mt-1 font-medium">{r.text}</p>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </div>
-                          <button className="px-3 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0 cursor-pointer">
-                            Profile
-                          </button>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* ===== TAB 5: FUTURISTIC CARDAMOM MARKETPLACE ===== */}
-          {activeTab === 'plots' && <CardamomMarketplace />}
-
-          {/* ===== TAB: LIVE PLANTATION INTELLIGENCE & AI RECOMMENDATIONS ===== */}
-          {(activeTab === 'intelligence' || activeTab === 'ai') && <LivePlantationIntelligenceModule onToast={showToast} />}
-
-
-
-          {/* ===== TAB: ADMIN PORTAL ===== */}
-          {activeTab === 'admin' && <AdminDashboard />}
-
-          {/* ===== TAB 6: PROFILE ===== */}
-          {activeTab === 'profile' && (
-            <div className="space-y-6 w-full">
-              <Card className="p-6">
-                <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
-                  <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" />
-                  <div>
-                    <h3 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
-                      {user?.fullName || user?.username || 'Planter'}
-                      <CheckCircle className="w-5 h-5 text-[#1F5E3B]" />
-                    </h3>
-                    <p className="text-xs text-[#5C8D4E] font-bold mt-0.5">{user?.district || user?.location || 'Idukki, Kerala'} • Planter</p>
-                    <p className="text-xs text-[#4A5568] mt-2 leading-relaxed">{user?.bio || 'Cardamom cultivator with high-altitude plantation records.'}</p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-[#D7E6D5] flex gap-3">
-                  <Button variant="primary" size="sm" icon={Edit} onClick={() => {
-                    setProfileForm({
-                      fullName: user?.fullName || user?.name || '',
-                      phone: user?.phone || '',
-                      district: user?.district || user?.location || 'Idukki, Kerala',
-                      location: user?.location || user?.district || 'Idukki, Kerala',
-                      bio: user?.bio || '',
-                      avatar: user?.avatar || user?.profileImage || '',
-                      role: user?.role || 'Farmer',
-                    });
-                    setPhotoUrlInput(user?.avatar || user?.profileImage || '');
-                    setProfileEditOpen(true);
-                  }}>
-                    Edit Profile Details
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* ===== TAB 7: SETTINGS ===== */}
-          {activeTab === 'settings' && (
-            <div className="space-y-6 w-full">
-              <div>
-                <h2 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-[#1F5E3B]" />
-                  Account Settings & Preferences
-                </h2>
-                <p className="text-xs text-[#4A5568] font-medium">Manage your profile photo, username, role, security credentials, and app preferences.</p>
-              </div>
-
-              {/* SECTION 1: PROFILE PHOTO UPLOAD */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
-                  <Camera className="w-5 h-5 text-[#1F5E3B]" />
-                  <h3 className="text-base font-extrabold text-[#17331F]">Profile Photo Management</h3>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-6">
-                  <div className="relative group">
-                    <img
-                      src={photoUrlInput || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
-                      alt="Avatar preview"
-                      className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md"
-                    />
-                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold pointer-events-none">
-                      Preview
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleUpdatePhoto} className="flex-1 w-full space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Profile Photo Upload & URL</label>
-                      <div className="flex flex-col sm:flex-row items-center gap-2">
-                        <input
-                          type="text"
-                          value={photoUrlInput}
-                          onChange={(e) => setPhotoUrlInput(e.target.value)}
-                          placeholder="Paste image URL or select a file..."
-                          className="flex-1 w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                        />
-                        <input
-                          type="file"
-                          id="profile-photo-upload"
-                          accept="image/*"
-                          onChange={handleProfileFileChange}
-                          className="hidden"
-                        />
-                        <label
-                          htmlFor="profile-photo-upload"
-                          className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-black hover:bg-[#5C8D4E] hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
-                        >
-                          <Upload className="w-4 h-4" />
-                          <span>Choose File</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <span className="text-[11px] font-bold text-[#4A5568] self-center">Presets:</span>
-                      {[
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-                        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-                        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300'
-                      ].map((presetUrl, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={async () => {
-                            setPhotoUrlInput(presetUrl);
-                            setProfileForm((prev) => ({ ...prev, avatar: presetUrl }));
-                            await updateProfile({ avatar: presetUrl, profileImage: presetUrl, profilePhoto: presetUrl, hasCustomPhoto: true });
-                          }}
-                          className="px-2.5 py-1 rounded-full bg-[#F8FAF7] border border-[#D7E6D5] text-[10px] font-bold text-[#1F5E3B] hover:bg-[#DDEFD9]"
-                        >
-                          Avatar {idx + 1}
-                        </button>
-                      ))}
-                    </div>
-
-                    <Button type="submit" variant="primary" size="sm" icon={Upload}>
-                      Save Profile Photo to MongoDB
-                    </Button>
-                  </form>
-                </div>
-              </div>
-
-              {/* SECTION 2: EDIT PROFILE & ROLE DETAILS */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
-                  <User className="w-5 h-5 text-[#1F5E3B]" />
-                  <h3 className="text-base font-extrabold text-[#17331F]">Profile & Account Details</h3>
-                </div>
-
-                <form onSubmit={handleSaveProfile} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Full Name *</label>
-                      <input
-                        type="text"
-                        value={profileForm.fullName}
-                        onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Username (@handle)</label>
-                      <input
-                        type="text"
-                        value={profileForm.username}
-                        onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-                        placeholder="e.g. suresh_planter"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Account Role</label>
-                      <select
-                        value={profileForm.role}
-                        onChange={(e) => setProfileForm({ ...profileForm, role: e.target.value })}
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] bg-white focus:outline-none focus:border-[#1F5E3B] font-bold"
-                      >
-                        <option value="Farmer">Farmer / Cardamom Cultivator</option>
-                        <option value="Supervisor">Plantation Supervisor</option>
-                        <option value="Expert">Agronomist / Specialist</option>
-                        <option value="Labor Contractor">Labor Contractor</option>
-                        <option value="Buyer">Cardamom Buyer / Trader</option>
-                        <option value="Investor">Plantation Investor</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">District / Place *</label>
-                      <select
-                        value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === 'Other') {
-                            setProfileForm({ ...profileForm, district: 'Other', location: 'Other' });
-                          } else {
-                            setProfileForm({ ...profileForm, district: val, location: val });
-                          }
-                        }}
-                        className="w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B] cursor-pointer"
-                      >
-                        {KERALA_DISTRICTS.map((dist) => (
-                          <option key={dist} value={dist}>{dist}</option>
-                        ))}
-                      </select>
-                      {(profileForm.district === 'Other' || (!KERALA_DISTRICTS.includes(profileForm.district) && profileForm.district !== 'Idukki, Kerala')) && (
-                        <input
-                          type="text"
-                          placeholder="Type your specific district or location"
-                          value={profileForm.district === 'Other' ? '' : profileForm.district}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setProfileForm({ ...profileForm, district: val || 'Other', location: val || 'Other' });
-                          }}
-                          className="w-full mt-2 p-2.5 rounded-xl text-xs bg-white border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
-                        />
                       )}
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Mobile Phone Number</label>
-                      <input
-                        type="text"
-                        value={profileForm.phone}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                        placeholder="+91 94470 12345"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Cover Photo URL</label>
-                      <input
-                        type="text"
-                        value={profileForm.coverImage}
-                        onChange={(e) => setProfileForm({ ...profileForm, coverImage: e.target.value })}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">Personal Bio</label>
-                    <textarea
-                      rows="2"
-                      value={profileForm.bio}
-                      onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-                      placeholder="Brief description about your plantation background..."
-                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] resize-none focus:outline-none focus:border-[#1F5E3B]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#D7E6D5]">
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Cultivation Experience</label>
-                      <input
-                        type="text"
-                        value={profileForm.experience}
-                        onChange={(e) => setProfileForm({ ...profileForm, experience: e.target.value })}
-                        placeholder="e.g. 12 Years Cardamom & Spice Cultivation"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Skills & Techniques (comma separated)</label>
-                      <input
-                        type="text"
-                        value={profileForm.skills}
-                        onChange={(e) => setProfileForm({ ...profileForm, skills: e.target.value })}
-                        placeholder="Organic Farming, Drip Irrigation, Azhukal Prevention"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Certifications (comma separated)</label>
-                      <input
-                        type="text"
-                        value={profileForm.certifications}
-                        onChange={(e) => setProfileForm({ ...profileForm, certifications: e.target.value })}
-                        placeholder="Spices Board India Certified, Organic Specialist"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Education / Qualifications</label>
-                      <input
-                        type="text"
-                        value={profileForm.education}
-                        onChange={(e) => setProfileForm({ ...profileForm, education: e.target.value })}
-                        placeholder="e.g. B.Sc. Agriculture / Horticulture"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-bold text-[#17331F] mb-1">Organization / Society</label>
-                      <input
-                        type="text"
-                        value={profileForm.organization}
-                        onChange={(e) => setProfileForm({ ...profileForm, organization: e.target.value })}
-                        placeholder="e.g. Cardamom Growers Association, Idukki"
-                        className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
-                      />
-                    </div>
-                  </div>
-
-                  <Button type="submit" variant="primary" size="sm">
-                    Save Profile Details to MongoDB Atlas
-                  </Button>
-                </form>
+                  ))
+                )}
               </div>
 
-              {/* SECTION 3: CHANGE PASSWORD */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
-                  <Lock className="w-5 h-5 text-[#1F5E3B]" />
-                  <h3 className="text-base font-extrabold text-[#17331F]">Security & Change Password</h3>
-                </div>
+              {/* RIGHT SIDEBAR COLUMN (col-span-4) */}
+              <div className="lg:col-span-4 space-y-6">
+                {/* Cardora Community Pulse Widget */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                  <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-[#1F5E3B]" />
+                    <span>Community Pulse Metrics</span>
+                  </h3>
 
-                <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">Current Password *</label>
-                    <input
-                      type="password"
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                      placeholder="••••••••"
-                      className={`w-full p-2.5 rounded-xl text-xs border ${passwordErrors.currentPassword ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                    />
-                    {passwordErrors.currentPassword && (
-                      <p className="text-[11px] font-bold text-red-600 mt-1">{passwordErrors.currentPassword}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">New Password *</label>
-                    <input
-                      type="password"
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                      placeholder="••••••••"
-                      className={`w-full p-2.5 rounded-xl text-xs border ${passwordErrors.newPassword ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                    />
-                    {passwordErrors.newPassword && (
-                      <p className="text-[11px] font-bold text-red-600 mt-1">{passwordErrors.newPassword}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#17331F] mb-1">Confirm New Password *</label>
-                    <input
-                      type="password"
-                      value={passwordForm.confirmNewPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmNewPassword: e.target.value })}
-                      placeholder="••••••••"
-                      className={`w-full p-2.5 rounded-xl text-xs border ${passwordErrors.confirmNewPassword ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                    />
-                    {passwordErrors.confirmNewPassword && (
-                      <p className="text-[11px] font-bold text-red-600 mt-1">{passwordErrors.confirmNewPassword}</p>
-                    )}
-                  </div>
-
-                  <Button type="submit" variant="primary" size="sm" icon={Key}>
-                    Update Password
-                  </Button>
-                </form>
-              </div>
-
-              {/* SECTION 4: PREFERENCES & TOGGLES */}
-              <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
-                  <Bell className="w-5 h-5 text-[#1F5E3B]" />
-                  <h3 className="text-base font-extrabold text-[#17331F]">App Preferences & Customization</h3>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                    <div>
-                      <p className="text-xs font-extrabold text-[#17331F]">Interface Language</p>
-                      <p className="text-[11px] text-[#4A5568]">Switch between English and Malayalam (മലയാളം)</p>
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-center">
+                      <div className="w-10 h-10 rounded-full bg-[#DDEFD9] text-[#1F5E3B] flex items-center justify-center mx-auto mb-2">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <p className="text-xl font-black text-[#17331F] dark:text-slate-100">1,420</p>
+                      <p className="text-xs text-gray-500 font-bold">Active Planters</p>
                     </div>
-                    <button
-                      onClick={toggleLang}
-                      className="px-3.5 py-1.5 rounded-full bg-[#1F5E3B] text-white font-extrabold text-xs"
-                    >
-                      {lang === 'en' ? 'English (EN)' : 'മലയാളം (ML)'}
-                    </button>
+
+                    <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-[#1F5E3B] flex items-center justify-center mx-auto mb-2">
+                        <MessageSquare className="w-5 h-5" />
+                      </div>
+                      <p className="text-xl font-black text-[#17331F] dark:text-slate-100">{feedPosts.length}</p>
+                      <p className="text-xs text-gray-500 font-bold">Live Feed Updates</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
-                    <div>
-                      <p className="text-xs font-extrabold text-[#17331F]">Dark Theme Mode</p>
-                      <p className="text-[11px] text-[#4A5568]">Toggle high-contrast dark green display theme</p>
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1F5E3B] to-[#17331F] text-white space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">Top Cardamom Hubs</span>
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     </div>
-                    <button
-                      onClick={() => setDarkMode(!darkMode)}
-                      className={`px-3.5 py-1.5 rounded-full font-extrabold text-xs transition-colors ${darkMode ? 'bg-amber-500 text-white' : 'bg-emerald-800 text-white'}`}
-                    >
-                      {darkMode ? '🌙 Dark Active' : '☀️ Light Active'}
-                    </button>
+                    <p className="text-xs text-emerald-100 font-medium">
+                      Idukki • Vandanmedu • Kattappana • Kumily • Munnar
+                    </p>
                   </div>
                 </div>
+
+                {/* Trending Spice Topics Widget */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                  <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#1F5E3B]" />
+                    <span>Trending Spice Topics</span>
+                  </h3>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {[
+                      { tag: '#Njallani777', count: '142 posts' },
+                      { tag: '#OrganicNeemCake', count: '89 posts' },
+                      { tag: '#MonsoonCare', count: '64 posts' },
+                      { tag: '#CardamomAuctions', count: '110 posts' },
+                      { tag: '#CapsuleGrade8mm', count: '75 posts' },
+                      { tag: '#DripFertigation', count: '53 posts' },
+                    ].map((item) => (
+                      <button
+                        key={item.tag}
+                        onClick={() => {
+                          setCommunitySearchQuery(item.tag.replace('#', ''));
+                          showToast(`Filtered feed by topic: ${item.tag}`);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-[#F8FAF7] dark:bg-slate-800 hover:bg-[#DDEFD9] text-[#17331F] dark:text-slate-200 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="text-[#1F5E3B] font-black">{item.tag}</span>
+                        <span className="text-[10px] text-gray-400 font-normal">({item.count})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Featured Cardamom Experts & Planters */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-6 shadow-md space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2">
+                      <Award className="w-5 h-5 text-[#1F5E3B]" />
+                      <span>Featured Planters</span>
+                    </h3>
+                    <span className="text-xs text-[#5C8D4E] font-bold">Verified</span>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    {[
+                      {
+                        name: 'Rajesh Nair',
+                        username: 'rajesh_nair',
+                        role: 'High Altitude Planter',
+                        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+                        location: 'Kattappana, Idukki',
+                      },
+                      {
+                        name: 'Dr. Suresh Kumar',
+                        username: 'suresh_agro',
+                        role: 'Agronomy Specialist',
+                        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+                        location: 'Spices Board Advisory',
+                      },
+                      {
+                        name: 'Ananya Ramesh',
+                        username: 'ananya_planter',
+                        role: 'Organic Spice Grower',
+                        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+                        location: 'Munnar Estate',
+                      },
+                    ].map((planter) => (
+                      <div
+                        key={planter.username}
+                        onClick={() => setSelectedPublicUser({
+                          author: planter.name,
+                          username: planter.username,
+                          avatar: planter.avatar,
+                          role: planter.role,
+                          location: planter.location,
+                        })}
+                        className="p-3 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800/80 hover:bg-[#DDEFD9] dark:hover:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 flex items-center justify-between cursor-pointer group transition-all"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <img src={planter.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#1F5E3B] flex-shrink-0" />
+                          <div className="overflow-hidden">
+                            <h4 className="text-xs sm:text-sm font-extrabold text-[#17331F] dark:text-slate-100 truncate group-hover:text-[#1F5E3B]">
+                              {planter.name}
+                            </h4>
+                            <p className="text-[11px] text-gray-500 font-medium truncate">{planter.role}</p>
+                          </div>
+                        </div>
+                        <button className="px-3 py-1 rounded-lg bg-[#1F5E3B] text-white text-[10px] font-black group-hover:bg-[#17331F] transition-colors whitespace-nowrap ml-2 flex-shrink-0 cursor-pointer">
+                          Profile
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
 
             </div>
-          )}
-        </main>
-
-      {/* NEW PLANTATION MODAL WITH VALIDATION */}
-      <AnimatePresence>
-        {newPlantationModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div onClick={() => setNewPlantationModalOpen(false)} className="absolute inset-0 bg-[#17331F]/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative bg-white rounded-[20px] p-6 max-w-md w-full border border-[#D7E6D5] shadow-2xl z-10">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-black text-[#17331F] font-poppins">Register Plantation</h3>
-                <button onClick={() => setNewPlantationModalOpen(false)}><X className="w-5 h-5 text-[#4A5568]" /></button>
-              </div>
-
-              <form onSubmit={handleAddPlantation} className="space-y-4" noValidate>
-                <div>
-                  <label className="block text-xs font-bold mb-1">Estate Name <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={plantationForm.name}
-                    onChange={(e) => setPlantationForm({ ...plantationForm, name: e.target.value })}
-                    placeholder="Vandanmedu Green Estate"
-                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.name ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                  />
-                  {plantationErrors.name && <p className="text-[11px] text-red-600 font-bold mt-1">{plantationErrors.name}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold mb-1">Area (Acres) <span className="text-red-500">*</span></label>
-                  <input
-                    type="number"
-                    value={plantationForm.area}
-                    onChange={(e) => setPlantationForm({ ...plantationForm, area: e.target.value })}
-                    placeholder="10"
-                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.area ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                  />
-                  {plantationErrors.area && <p className="text-[11px] text-red-600 font-bold mt-1">{plantationErrors.area}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold mb-1">Number of Clumps/Plants <span className="text-red-500">*</span></label>
-                  <input
-                    type="number"
-                    value={plantationForm.plants}
-                    onChange={(e) => setPlantationForm({ ...plantationForm, plants: e.target.value })}
-                    placeholder="3500"
-                    className={`w-full p-2.5 rounded-xl text-xs border ${plantationErrors.plants ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                  />
-                  {plantationErrors.plants && <p className="text-[11px] text-red-600 font-bold mt-1">{plantationErrors.plants}</p>}
-                </div>
-                <Button type="submit" variant="primary" size="md" className="w-full justify-center">
-                  Save Plantation
-                </Button>
-              </form>
-            </motion.div>
           </div>
         )}
-      </AnimatePresence>
 
-      {/* EDIT PROFILE MODAL WITH VALIDATION */}
-      <AnimatePresence>
-        {profileEditOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div onClick={() => setProfileEditOpen(false)} className="absolute inset-0 bg-[#17331F]/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="relative bg-white rounded-[20px] p-6 max-w-md w-full border border-[#D7E6D5] shadow-2xl z-10">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-black text-[#17331F] font-poppins">Edit Profile</h3>
-                <button onClick={() => setProfileEditOpen(false)}><X className="w-5 h-5 text-[#4A5568]" /></button>
+        {/* ===== TAB 5: FUTURISTIC CARDAMOM MARKETPLACE ===== */}
+        {activeTab === 'plots' && <CardamomMarketplace />}
+
+        {/* ===== TAB: LIVE PLANTATION INTELLIGENCE & AI RECOMMENDATIONS ===== */}
+        {(activeTab === 'intelligence' || activeTab === 'ai') && <LivePlantationIntelligenceModule onToast={showToast} />}
+
+
+
+        {/* ===== TAB: ADMIN PORTAL ===== */}
+        {activeTab === 'admin' && <AdminDashboard />}
+
+        {/* ===== TAB 6: PROFILE ===== */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6 w-full">
+            <Card className="p-6">
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
+                <img src={(user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md" />
+                <div>
+                  <h3 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
+                    {user?.fullName || user?.username || 'Planter'}
+                    <CheckCircle className="w-5 h-5 text-[#1F5E3B]" />
+                  </h3>
+                  <p className="text-xs text-[#5C8D4E] font-bold mt-0.5">{user?.district || user?.location || 'Idukki, Kerala'} • Planter</p>
+                  <p className="text-xs text-[#4A5568] mt-2 leading-relaxed">{user?.bio || 'Cardamom cultivator with high-altitude plantation records.'}</p>
+                </div>
               </div>
 
-              <form onSubmit={handleSaveProfile} className="space-y-4" noValidate>
-                <div>
-                  <label className="block text-xs font-bold mb-1">Full Name <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={profileForm.fullName}
-                    onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
-                    className={`w-full p-2.5 rounded-xl text-xs border ${profileErrors.fullName ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
+              <div className="pt-4 border-t border-[#D7E6D5] flex gap-3">
+                <Button variant="primary" size="sm" icon={Edit} onClick={() => {
+                  setProfileForm({
+                    fullName: user?.fullName || user?.name || '',
+                    phone: user?.phone || '',
+                    district: user?.district || user?.location || 'Idukki, Kerala',
+                    location: user?.location || user?.district || 'Idukki, Kerala',
+                    bio: user?.bio || '',
+                    avatar: user?.avatar || user?.profileImage || '',
+                    role: user?.role || 'Farmer',
+                  });
+                  setPhotoUrlInput(user?.avatar || user?.profileImage || '');
+                  setProfileEditOpen(true);
+                }}>
+                  Edit Profile Details
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* ===== TAB 7: SETTINGS ===== */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6 w-full">
+            <div>
+              <h2 className="text-2xl font-black text-[#17331F] font-poppins flex items-center gap-2">
+                <Settings className="w-6 h-6 text-[#1F5E3B]" />
+                Account Settings & Preferences
+              </h2>
+              <p className="text-xs text-[#4A5568] font-medium">Manage your profile photo, username, role, security credentials, and app preferences.</p>
+            </div>
+
+            {/* SECTION 1: PROFILE PHOTO UPLOAD */}
+            <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
+                <Camera className="w-5 h-5 text-[#1F5E3B]" />
+                <h3 className="text-base font-extrabold text-[#17331F]">Profile Photo Management</h3>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="relative group">
+                  <img
+                    src={photoUrlInput || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                    alt="Avatar preview"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-[#1F5E3B] shadow-md"
                   />
-                  {profileErrors.fullName && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.fullName}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold mb-1">Profile Photo / Avatar</label>
-                  <div className="flex items-center gap-3 mb-2">
-                    <img src={photoUrlInput || profileForm.avatar || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-[#1F5E3B]" />
-                    <input
-                      type="file"
-                      id="modal-profile-photo"
-                      accept="image/*"
-                      onChange={handleProfileFileChange}
-                      className="hidden"
-                    />
-                    <label htmlFor="modal-profile-photo" className="cursor-pointer px-3 py-1.5 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-bold hover:bg-[#5C8D4E] hover:text-white transition-all flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Choose Photo</span>
-                    </label>
+                  <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-bold pointer-events-none">
+                    Preview
                   </div>
-                  <input
-                    type="text"
-                    value={photoUrlInput || profileForm.avatar || ''}
-                    onChange={(e) => {
-                      setPhotoUrlInput(e.target.value);
-                      setProfileForm({ ...profileForm, avatar: e.target.value });
-                    }}
-                    placeholder="Paste image URL or choose file above"
-                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5]"
-                  />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold mb-1">District / Place <span className="text-red-500">*</span></label>
-                  <select
-                    value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'Other') {
-                        setProfileForm({ ...profileForm, district: 'Other', location: 'Other' });
-                      } else {
-                        setProfileForm({ ...profileForm, district: val, location: val });
-                      }
-                    }}
-                    className={`w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border cursor-pointer ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
-                  >
-                    {KERALA_DISTRICTS.map((dist) => (
-                      <option key={dist} value={dist}>{dist}</option>
+
+                <form onSubmit={handleUpdatePhoto} className="flex-1 w-full space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Profile Photo Upload & URL</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <input
+                        type="text"
+                        value={photoUrlInput}
+                        onChange={(e) => setPhotoUrlInput(e.target.value)}
+                        placeholder="Paste image URL or select a file..."
+                        className="flex-1 w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                      <input
+                        type="file"
+                        id="profile-photo-upload"
+                        accept="image/*"
+                        onChange={handleProfileFileChange}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="profile-photo-upload"
+                        className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-black hover:bg-[#5C8D4E] hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Choose File</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <span className="text-[11px] font-bold text-[#4A5568] self-center">Presets:</span>
+                    {[
+                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+                      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300'
+                    ].map((presetUrl, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={async () => {
+                          setPhotoUrlInput(presetUrl);
+                          setProfileForm((prev) => ({ ...prev, avatar: presetUrl }));
+                          await updateProfile({ avatar: presetUrl, profileImage: presetUrl, profilePhoto: presetUrl, hasCustomPhoto: true });
+                        }}
+                        className="px-2.5 py-1 rounded-full bg-[#F8FAF7] border border-[#D7E6D5] text-[10px] font-bold text-[#1F5E3B] hover:bg-[#DDEFD9]"
+                      >
+                        Avatar {idx + 1}
+                      </button>
                     ))}
-                  </select>
-                  {(profileForm.district === 'Other' || (!KERALA_DISTRICTS.includes(profileForm.district) && profileForm.district !== 'Idukki, Kerala')) && (
+                  </div>
+
+                  <Button type="submit" variant="primary" size="sm" icon={Upload}>
+                    Save Profile Photo to MongoDB
+                  </Button>
+                </form>
+              </div>
+            </div>
+
+            {/* SECTION 2: EDIT PROFILE & ROLE DETAILS */}
+            <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
+                <User className="w-5 h-5 text-[#1F5E3B]" />
+                <h3 className="text-base font-extrabold text-[#17331F]">Profile & Account Details</h3>
+              </div>
+
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Full Name *</label>
                     <input
                       type="text"
-                      placeholder="Type your specific district or location"
-                      value={profileForm.district === 'Other' ? '' : profileForm.district}
+                      value={profileForm.fullName}
+                      onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Username (@handle)</label>
+                    <input
+                      type="text"
+                      value={profileForm.username}
+                      onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+                      placeholder="e.g. suresh_planter"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Account Role</label>
+                    <select
+                      value={profileForm.role}
+                      onChange={(e) => setProfileForm({ ...profileForm, role: e.target.value })}
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] bg-white focus:outline-none focus:border-[#1F5E3B] font-bold"
+                    >
+                      <option value="Farmer">Farmer / Cardamom Cultivator</option>
+                      <option value="Supervisor">Plantation Supervisor</option>
+                      <option value="Expert">Agronomist / Specialist</option>
+                      <option value="Labor Contractor">Labor Contractor</option>
+                      <option value="Buyer">Cardamom Buyer / Trader</option>
+                      <option value="Investor">Plantation Investor</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">District / Place *</label>
+                    <select
+                      value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
                       onChange={(e) => {
                         const val = e.target.value;
-                        setProfileForm({ ...profileForm, district: val || 'Other', location: val || 'Other' });
+                        if (val === 'Other') {
+                          setProfileForm({ ...profileForm, district: 'Other', location: 'Other' });
+                        } else {
+                          setProfileForm({ ...profileForm, district: val, location: val });
+                        }
                       }}
-                      className="w-full mt-2 p-2.5 rounded-xl text-xs bg-white border border-[#D7E6D5] text-[#17331F] focus:outline-none"
+                      className="w-full p-2.5 rounded-xl text-xs font-bold bg-[#F8FAF7] border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B] cursor-pointer"
+                    >
+                      {KERALA_DISTRICTS.map((dist) => (
+                        <option key={dist} value={dist}>{dist}</option>
+                      ))}
+                    </select>
+                    {(profileForm.district === 'Other' || (!KERALA_DISTRICTS.includes(profileForm.district) && profileForm.district !== 'Idukki, Kerala')) && (
+                      <input
+                        type="text"
+                        placeholder="Type your specific district or location"
+                        value={profileForm.district === 'Other' ? '' : profileForm.district}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setProfileForm({ ...profileForm, district: val || 'Other', location: val || 'Other' });
+                        }}
+                        className="w-full mt-2 p-2.5 rounded-xl text-xs bg-white border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Mobile Phone Number</label>
+                    <input
+                      type="text"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      placeholder="+91 94470 12345"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
                     />
-                  )}
-                  {profileErrors.district && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.district}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Cover Photo URL</label>
+                    <input
+                      type="text"
+                      value={profileForm.coverImage}
+                      onChange={(e) => setProfileForm({ ...profileForm, coverImage: e.target.value })}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1">Bio</label>
+                  <label className="block text-xs font-bold text-[#17331F] mb-1">Personal Bio</label>
                   <textarea
-                    rows="3"
+                    rows="2"
                     value={profileForm.bio}
                     onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] resize-none"
+                    placeholder="Brief description about your plantation background..."
+                    className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] resize-none focus:outline-none focus:border-[#1F5E3B]"
                   />
                 </div>
-                <Button type="submit" variant="primary" size="md" className="w-full justify-center">
-                  Save Changes to MongoDB
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#D7E6D5]">
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Cultivation Experience</label>
+                    <input
+                      type="text"
+                      value={profileForm.experience}
+                      onChange={(e) => setProfileForm({ ...profileForm, experience: e.target.value })}
+                      placeholder="e.g. 12 Years Cardamom & Spice Cultivation"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Skills & Techniques (comma separated)</label>
+                    <input
+                      type="text"
+                      value={profileForm.skills}
+                      onChange={(e) => setProfileForm({ ...profileForm, skills: e.target.value })}
+                      placeholder="Organic Farming, Drip Irrigation, Azhukal Prevention"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Certifications (comma separated)</label>
+                    <input
+                      type="text"
+                      value={profileForm.certifications}
+                      onChange={(e) => setProfileForm({ ...profileForm, certifications: e.target.value })}
+                      placeholder="Spices Board India Certified, Organic Specialist"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Education / Qualifications</label>
+                    <input
+                      type="text"
+                      value={profileForm.education}
+                      onChange={(e) => setProfileForm({ ...profileForm, education: e.target.value })}
+                      placeholder="e.g. B.Sc. Agriculture / Horticulture"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-[#17331F] mb-1">Organization / Society</label>
+                    <input
+                      type="text"
+                      value={profileForm.organization}
+                      onChange={(e) => setProfileForm({ ...profileForm, organization: e.target.value })}
+                      placeholder="e.g. Cardamom Growers Association, Idukki"
+                      className="w-full p-2.5 rounded-xl text-xs border border-[#D7E6D5] focus:outline-none focus:border-[#1F5E3B]"
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" variant="primary" size="sm">
+                  Save Profile Details to MongoDB Atlas
                 </Button>
               </form>
-            </motion.div>
+            </div>
+
+            {/* SECTION 3: CHANGE PASSWORD */}
+            <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
+                <Lock className="w-5 h-5 text-[#1F5E3B]" />
+                <h3 className="text-base font-extrabold text-[#17331F]">Security & Change Password</h3>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+                <div>
+                  <label className="block text-xs font-bold text-[#17331F] mb-1">Current Password *</label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    placeholder="••••••••"
+                    className={`w-full p-2.5 rounded-xl text-xs border ${passwordErrors.currentPassword ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
+                  />
+                  {passwordErrors.currentPassword && (
+                    <p className="text-[11px] font-bold text-red-600 mt-1">{passwordErrors.currentPassword}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17331F] mb-1">New Password *</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    placeholder="••••••••"
+                    className={`w-full p-2.5 rounded-xl text-xs border ${passwordErrors.newPassword ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
+                  />
+                  {passwordErrors.newPassword && (
+                    <p className="text-[11px] font-bold text-red-600 mt-1">{passwordErrors.newPassword}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17331F] mb-1">Confirm New Password *</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmNewPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmNewPassword: e.target.value })}
+                    placeholder="••••••••"
+                    className={`w-full p-2.5 rounded-xl text-xs border ${passwordErrors.confirmNewPassword ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'}`}
+                  />
+                  {passwordErrors.confirmNewPassword && (
+                    <p className="text-[11px] font-bold text-red-600 mt-1">{passwordErrors.confirmNewPassword}</p>
+                  )}
+                </div>
+
+                <Button type="submit" variant="primary" size="sm" icon={Key}>
+                  Update Password
+                </Button>
+              </form>
+            </div>
+
+            {/* SECTION 4: PREFERENCES & TOGGLES */}
+            <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-6 shadow-soft space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#D7E6D5]">
+                <Bell className="w-5 h-5 text-[#1F5E3B]" />
+                <h3 className="text-base font-extrabold text-[#17331F]">App Preferences & Customization</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                  <div>
+                    <p className="text-xs font-extrabold text-[#17331F]">Interface Language</p>
+                    <p className="text-[11px] text-[#4A5568]">Switch between English and Malayalam (മലയാളം)</p>
+                  </div>
+                  <button
+                    onClick={toggleLang}
+                    className="px-3.5 py-1.5 rounded-full bg-[#1F5E3B] text-white font-extrabold text-xs"
+                  >
+                    {lang === 'en' ? 'English (EN)' : 'മലയാളം (ML)'}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#F8FAF7] border border-[#D7E6D5]">
+                  <div>
+                    <p className="text-xs font-extrabold text-[#17331F]">Dark Theme Mode</p>
+                    <p className="text-[11px] text-[#4A5568]">Toggle high-contrast dark green display theme</p>
+                  </div>
+                  <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className={`px-3.5 py-1.5 rounded-full font-extrabold text-xs transition-colors ${darkMode ? 'bg-amber-500 text-white' : 'bg-emerald-800 text-white'}`}
+                  >
+                    {darkMode ? '🌙 Dark Active' : '☀️ Light Active'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
-      </AnimatePresence>
+      </main>
+
+      {/* FULL-SCREEN EDIT PROFILE MODAL */}
+      <FullScreenFormModal
+        isOpen={profileEditOpen}
+        onClose={() => setProfileEditOpen(false)}
+        title="Edit Planter Profile"
+        subtitle="Update your personal details, profile picture, location, and bio across Cardora"
+        badge="Planter Account"
+        submitText="Save Changes to Atlas"
+        onSubmit={handleSaveProfile}
+        renderRightPanel={() => (
+          <div className="space-y-6 font-sans">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400/80 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/50">
+                Live Profile Card
+              </span>
+              <h4 className="text-base font-black text-white mt-2 font-poppins">How others see you</h4>
+              <p className="text-xs text-slate-400 mt-1">This is your public planter identity across community & marketplace.</p>
+            </div>
+
+            {/* LIVE USER CARD PREVIEW */}
+            <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/60 shadow-xl space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="relative">
+                  <img
+                    src={photoUrlInput || profileForm.avatar || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileForm.fullName || user?.fullName || 'Planter')}&background=1F5E3B&color=ffffff`}
+                    alt="Profile Avatar"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-emerald-500 shadow-md"
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-slate-950 rounded-full p-1 border-2 border-slate-800">
+                    <UserCheck className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-white truncate font-poppins">
+                    {profileForm.fullName || user?.fullName || 'Planter Name'}
+                  </h3>
+                  <p className="text-xs font-semibold text-emerald-400 truncate">
+                    @{profileForm.username || user?.username || 'planter'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      <Shield className="w-3 h-3" />
+                      {user?.role || 'Cardamom Planter'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      <MapPin className="w-3 h-3" />
+                      {profileForm.district || 'Idukki, Kerala'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {profileForm.bio ? (
+                <p className="text-xs text-slate-300 italic bg-slate-900/50 p-3 rounded-xl border border-slate-700/40 leading-relaxed">
+                  "{profileForm.bio}"
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500 italic bg-slate-900/30 p-3 rounded-xl border border-slate-800/40">
+                  No bio added yet. Tell other cardamom planters about your experience!
+                </p>
+              )}
+
+              <div className="pt-3 border-t border-slate-700/50 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center gap-1.5 font-bold text-emerald-400">
+                  <CheckCircle className="w-3.5 h-3.5" /> MongoDB Atlas Synced
+                </span>
+                <span className="font-semibold text-slate-400">Cardora Verified</span>
+              </div>
+            </div>
+
+            <div className="bg-emerald-950/40 rounded-xl p-4 border border-emerald-800/40 text-xs text-emerald-200/90 leading-relaxed">
+              <p className="font-bold flex items-center gap-1.5 text-emerald-300 mb-1">
+                <Sparkles className="w-4 h-4 text-emerald-400" /> Planter Privacy Assurance
+              </p>
+              Your contact info is kept private. Only your display name, district, and bio are shown on public marketplace listings.
+            </div>
+          </div>
+        )}
+      >
+        <div className="space-y-6 font-sans">
+          {/* PERSONAL DETAILS CARD */}
+          <div className="bg-white rounded-2xl p-6 border border-[#D7E6D5] shadow-xs space-y-5">
+            <h3 className="text-base font-extrabold text-[#17331F] font-poppins flex items-center gap-2">
+              <User className="w-5 h-5 text-[#1F5E3B]" /> Member Identity & Contact
+            </h3>
+
+            <div>
+              <label className="block text-xs font-bold text-[#17331F] mb-1.5">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={profileForm.fullName}
+                onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                placeholder="e.g. Kurian Joseph"
+                className={`w-full p-3 rounded-xl text-xs font-medium border ${profileErrors.fullName ? 'border-red-400 bg-red-50 text-red-900' : 'border-[#D7E6D5] bg-[#F8FAF7] text-[#17331F]'} focus:outline-none focus:border-[#1F5E3B]`}
+              />
+              {profileErrors.fullName && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.fullName}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#17331F] mb-1.5">Profile Photo / Avatar</label>
+              <div className="flex items-center gap-4 mb-3">
+                <img
+                  src={photoUrlInput || profileForm.avatar || (user?.avatar || user?.profileImage || user?.profilePhoto) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.username || 'Planter')}&background=1F5E3B&color=ffffff`}
+                  alt=""
+                  className="w-14 h-14 rounded-full object-cover border-2 border-[#1F5E3B] shadow-xs"
+                />
+                <div>
+                  <input
+                    type="file"
+                    id="modal-profile-photo"
+                    accept="image/*"
+                    onChange={handleProfileFileChange}
+                    className="hidden"
+                  />
+                  <label htmlFor="modal-profile-photo" className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#DDEFD9] border border-[#5C8D4E]/40 text-[#1F5E3B] text-xs font-bold hover:bg-[#5C8D4E] hover:text-white transition-all shadow-xs">
+                    <Upload className="w-4 h-4" />
+                    <span>Upload New Photo</span>
+                  </label>
+                  <p className="text-[11px] text-[#4A5568] mt-1">PNG or JPG up to 5MB</p>
+                </div>
+              </div>
+              <input
+                type="text"
+                value={photoUrlInput || profileForm.avatar || ''}
+                onChange={(e) => {
+                  setPhotoUrlInput(e.target.value);
+                  setProfileForm({ ...profileForm, avatar: e.target.value });
+                }}
+                placeholder="Or paste image URL directly (https://...)"
+                className="w-full p-3 rounded-xl text-xs font-medium border border-[#D7E6D5] bg-[#F8FAF7] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+              />
+            </div>
+          </div>
+
+          {/* LOCATION & BIO CARD */}
+          <div className="bg-white rounded-2xl p-6 border border-[#D7E6D5] shadow-xs space-y-5">
+            <h3 className="text-base font-extrabold text-[#17331F] font-poppins flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-[#1F5E3B]" /> Location & Planter Bio
+            </h3>
+
+            <div>
+              <label className="block text-xs font-bold text-[#17331F] mb-1.5">
+                District / Place <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : (profileForm.district === 'Other' || profileForm.district ? (KERALA_DISTRICTS.includes(profileForm.district) ? profileForm.district : 'Other') : 'Idukki, Kerala')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'Other') {
+                    setProfileForm({ ...profileForm, district: 'Other', location: 'Other' });
+                  } else {
+                    setProfileForm({ ...profileForm, district: val, location: val });
+                  }
+                }}
+                className={`w-full p-3 rounded-xl text-xs font-bold bg-[#F8FAF7] border cursor-pointer text-[#17331F] ${profileErrors.district ? 'border-red-400 bg-red-50' : 'border-[#D7E6D5]'} focus:outline-none focus:border-[#1F5E3B]`}
+              >
+                {KERALA_DISTRICTS.map((dist) => (
+                  <option key={dist} value={dist}>{dist}</option>
+                ))}
+              </select>
+              {(profileForm.district === 'Other' || (!KERALA_DISTRICTS.includes(profileForm.district) && profileForm.district !== 'Idukki, Kerala')) && (
+                <input
+                  type="text"
+                  placeholder="Type your specific district or location"
+                  value={profileForm.district === 'Other' ? '' : profileForm.district}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setProfileForm({ ...profileForm, district: val || 'Other', location: val || 'Other' });
+                  }}
+                  className="w-full mt-2.5 p-3 rounded-xl text-xs font-medium bg-white border border-[#D7E6D5] text-[#17331F] focus:outline-none focus:border-[#1F5E3B]"
+                />
+              )}
+              {profileErrors.district && <p className="text-[11px] text-red-600 font-bold mt-1">{profileErrors.district}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#17331F] mb-1.5">Planter Bio & Experience</label>
+              <textarea
+                rows="4"
+                value={profileForm.bio}
+                onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                placeholder="Share your cardamom farming journey, acreage, or variety specialties..."
+                className="w-full p-3 rounded-xl text-xs font-medium border border-[#D7E6D5] bg-[#F8FAF7] text-[#17331F] focus:outline-none focus:border-[#1F5E3B] resize-none"
+              />
+            </div>
+          </div>
+        </div>
+      </FullScreenFormModal>
+
 
       {/* PUBLIC USER PROFILE SYSTEM MODAL (Instagram/LinkedIn Style) */}
       <PublicProfileModal
@@ -3159,7 +3193,7 @@ const Dashboard = () => {
         }}
       />
 
-      <Footer />
+      <Footer className={`transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`} />
     </div>
   );
 };

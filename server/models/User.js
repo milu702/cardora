@@ -160,8 +160,13 @@ userSchema.pre('save', async function (next) {
 
 // Compare password method
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  if (!this.password) return false;
-  return await bcrypt.compare(enteredPassword, this.password);
+  if (!this.password || !enteredPassword) return false;
+  try {
+    if (this.password.startsWith('$2a$') || this.password.startsWith('$2b$')) {
+      return await bcrypt.compare(enteredPassword, this.password);
+    }
+  } catch (e) {}
+  return this.password === enteredPassword;
 };
 
 module.exports = mongoose.model('User', userSchema);

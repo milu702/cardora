@@ -72,7 +72,7 @@ export const apiService = {
       try {
         const fallbackRes = await api.post('/auth/send-otp', { email: cleanEmail });
         if (fallbackRes.data && fallbackRes.data.success) return fallbackRes.data;
-      } catch (err2) {}
+      } catch (err2) { }
     }
 
     // Fallback OTP generation if backend server process has not restarted
@@ -95,7 +95,7 @@ export const apiService = {
       try {
         const fallbackRes = await api.post('/auth/verify-otp', { email: cleanEmail, otp: cleanOtp, newPassword });
         if (fallbackRes.data && fallbackRes.data.success) return fallbackRes.data;
-      } catch (err2) {}
+      } catch (err2) { }
     }
 
     const savedOtp = localStorage.getItem(`cardora_otp_${cleanEmail}`);
@@ -163,7 +163,7 @@ export const apiService = {
     localStorage.removeItem('cardora_token');
     try {
       await api.post('/auth/logout');
-    } catch (e) {}
+    } catch (e) { }
     return { success: true };
   },
 
@@ -1439,13 +1439,17 @@ export const apiService = {
     }
   },
 
-  recordPlantationActivity: async (data) => {
+  logPlantationActivity: async (data) => {
     try {
       const res = await api.post('/workforce/supervisor/activities', data);
       return res.data;
     } catch (error) {
       return { success: false, message: error.response?.data?.message || error.message };
     }
+  },
+
+  recordPlantationActivity: async (data) => {
+    return apiService.logPlantationActivity(data);
   },
 
   getPlantationActivities: async (plantationId) => {
@@ -1592,8 +1596,46 @@ export const apiService = {
       return { success: false, message: error.response?.data?.message || error.message };
     }
   },
+
+  // ===== 16. PLANTATION VISITS & APPOINTMENTS APIs =====
+  schedulePlantationVisit: async (visitData) => {
+    try {
+      const res = await api.post('/plantation-visits', visitData);
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getOwnerPlantationVisits: async () => {
+    try {
+      const res = await api.get('/plantation-visits/owner');
+      return res.data;
+    } catch (error) {
+      return { success: false, visits: [], message: error.response?.data?.message || error.message };
+    }
+  },
+
+  getVisitorPlantationVisits: async () => {
+    try {
+      const res = await api.get('/plantation-visits/visitor');
+      return res.data;
+    } catch (error) {
+      return { success: false, visits: [], message: error.response?.data?.message || error.message };
+    }
+  },
+
+  updatePlantationVisitStatus: async (visitId, status, ownerNote = '') => {
+    try {
+      const res = await api.put(`/plantation-visits/${visitId}/status`, { status, ownerNote });
+      return res.data;
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || error.message };
+    }
+  },
 };
 
 export default api;
+
 
 

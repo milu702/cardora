@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import api, { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import FullScreenFormModal from '../ui/FullScreenFormModal';
 
 const ExpertConsultationPortal = () => {
   const { user, toggleExpertMode } = useAuth();
@@ -1615,41 +1616,96 @@ const ExpertConsultationPortal = () => {
       {/* MODAL: SUBMIT HUMAN EXPERT TICKET */}
       {/* ========================================================================= */}
       {ticketModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-xl rounded-3xl shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-lg font-black text-slate-900 dark:text-white font-poppins flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#1F5E3B]" />
-                Submit Expert Consultation Request
-              </h3>
+        <FullScreenFormModal
+          isOpen={ticketModalOpen}
+          onClose={() => setTicketModalOpen(false)}
+          title="Submit Agronomist Consultation Ticket"
+          subtitle="Submit detailed plant pathology, soil chemistry, or yield questions to CARDORA verified agronomists"
+          badgeText="EXPERT DESK DISPATCH"
+          badgeIcon={FileText}
+          rightPanel={
+            <div className="space-y-4 font-sans">
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <span className="text-xs font-black uppercase text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4" />
+                    Consultation Summary
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    SLA: 2 HOURS
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 space-y-3 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Category:</span>
+                    <strong className="text-[#17331F] dark:text-emerald-300 font-bold">{newTicketForm.category}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Selected Estate:</span>
+                    <strong className="text-slate-900 dark:text-white font-extrabold truncate max-w-[160px]">
+                      {plantations.find((p) => (p._id || p.id) === newTicketForm.plantationId)?.name || 'Estate Selected'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950/40 border border-[#5C8D4E]/30 space-y-1.5 text-xs">
+                  <h5 className="font-extrabold text-[#1F5E3B] dark:text-emerald-300 flex items-center gap-1">
+                    <Award className="w-4 h-4" />
+                    Verified Agronomist Review
+                  </h5>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Your request will be assigned to senior cardamom agronomists in Idukki/Wayanad for instant review & prescription.
+                  </p>
+                </div>
+              </div>
+            </div>
+          }
+          footerActions={
+            <div className="w-full flex items-center justify-between gap-3 font-sans">
               <button
+                type="button"
                 onClick={() => setTicketModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-xs sm:text-sm cursor-pointer transition"
               >
-                <X className="w-5 h-5" />
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSubmitTicket}
+                disabled={submittingTicket}
+                className="px-6 py-2.5 rounded-xl bg-[#1F5E3B] hover:bg-[#17331F] text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-2 cursor-pointer transition active:scale-95"
+              >
+                <Send className="w-4 h-4" />
+                <span>{submittingTicket ? 'Submitting Ticket...' : 'Dispatch Ticket to Agronomists'}</span>
               </button>
             </div>
-
-            <form onSubmit={handleSubmitTicket} className="space-y-4 text-xs font-bold">
+          }
+        >
+          <form onSubmit={handleSubmitTicket} className="space-y-6 font-sans">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-[#D7E6D5] dark:border-slate-800 shadow-sm space-y-4">
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">Consultation Title *</label>
+                <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+                  Consultation Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Dark brown rot spots on lower tiller pods after heavy rain"
                   value={newTicketForm.title}
                   onChange={(e) => setNewTicketForm({ ...newTicketForm, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#1F5E3B]"
+                  className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-sm font-bold text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                  <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">Category</label>
                   <select
                     value={newTicketForm.category}
                     onChange={(e) => setNewTicketForm({ ...newTicketForm, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+                    className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold text-[#17331F] dark:text-white"
                   >
                     <option value="Plant Pathology & Diseases">🦠 Plant Pathology & Diseases</option>
                     <option value="Fertilizer & Soil Health">🌱 Fertilizer & Soil Health</option>
@@ -1660,39 +1716,41 @@ const ExpertConsultationPortal = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1">Select Estate</label>
+                  <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">Select Estate</label>
                   <select
                     value={newTicketForm.plantationId}
                     onChange={(e) => setNewTicketForm({ ...newTicketForm, plantationId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none"
+                    className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-bold text-[#17331F] dark:text-white"
                   >
                     {plantations.length > 0 ? (
                       plantations.map((p) => (
                         <option key={p._id || p.id} value={p._id || p.id}>
-                          {p.name} ({p.area || 5} Acres)
+                          🌿 {p.name} ({p.area || 5} Acres)
                         </option>
                       ))
                     ) : (
-                      <option value="">Mary's Estate (Default)</option>
+                      <option value="">Default Estate</option>
                     )}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">Detailed Symptoms / Question *</label>
+                <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">
+                  Detailed Crop Symptoms / Agronomy Question <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   rows={4}
                   required
                   placeholder="Describe crop symptoms, leaf yellowing, pod spots, soil moisture, or specific questions for Cardora agronomists..."
                   value={newTicketForm.questionText}
                   onChange={(e) => setNewTicketForm({ ...newTicketForm, questionText: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#1F5E3B] resize-none"
+                  className="w-full p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 text-xs font-medium text-[#17331F] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F5E3B]"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 mb-1">Photo Attachment URL (Optional)</label>
+                <label className="block text-xs font-bold text-[#17331F] dark:text-slate-200 mb-1.5">Photo Attachment URL (Optional)</label>
                 <input
                   type="url"
                   placeholder="https://..."
@@ -1728,10 +1786,12 @@ const ExpertConsultationPortal = () => {
                   )}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
+        </FullScreenFormModal>
       )}
+
+
 
       {/* ========================================================================= */}
       {/* MODAL: ANSWER CONSULTATION TICKET (EXPERT MODE) */}

@@ -126,6 +126,7 @@ app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/workforce', require('./routes/workforceRoutes'));
 app.use('/api/plantation-intelligence', require('./routes/plantationIntelligenceRoutes'));
+app.use('/api/plantation-visits', require('./routes/plantationVisitRoutes'));
 
 // 404 & Error Handlers
 app.use(notFound);

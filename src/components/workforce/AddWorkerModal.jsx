@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import FullScreenFormModal from '../ui/FullScreenFormModal';
 import {
-  X,
   UserPlus,
+
   Phone,
   User,
   MapPin,
@@ -184,40 +185,91 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
   const estMonthlyPay = (Number(formData.dailyWage) || 0) * 26;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white dark:bg-[#111827] w-full max-w-3xl rounded-[28px] shadow-2xl border border-emerald-500/20 dark:border-emerald-500/30 overflow-hidden max-h-[92vh] flex flex-col transition-all">
-        
-        {/* MODAL HEADER */}
-        <div className="px-6 py-5 bg-gradient-to-r from-[#0F2D18] via-[#17331F] to-[#2C5E3B] text-white flex items-center justify-between relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="flex items-center space-x-3.5 relative z-10">
-            <div className="p-3 bg-emerald-500/25 rounded-2xl border border-emerald-400/30 shadow-inner flex items-center justify-center text-emerald-300">
-              <UserPlus className="w-6 h-6 stroke-[2.2]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black tracking-tight font-poppins text-white">
-                  {initialData ? 'Edit Worker Roster Entry' : 'Register Plantation Worker'}
-                </h3>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-                  {initialData ? `ID: ${initialData.workerId || 'WRK-01'}` : 'Direct Roster'}
-                </span>
-              </div>
-              <p className="text-xs text-emerald-200/80 mt-0.5 font-medium">
-                Configure field parameters, wage rates, emergency profile, and SMS notification settings.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors relative z-10"
-          >
-            <X className="w-5 h-5" />
-          </button>
+  // RIGHT SIDE WORKER PREVIEW PANEL
+  const rightWorkerPreview = (
+    <div className="space-y-4 font-sans">
+      <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-black uppercase text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1.5">
+            <User className="w-4 h-4" />
+            Worker Profile Preview
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            {initialData ? `ID: ${initialData.workerId || 'WRK-01'}` : 'NEW WORKER'}
+          </span>
         </div>
+
+        {/* Worker Avatar & Basic Info */}
+        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700">
+          <img
+            src={formData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'Worker')}&background=1F5E3B&color=ffffff`}
+            alt="Worker Avatar"
+            className="w-14 h-14 rounded-2xl object-cover border-2 border-[#1F5E3B] shadow-xs flex-shrink-0"
+          />
+          <div className="min-w-0">
+            <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
+              {formData.name || 'New Worker Entry'}
+            </h4>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-extrabold inline-block mt-0.5">
+              {formData.role || 'Laborer'}
+            </span>
+            <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+              {formData.phone ? `📱 ${formData.phone}` : 'No phone entered'}
+            </p>
+          </div>
+        </div>
+
+        {/* Wage & Payment Breakdown */}
+        <div className="p-3.5 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950/40 border border-[#5C8D4E]/30 space-y-2 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-600 dark:text-slate-300 font-medium">Daily Wage Rate:</span>
+            <strong className="text-emerald-800 dark:text-emerald-300 font-black text-base">
+              ₹{Number(formData.dailyWage || 0).toLocaleString()} / day
+            </strong>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-600 dark:text-slate-300 font-medium">Overtime Hourly Rate:</span>
+            <strong className="text-slate-800 dark:text-slate-200 font-bold">
+              ₹{Number(formData.overtimeRate || 0).toLocaleString()} / hr
+            </strong>
+          </div>
+          <div className="flex justify-between items-center pt-1.5 border-t border-[#5C8D4E]/20">
+            <span className="text-slate-700 dark:text-slate-300 font-bold">Est. Monthly Payout (26 Days):</span>
+            <strong className="text-[#17331F] dark:text-emerald-300 font-black text-sm">
+              ₹{estMonthlyPay.toLocaleString()}
+            </strong>
+          </div>
+        </div>
+
+        {/* Skill Verification Badge */}
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 space-y-1.5 text-xs">
+          <h5 className="font-extrabold text-[#1F5E3B] dark:text-emerald-400 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Ecosystem Integration
+          </h5>
+          <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+            Automatically synced with <strong>Workforce Attendance</strong>, <strong>Daily Wage Ledger</strong>, and <strong>SMS Dispatch</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <FullScreenFormModal
+      isOpen={true}
+      onClose={onClose}
+      title={initialData ? 'Edit Worker Roster Entry' : 'Register Plantation Worker'}
+      subtitle="Configure field parameters, wage rates, emergency profile, and SMS notification settings"
+      badgeText="WORKFORCE ROSTER WIZARD"
+      badgeIcon={UserPlus}
+      currentStep={activeTab === 'primary' ? 1 : activeTab === 'role' ? 2 : 3}
+      totalSteps={3}
+      steps={['Identity & Avatar', 'Role & Wage Rates', 'Address & Emergency']}
+      onStepClick={(stepNum) => setActiveTab(stepNum === 1 ? 'primary' : stepNum === 2 ? 'role' : 'contact')}
+      rightPanel={rightWorkerPreview}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6 font-sans">
 
         {/* SECTION NAVIGATION PILLS */}
         <div className="bg-[#F8FAF7] dark:bg-[#1E293B]/70 px-6 py-2.5 border-b border-emerald-100 dark:border-gray-800 flex items-center justify-between gap-2 overflow-x-auto">
@@ -253,7 +305,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
         </div>
 
         {/* FORM BODY */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-800 dark:text-slate-100">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-800 dark:text-slate-100">
           
           {error && (
             <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-600 dark:text-red-400 text-xs font-bold flex items-center space-x-2.5 animate-shake">
@@ -666,10 +718,10 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
               </button>
             </div>
           </div>
+        </div>
 
-        </form>
-      </div>
-    </div>
+      </form>
+    </FullScreenFormModal>
   );
 };
 
