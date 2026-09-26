@@ -2,6 +2,7 @@
  * Modular SMS Notification Service for Cardora Supervisor-Worker Module
  */
 
+const axios = require('axios');
 const SMSLog = require('../models/SMSLog');
 
 // Default SMS Settings
@@ -38,33 +39,35 @@ const sendSmsNotification = async ({ workerId, workerObj, phone, type, data = {}
     }
 
     const workerName = workerObj?.fullName || data.workerName || 'Worker';
-    let message = '';
+    let message = data.message || '';
     let isTypeEnabled = true;
 
-    switch (type) {
-      case 'Attendance':
-        isTypeEnabled = smsSettings.attendanceSMS;
-        message = `Hello ${workerName}, your attendance for ${data.date || 'Today'} has been marked as ${data.status || 'Present'}. Daily wage: ₹${data.dailyWage || 700}. – Cardora`;
-        break;
+    if (!message) {
+      switch (type) {
+        case 'Attendance':
+          isTypeEnabled = smsSettings.attendanceSMS;
+          message = `Hello ${workerName}, your attendance for ${data.date || 'Today'} has been marked as ${data.status || 'Present'}. Daily wage: ₹${data.dailyWage || 700}. – Cardora`;
+          break;
 
-      case 'Wage':
-        isTypeEnabled = smsSettings.wageSMS;
-        message = `Hello ${workerName}, your wage for ${data.month || 'this month'} is ₹${data.totalWage || 0}. Paid: ₹${data.paidAmount || 0}. Pending: ₹${data.pendingAmount || 0}. – Cardora`;
-        break;
+        case 'Wage':
+          isTypeEnabled = smsSettings.wageSMS;
+          message = `Hello ${workerName}, your wage for ${data.month || 'this month'} is ₹${data.totalWage || 0}. Paid: ₹${data.paidAmount || 0}. Pending: ₹${data.pendingAmount || 0}. – Cardora`;
+          break;
 
-      case 'Payment':
-        isTypeEnabled = smsSettings.paymentSMS;
-        message = `Hello ${workerName}, ₹${data.amount || 0} has been recorded as your wage payment on ${data.date || new Date().toLocaleDateString()}. – Cardora`;
-        break;
+        case 'Payment':
+          isTypeEnabled = smsSettings.paymentSMS;
+          message = `Hello ${workerName}, ₹${data.amount || 0} has been recorded as your wage payment on ${data.date || new Date().toLocaleDateString()}. – Cardora`;
+          break;
 
-      case 'WorkAssignment':
-        isTypeEnabled = smsSettings.workAssignmentSMS;
-        message = `Hello ${workerName}, you have been assigned ${data.workType || 'Field Work'} at ${data.plantationName || 'Cardora Plantation'} on ${data.date || 'Today'}. – Cardora`;
-        break;
+        case 'WorkAssignment':
+          isTypeEnabled = smsSettings.workAssignmentSMS;
+          message = `Hello ${workerName}, you have been assigned ${data.workType || 'Field Work'} at ${data.plantationName || 'Cardora Plantation'} on ${data.date || 'Today'}. – Cardora`;
+          break;
 
-      default:
-        message = `Hello ${workerName}, notification from Cardora Plantation Management. – Cardora`;
-        break;
+        default:
+          message = `Hello ${workerName}, notification from Cardora Plantation Management. – Cardora`;
+          break;
+      }
     }
 
     if (!isTypeEnabled) {
@@ -79,11 +82,61 @@ const sendSmsNotification = async ({ workerId, workerObj, phone, type, data = {}
     let status = 'Sent';
 
     if (provider === 'TWILIO' && process.env.TWILIO_ACCOUNT_SID) {
-      // Integration hook for Twilio SDK
-      console.log(`[SMS Service Via Twilio] Sending to ${targetPhone}: ${message}`);
+      try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        const fromPhone = process.env.TWILIO_PHONE_NUMBER || '+18005550199';
+        const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+        const formattedTarget = targetPhone.startsWith('+') ? targetPhone : `+91${targetPhone.replace(/[^0-9]/g, '').slice(-10)}`;
+
+        const params = new URLSearchParams();
+        params.append('To', formattedTarget);
+        params.append('From', fromPhone);
+        params.append('Body', message);
+
+        await axios.post(
+          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+          params.toString(),
+          {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 5000,
+          }
+        );
+        console.log(`[Twilio SMS Sent] to ${formattedTarget}`);
+        status = 'Sent';
+      } catch (twErr) {
+        console.error('[Twilio Error]:', twErr.response?.data || twErr.message);
+        status = 'Twilio_Failed';
+      }
     } else if (provider === 'FAST2SMS' && process.env.FAST2SMS_API_KEY) {
-      // Integration hook for Fast2SMS HTTP API
-      console.log(`[SMS Service Via Fast2SMS] Sending to ${targetPhone}: ${message}`);
+      try {
+        const cleanNum = targetPhone.replace(/[^0-9]/g, '').slice(-10);
+        await axios.post(
+          'https://www.fast2sms.com/dev/bulkV2',
+          {
+            route: 'v3',
+            sender_id: 'TXTIND',
+            message,
+            language: 'english',
+            flash: 0,
+            numbers: cleanNum,
+          },
+          {
+            headers: {
+              authorization: process.env.FAST2SMS_API_KEY,
+            },
+            timeout: 5000,
+          }
+        );
+        console.log(`[Fast2SMS Sent] to ${cleanNum}`);
+        status = 'Sent';
+      } catch (fErr) {
+        console.error('[Fast2SMS Error]:', fErr.response?.data || fErr.message);
+        status = 'Fast2SMS_Failed';
+      }
     } else {
       // Console Simulation Mode (Default)
       console.log(`📱 [SMS SIMULATION] To: ${targetPhone} | Text: "${message}"`);

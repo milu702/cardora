@@ -820,6 +820,7 @@ exports.recordPlantationActivity = async (req, res) => {
     if (!plantation) {
       plantation = await Plantation.create({
         user: req.user?._id || new mongoose.Types.ObjectId(),
+        name: 'Cardora Estate (Main)',
         title: 'Cardora Estate (Main)',
         location: 'Idukki, Kerala',
         cropType: 'Cardamom',
@@ -829,10 +830,12 @@ exports.recordPlantationActivity = async (req, res) => {
       });
     }
 
+    const fallbackUserId = req.user?._id || plantation.user || new mongoose.Types.ObjectId();
+
     const activity = await PlantationActivity.create({
       plantation: plantation._id,
-      supervisor: req.user?._id || plantation.user,
-      owner: plantation.user || req.user?._id,
+      supervisor: req.user?._id || plantation.user || fallbackUserId,
+      owner: plantation.user || req.user?._id || fallbackUserId,
       activityType,
       date: date ? new Date(date) : new Date(),
       block: block || 'Main Block',

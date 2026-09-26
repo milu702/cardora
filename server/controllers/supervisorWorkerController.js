@@ -1212,3 +1212,86 @@ exports.inviteAndAssignSupervisor = async (req, res) => {
     res.status(500).json({ success: false, message: error.message || 'Failed to send supervisor invitation' });
   }
 };
+
+// In-memory OTP storage for phone number verification
+const phoneOtpStore = new Map();
+
+// @desc    Send OTP to phone number for verification
+// @route   POST /api/workforce/supervisor/phone/send-otp
+// @access  Private (Supervisor / Owner)
+exports.sendWorkerPhoneOTP = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    const cleanPhone = (phone || '').replace(/[^0-9]/g, '').slice(-10);
+
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    phoneOtpStore.set(cleanPhone, { otp, expiresAt });
+
+    await sendSmsNotification({
+      phone: cleanPhone,
+      type: 'WorkAssignment',
+      data: {
+        message: `Your Cardora phone verification OTP code is ${otp}. Valid for 10 minutes.`,
+        otp,
+      },
+      supervisorId: req.user?._id,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `OTP security code sent to +91 ${cleanPhone}`,
+      otp,
+    });
+  } catch (error) {
+    console.error('sendWorkerPhoneOTP error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to send OTP to mobile number' });
+  }
+};
+
+// @desc    Verify OTP for phone number
+// @route   POST /api/workforce/supervisor/phone/verify-otp
+// @access  Private (Supervisor / Owner)
+exports.verifyWorkerPhoneOTP = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+    const cleanPhone = (phone || '').replace(/[^0-9]/g, '').slice(-10);
+    const cleanOtp = (otp || '').trim();
+
+    if (!cleanPhone || !cleanOtp) {
+      return res.status(400).json({ success: false, message: 'Phone number and 6-digit OTP code are required.' });
+    }
+
+    const cached = phoneOtpStore.get(cleanPhone);
+
+    if (!cached) {
+      return res.status(400).json({ success: false, message: 'OTP expired or not found. Please request a new OTP.' });
+    }
+
+    if (Date.now() > cached.expiresAt) {
+      phoneOtpStore.delete(cleanPhone);
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
+    }
+
+    if (cached.otp !== cleanOtp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP security code. Please check and try again.' });
+    }
+
+    phoneOtpStore.delete(cleanPhone);
+
+    res.status(200).json({
+      success: true,
+      message: 'Mobile number verified successfully!',
+      verifiedPhone: cleanPhone,
+    });
+  } catch (error) {
+    console.error('verifyWorkerPhoneOTP error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to verify OTP' });
+  }
+};
+

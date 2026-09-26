@@ -48,6 +48,8 @@ const {
   getOwnerMonitoringSummary,
   assignSupervisorToPlantation,
   inviteAndAssignSupervisor,
+  sendWorkerPhoneOTP,
+  verifyWorkerPhoneOTP,
 } = require('../controllers/supervisorWorkerController');
 
 const {
@@ -119,6 +121,9 @@ router.post('/supervisor/sms/send', protect, sendWorkerSms);
 router.get('/supervisor/sms/history/:workerId', protect, getWorkerSmsLogs);
 router.get('/supervisor/sms/settings', protect, getSmsSettingsController);
 router.put('/supervisor/sms/settings', protect, updateSmsSettingsController);
+
+router.post('/supervisor/phone/send-otp', protect, sendWorkerPhoneOTP);
+router.post('/supervisor/phone/verify-otp', protect, verifyWorkerPhoneOTP);
 
 router.get('/owner-summary/:plantationId', protect, getOwnerMonitoringSummary);
 router.post('/plantations/:plantationId/assign-supervisor', protect, assignSupervisorToPlantation);

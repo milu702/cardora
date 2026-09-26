@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import FullScreenFormModal from '../ui/FullScreenFormModal';
+import apiService from '../../services/api';
 import {
   UserPlus,
-
   Phone,
   User,
   MapPin,
@@ -15,6 +15,9 @@ import {
   Send,
   HeartHandshake,
   Check,
+  ShieldCheck,
+  Key,
+  RefreshCw,
 } from 'lucide-react';
 
 const AVATAR_PRESETS = [
@@ -64,6 +67,15 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
   const [customWorkTypeActive, setCustomWorkTypeActive] = useState(false);
   const [activeTab, setActiveTab] = useState('primary'); // 'primary' | 'role' | 'contact'
 
+  // Phone OTP Verification States
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpStatusMessage, setOtpStatusMessage] = useState('');
+  const [simulatedOtp, setSimulatedOtp] = useState('');
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -84,6 +96,7 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
 
       const isKnownType = WORK_TYPES.some((w) => w.id === initialData.workType);
       setCustomWorkTypeActive(!isKnownType && Boolean(initialData.workType));
+      setOtpVerified(Boolean(initialData.phone));
     } else {
       setFormData({
         fullName: '',
@@ -101,9 +114,69 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
         sendAssignmentSms: true,
       });
       setCustomWorkTypeActive(false);
+      setOtpVerified(false);
     }
+    setOtpSent(false);
+    setPhoneOtp('');
+    setOtpStatusMessage('');
+    setSimulatedOtp('');
     setError('');
   }, [initialData, isOpen]);
+
+  const handleSendPhoneOTP = async () => {
+    const cleanPhone = (formData.phone || '').trim().replace(/[\s-]/g, '');
+    if (!cleanPhone || !/^[+0-9]{10,14}$/.test(cleanPhone)) {
+      setOtpStatusMessage('⚠️ Please enter a valid 10-digit mobile number before requesting OTP.');
+      return;
+    }
+
+    setSendingOtp(true);
+    setOtpStatusMessage('');
+    try {
+      const res = await apiService.sendWorkerPhoneOTP(cleanPhone);
+      if (res && res.success) {
+        setOtpSent(true);
+        setSimulatedOtp(res.otp || '');
+        setOtpStatusMessage(`📱 OTP security code sent to +91 ${cleanPhone}.`);
+      } else {
+        setOtpStatusMessage(`❌ ${res?.message || 'Failed to send OTP.'}`);
+      }
+    } catch (err) {
+      setOtpStatusMessage(`❌ ${err.message || 'Failed to send OTP.'}`);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyPhoneOTP = async () => {
+    const cleanPhone = (formData.phone || '').trim().replace(/[\s-]/g, '');
+    const cleanOtp = (phoneOtp || '').trim();
+
+    if (!cleanPhone) {
+      setOtpStatusMessage('⚠️ Mobile number is missing.');
+      return;
+    }
+    if (!cleanOtp || cleanOtp.length < 4) {
+      setOtpStatusMessage('⚠️ Please enter the complete 6-digit OTP code.');
+      return;
+    }
+
+    setVerifyingOtp(true);
+    setOtpStatusMessage('');
+    try {
+      const res = await apiService.verifyWorkerPhoneOTP(cleanPhone, cleanOtp);
+      if (res && res.success) {
+        setOtpVerified(true);
+        setOtpStatusMessage('🎉 Mobile number verified successfully!');
+      } else {
+        setOtpStatusMessage(`❌ ${res?.message || 'Invalid or expired OTP code.'}`);
+      }
+    } catch (err) {
+      setOtpStatusMessage(`❌ ${err.message || 'Verification failed.'}`);
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -339,28 +412,119 @@ const AddWorkerModal = ({ isOpen, onClose, onSave, plantationId, initialData = n
                   </div>
                 </div>
 
-                {/* Mobile Number Field */}
-                <div>
-                  <label className="block text-xs font-black text-[#17331F] dark:text-slate-200 mb-1.5 flex items-center justify-between">
+                {/* Mobile Number Field with OTP Verification */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-black text-[#17331F] dark:text-slate-200 flex items-center justify-between">
                     <span>Mobile Phone Number</span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                      <Send className="w-2.5 h-2.5" /> Direct SMS Alerts
-                    </span>
+                    {otpVerified ? (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Number Verified
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <Send className="w-2.5 h-2.5" /> Direct SMS & OTP
+                      </span>
+                    )}
                   </label>
-                  <div className="relative flex items-center">
-                    <div className="absolute left-3.5 flex items-center gap-1 text-slate-400 border-r border-slate-300 dark:border-slate-700 pr-2">
-                      <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">+91</span>
+
+                  <div className="flex gap-2">
+                    <div className="relative flex-1 flex items-center">
+                      <div className="absolute left-3.5 flex items-center gap-1 text-slate-400 border-r border-slate-300 dark:border-slate-700 pr-2">
+                        <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">+91</span>
+                      </div>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          handleChange(e);
+                          if (otpVerified) setOtpVerified(false);
+                        }}
+                        placeholder="98470 12345"
+                        className={`w-full pl-20 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/90 border ${
+                          otpVerified
+                            ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 dark:border-slate-700/80'
+                        } rounded-xl text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-emerald-500 outline-none transition-all`}
+                      />
                     </div>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="98470 12345"
-                      className="w-full pl-20 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                    />
+
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneOTP}
+                      disabled={sendingOtp || !formData.phone || otpVerified}
+                      className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                        otpVerified
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 cursor-default'
+                          : 'bg-[#1F5E3B] hover:bg-[#17331F] text-white shadow-xs disabled:opacity-50'
+                      }`}
+                    >
+                      {sendingOtp ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Sending...</span>
+                        </>
+                      ) : otpVerified ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Verified</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>{otpSent ? 'Resend OTP' : 'Send OTP'}</span>
+                        </>
+                      )}
+                    </button>
                   </div>
+
+                  {/* OTP Input & Verification Box */}
+                  {otpSent && !otpVerified && (
+                    <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl space-y-2 animate-fadeIn">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-extrabold text-[#17331F] dark:text-emerald-300 flex items-center gap-1">
+                          <Key className="w-3.5 h-3.5 text-emerald-600" /> Enter 6-Digit OTP Code
+                        </span>
+                        {simulatedOtp && (
+                          <span className="text-[10px] font-mono bg-emerald-200/70 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200 px-1.5 py-0.5 rounded font-bold">
+                            Dev Code: {simulatedOtp}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={phoneOtp}
+                          onChange={(e) => setPhoneOtp(e.target.value)}
+                          placeholder="e.g. 482910"
+                          className="flex-1 px-3 py-2 text-xs font-mono font-black tracking-wider bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded-lg text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyPhoneOTP}
+                          disabled={verifyingOtp || !phoneOtp.trim()}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black transition-all flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {otpStatusMessage && (
+                    <p
+                      className={`text-[11px] font-bold ${
+                        otpStatusMessage.includes('Verified') || otpStatusMessage.includes('sent')
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-red-500'
+                      }`}
+                    >
+                      {otpStatusMessage}
+                    </p>
+                  )}
                 </div>
 
                 {/* Gender Segmented Switch */}
