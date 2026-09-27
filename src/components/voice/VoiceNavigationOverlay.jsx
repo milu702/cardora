@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useVoiceNavigation } from '../../context/VoiceNavigationContext';
-import { Mic, X, HelpCircle, CheckCircle, ArrowRight, RotateCcw, Send, Keyboard } from 'lucide-react';
+import { Mic, X, HelpCircle, CheckCircle, ArrowRight, RotateCcw, Send, Keyboard, ChevronUp, Minus } from 'lucide-react';
 
 const VoiceNavigationOverlay = () => {
   const {
@@ -25,6 +25,7 @@ const VoiceNavigationOverlay = () => {
   } = useVoiceNavigation();
 
   const [manualQuery, setManualQuery] = useState('');
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const handleManualSubmit = (e) => {
     e.preventDefault();
@@ -70,40 +71,92 @@ const VoiceNavigationOverlay = () => {
       {/* ========================================================================= */}
       {/* 1. UNIVERSAL FLOATING MICROPHONE BUTTON (ACCESSIBLE FROM EVERY PAGE) */}
       {/* ========================================================================= */}
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2 font-sans select-none">
-        <button
-          onClick={() => {
-            if (isListening) {
-              stopListening();
-            } else {
-              startListening();
-            }
-          }}
-          className={`relative group px-4 py-3 rounded-full shadow-2xl flex items-center gap-3 transition-all duration-300 cursor-pointer border ${
-            isListening
-              ? 'bg-rose-600 text-white border-rose-400 scale-105 ring-4 ring-rose-500/30 shadow-rose-950/50'
-              : 'bg-gradient-to-r from-amber-400 via-amber-500 to-[#D4AF37] text-slate-950 border-amber-300 hover:scale-105 shadow-amber-950/40 font-black'
-          }`}
-          title="Universal Voice Navigation (പറയൂ, Cardora ചെയ്യും)"
-        >
-          {/* Pulse Ripple Effect when listening */}
-          {isListening && (
-            <span className="absolute -inset-1 rounded-full bg-rose-500/40 animate-ping pointer-events-none" />
-          )}
-
-          <div className={`p-2 rounded-full ${isListening ? 'bg-white/20' : 'bg-slate-950/10'} backdrop-blur-xs`}>
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-1.5 font-sans select-none">
+        {isMinimized ? (
+          /* COMPACT MINI MIC PILL (Zero UI Blocking) */
+          <button
+            onClick={() => {
+              if (isListening) {
+                stopListening();
+              } else {
+                startListening();
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setIsMinimized(false);
+            }}
+            className={`relative p-3 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 cursor-pointer border ${
+              isListening
+                ? 'bg-rose-600 text-white border-rose-400 scale-110 ring-4 ring-rose-500/30'
+                : 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 border-amber-300 hover:scale-105 shadow-amber-950/40'
+            }`}
+            title="Speak to Cardora Voice Assist (Click to Listen, Right-Click or Expand to restore label)"
+          >
+            {isListening && (
+              <span className="absolute -inset-1 rounded-full bg-rose-500/40 animate-ping pointer-events-none" />
+            )}
             <Mic className={`w-5 h-5 ${isListening ? 'animate-bounce text-white' : 'text-slate-950'}`} />
-          </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMinimized(false);
+              }}
+              className="absolute -top-1 -right-1 w-4 h-4 bg-slate-900 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-emerald-600 shadow-sm"
+              title="Expand Voice Widget"
+            >
+              <ChevronUp className="w-3 h-3" />
+            </button>
+          </button>
+        ) : (
+          /* FULL GOLD VOICE BADGE WITH MINIMIZE BUTTON */
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                if (isListening) {
+                  stopListening();
+                } else {
+                  startListening();
+                }
+              }}
+              className={`relative group px-3.5 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 transition-all duration-300 cursor-pointer border ${
+                isListening
+                  ? 'bg-rose-600 text-white border-rose-400 scale-105 ring-4 ring-rose-500/30 shadow-rose-950/50'
+                  : 'bg-gradient-to-r from-amber-400 via-amber-500 to-[#D4AF37] text-slate-950 border-amber-300 hover:scale-105 shadow-amber-950/40 font-black'
+              }`}
+              title="Universal Voice Navigation (പറയൂ, Cardora ചെയ്യും)"
+            >
+              {/* Pulse Ripple Effect when listening */}
+              {isListening && (
+                <span className="absolute -inset-1 rounded-full bg-rose-500/40 animate-ping pointer-events-none" />
+              )}
 
-          <div className="text-left hidden sm:block pr-1">
-            <p className="text-xs font-black tracking-wide leading-none text-slate-950 font-poppins">
-              {isListening ? (voiceLang === 'ml' ? 'കേൾക്കുന്നു...' : 'Listening...') : 'Speak to Cardora'}
-            </p>
-            <p className="text-[10px] text-slate-900 font-extrabold leading-tight mt-0.5">
-              {voiceLang === 'ml' ? 'പറയൂ, Cardora ചെയ്യും 🎙️' : 'Universal Voice Nav'}
-            </p>
+              <div className={`p-1.5 rounded-full ${isListening ? 'bg-white/20' : 'bg-slate-950/10'} backdrop-blur-xs`}>
+                <Mic className={`w-4 h-4 ${isListening ? 'animate-bounce text-white' : 'text-slate-950'}`} />
+              </div>
+
+              <div className="text-left hidden sm:block pr-1">
+                <p className="text-xs font-black tracking-wide leading-none text-slate-950 font-poppins">
+                  {isListening ? (voiceLang === 'ml' ? 'കേൾക്കുന്നു...' : 'Listening...') : 'Speak to Cardora'}
+                </p>
+                <p className="text-[10px] text-slate-900 font-extrabold leading-tight mt-0.5">
+                  {voiceLang === 'ml' ? 'പറയൂ, Cardora ചെയ്യും 🎙️' : 'Voice Assistant'}
+                </p>
+              </div>
+            </button>
+
+            {/* MINIMIZE TOGGLE BUTTON */}
+            <button
+              type="button"
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 rounded-full bg-slate-900/80 hover:bg-slate-900 text-amber-300 hover:text-white transition shadow-md border border-amber-400/30 cursor-pointer"
+              title="Minimize Voice Button to prevent blocking UI"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
           </div>
-        </button>
+        )}
       </div>
 
       {/* ========================================================================= */}

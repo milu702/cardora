@@ -18,7 +18,14 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, onEditP
 
   const plotPhotos = (plot.images && plot.images.length > 0)
     ? plot.images
-    : [plot.image || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'];
+    : [
+        plot.image || '/images/cardamom/cardamom_plantation_forest.jpg',
+        '/images/cardamom/cardamom_panorama_360.jpg',
+        '/images/cardamom/cardamom_drone_aerial.jpg',
+        '/images/cardamom/cardamom_tillers_soil.jpg',
+        '/images/cardamom/cardamom_hanging_pods.jpg',
+        '/images/cardamom/cardamom_pods_pile.jpg'
+      ];
 
   // Text-To-Speech Reader
   const handleReadAloud = () => {
@@ -184,39 +191,159 @@ const LuxuryDetailModal = ({ plot, onClose, onOpenChat, onScheduleVisit, onEditP
             </div>
 
             <div className="relative h-72 sm:h-96 rounded-3xl overflow-hidden border-2 border-[#2E7D32]/30 shadow-2xl bg-slate-950 flex items-center justify-center">
+              {/* 1. 360 PANORAMA VIEW */}
               {activeMediaTab === '360' && (
-                <div className="relative w-full h-full">
+                <div className="relative w-full h-full group overflow-hidden">
                   <img
-                    src={plotPhotos[activePhotoIdx] || plot.image}
-                    alt=""
-                    className="w-full h-full object-cover filter brightness-90 animate-pulse"
+                    src="/images/cardamom/cardamom_panorama_360.jpg"
+                    alt="Cardamom 360 Panorama View"
+                    className="w-full h-full object-cover filter brightness-95 group-hover:scale-105 transition-transform duration-1000"
                   />
-                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white space-y-3">
-                    <span className="p-4 rounded-full bg-[#1B5E20]/80 backdrop-blur-md border-2 border-[#66BB6A] animate-bounce">
-                      <Eye className="w-8 h-8 text-[#66BB6A]" />
-                    </span>
-                    <p className="text-sm font-black font-poppins">Interactive 360° Panorama View</p>
-                    <p className="text-xs text-emerald-200">Drag to look around plantation canopy & soil pulse drip lines</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40 flex flex-col justify-between p-4 sm:p-6 text-white select-none">
+                    {/* Top HUD bar */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-emerald-500/40 text-xs font-black">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span>360° LIVE CANOPY PANORAMA</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-[11px] font-bold">
+                        📍 {plot.location || 'Kattappana, Idukki'} • Compass: N 42° E
+                      </div>
+                    </div>
+
+                    {/* Center Interactive Hotspot Badge */}
+                    <div className="relative flex-1 flex items-center justify-center">
+                      <div className="text-center space-y-2 max-w-md bg-black/60 backdrop-blur-md p-4 rounded-3xl border border-emerald-400/40 shadow-2xl">
+                        <span className="p-3.5 rounded-full bg-[#1B5E20]/90 backdrop-blur-md border-2 border-[#66BB6A] inline-flex items-center justify-center animate-bounce shadow-lg">
+                          <Eye className="w-7 h-7 text-[#66BB6A]" />
+                        </span>
+                        <p className="text-sm font-black font-poppins text-white">Interactive 360° Cardamom Canopy Tour</p>
+                        <p className="text-xs text-emerald-200">Drag to look around tiller clumps, shade canopy & soil pulse drip lines</p>
+                      </div>
+
+                      {/* Hotspot 1: Soil Drip */}
+                      <div className="absolute top-1/4 left-10 hidden sm:flex items-center gap-2 bg-emerald-950/80 backdrop-blur-md p-2 px-3 rounded-2xl border border-emerald-400/50 text-[10px] font-extrabold shadow-xl">
+                        <Droplets className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Micro-Drip Line • Moisture 82%</span>
+                      </div>
+
+                      {/* Hotspot 2: Cardamom Pods */}
+                      <div className="absolute bottom-1/4 right-10 hidden sm:flex items-center gap-2 bg-amber-950/80 backdrop-blur-md p-2 px-3 rounded-2xl border border-amber-400/50 text-[10px] font-extrabold shadow-xl">
+                        <Trees className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Njallani Clump • 48 capsules</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Scrubber Indicator */}
+                    <div className="flex items-center justify-between text-[11px] font-extrabold bg-black/50 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                      <span>↔ 360° Angle Rotation</span>
+                      <span className="text-emerald-300 font-poppins">Tilt Elevation: +12° | Soil Depth: 40cm</span>
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* 2. 4K DRONE FLYOVER VIDEO */}
               {activeMediaTab === 'drone' && (
-                <div className="relative w-full h-full flex flex-col items-center justify-center bg-slate-950 text-white">
-                  <Video className="w-12 h-12 text-[#66BB6A] animate-pulse mb-2" />
-                  <p className="text-base font-black font-poppins">4K Ultra-HD Drone Flyover Video</p>
-                  <p className="text-xs text-emerald-200">Filmed with Geo-tagged Elevation MSL Sensor</p>
+                <div className="relative w-full h-full group overflow-hidden">
+                  <img
+                    src="/images/cardamom/cardamom_drone_aerial.jpg"
+                    alt="4K Cardamom Aerial Drone Shot"
+                    className="w-full h-full object-cover filter brightness-90 group-hover:scale-105 transition-transform duration-1000"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40 flex flex-col justify-between p-4 sm:p-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                        4K HDR FLYOVER
+                      </span>
+                      <span className="text-xs font-mono font-bold bg-black/60 px-3 py-1 rounded-full border border-white/20">
+                        ALT: 1,120m MSL | SPEED: 14 km/h
+                      </span>
+                    </div>
+
+                    <div className="text-center space-y-3 my-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.open('/images/cardamom/cardamom_drone_aerial.jpg', '_blank');
+                        }}
+                        className="p-5 rounded-full bg-emerald-600/90 hover:bg-emerald-500 text-white backdrop-blur-md border-2 border-emerald-300 inline-flex items-center justify-center transition scale-110 shadow-2xl cursor-pointer hover:scale-125"
+                      >
+                        <Video className="w-8 h-8 text-white" />
+                      </button>
+                      <div>
+                        <p className="text-base font-black font-poppins text-white">4K Ultra-HD Drone Flyover Video</p>
+                        <p className="text-xs text-emerald-200">Aerial Survey of Estate Boundary & Silver Oak Canopy</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-300 font-mono">
+                      <span>REC 🔴 00:02:45 / 00:05:00</span>
+                      <span>Resolution: 3840 x 2160 • Geo-Tagged</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
+              {/* 3. HIGH-RES PHOTOS GALLERY */}
               {activeMediaTab === 'gallery' && (
-                <img src={plotPhotos[activePhotoIdx] || plot.image} alt="" className="w-full h-full object-cover" />
+                <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
+                  <img
+                    src={plotPhotos[activePhotoIdx] || '/images/cardamom/cardamom_plantation_forest.jpg'}
+                    alt="Cardamom High-Res Photo"
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
+                  <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-white text-xs font-black border border-white/20">
+                    Photo #{activePhotoIdx + 1} of {plotPhotos.length}
+                  </div>
+                  <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-emerald-950/80 backdrop-blur-md text-emerald-300 text-xs font-extrabold border border-emerald-500/30">
+                    🌿 Authentic Cardamom Crop Foliage
+                  </div>
+                </div>
               )}
 
+              {/* 4. SATELLITE BOUNDARY MAP */}
               {activeMediaTab === 'map' && (
-                <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white">
-                  <Map className="w-12 h-12 text-[#66BB6A] mb-2" />
-                  <p className="text-sm font-black font-poppins">Geo-Fenced Polygon Boundaries Active</p>
+                <div className="relative w-full h-full overflow-hidden">
+                  <img
+                    src="/images/cardamom/cardamom_drone_aerial.jpg"
+                    alt="Satellite Geo-Fence Map"
+                    className="w-full h-full object-cover filter contrast-125 saturate-150"
+                  />
+                  {/* Geo-Fenced Polygon Overlay */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <polygon
+                      points="20,25 75,20 85,75 30,85 15,50"
+                      fill="rgba(5, 150, 105, 0.25)"
+                      stroke="#34D399"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 2"
+                      className="animate-pulse"
+                    />
+                  </svg>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/50 p-4 sm:p-6 flex flex-col justify-between text-white select-none">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider shadow-md">
+                        NEON GEO-FENCE POLYGON ACTIVE
+                      </span>
+                      <span className="text-xs font-black bg-black/60 px-3 py-1 rounded-full border border-emerald-400/40 text-emerald-300 font-mono">
+                        99.4% AI Legal Trust Verified
+                      </span>
+                    </div>
+
+                    <div className="bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-emerald-500/30 space-y-1 self-start max-w-xs">
+                      <h4 className="text-xs font-black text-white font-poppins">Geo-Polygon Survey Reference</h4>
+                      <p className="text-[11px] text-emerald-200">Survey No: 412/1-B • Kattappana Village</p>
+                      <p className="text-[11px] text-emerald-300 font-bold">Total Acreage: {plot.area || '4.2 Acres'}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-300 font-mono">
+                      <span>LAT: 9.8512° N | LON: 77.0823° E</span>
+                      <span>Elevation: 1,150m MSL</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

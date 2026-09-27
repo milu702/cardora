@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  MapPin, Leaf, Calendar, Droplets, Database, Activity, 
+import {
+  MapPin, Leaf, Calendar, Droplets, Database, Activity,
   Sparkles, CheckCircle2, ShieldCheck, Mountain, Users, ArrowUpRight
 } from 'lucide-react';
 
@@ -28,10 +28,10 @@ const OverviewTab = ({ plantation, onSwitchTab }) => {
 
   return (
     <div className="space-y-6">
-      
+
       {/* 1. OVERVIEW HIGHLIGHT CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
+
         <div className="p-4 rounded-2xl bg-white border border-[#D7E6D5] shadow-soft">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-[#4A5568]">Health Index</span>
@@ -86,7 +86,7 @@ const OverviewTab = ({ plantation, onSwitchTab }) => {
 
       {/* 2. MAP & KEY SCHEDULES GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* MAP & GEOLOCATION PANEL */}
         <div className="lg:col-span-7 bg-white rounded-[20px] border border-[#D7E6D5] p-5 shadow-soft space-y-4">
           <div className="flex items-center justify-between">
@@ -101,13 +101,13 @@ const OverviewTab = ({ plantation, onSwitchTab }) => {
 
           {/* Interactive Map Visual Mock */}
           <div className="relative h-64 rounded-2xl overflow-hidden border border-[#D7E6D5] bg-[#17331F] flex items-center justify-center text-white">
-            <img 
-              src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80" 
-              alt="Map Topography" 
+            <img
+              src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80"
+              alt="Map Topography"
               className="w-full h-full object-cover opacity-70"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            
+
             {/* Map Pin Marker */}
             <div className="absolute flex flex-col items-center">
               <div className="p-2 rounded-full bg-[#1F5E3B] text-white shadow-xl animate-bounce">
@@ -196,13 +196,12 @@ const OverviewTab = ({ plantation, onSwitchTab }) => {
           </div>
 
           {/* Region Advisory Notice Banner */}
-          <div className={`p-3.5 rounded-xl border text-xs font-medium ${
-            isIdeal ? 'bg-[#DDEFD9]/60 border-[#5C8D4E]/40 text-[#1F5E3B]' : 'bg-amber-50 border-amber-300 text-amber-900'
-          }`}>
+          <div className={`p-3.5 rounded-xl border text-xs font-medium ${isIdeal ? 'bg-[#DDEFD9]/60 border-[#5C8D4E]/40 text-[#1F5E3B]' : 'bg-amber-50 border-amber-300 text-amber-900'
+            }`}>
             <div className="flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>
-                {isIdeal 
+                {isIdeal
                   ? `Located in prime ${district} cardamom cultivation belt. High-altitude shade forest conditions active.`
                   : `⚠️ ${district} is not a primary cardamom zone. Intensive climate control required.`}
               </span>
@@ -212,6 +211,136 @@ const OverviewTab = ({ plantation, onSwitchTab }) => {
 
       </div>
 
+      {/* 3. CARDORA WHAT-IF ANALYSIS SIMULATOR */}
+      <WhatIfSimulator plantation={plantation} />
+
+    </div>
+  );
+};
+
+// Interactive What-If Simulation Component
+const WhatIfSimulator = ({ plantation }) => {
+  const area = plantation?.area || 5.0;
+  const baseYield = Math.round(area * 420);
+  const baseHealth = plantation?.healthScore ?? plantation?.health ?? 90;
+
+  const [rainChange, setRainChange] = React.useState(0); // % change
+  const [tempChange, setTempChange] = React.useState(0); // deg C
+  const [fertilizerDosage, setFertilizerDosage] = React.useState(500); // grams per clump
+  const [shadePercent, setShadePercent] = React.useState(plantation?.shadePercentage || 55);
+
+  // Dynamic simulation calculations
+  const simDiseaseRisk = Math.min(95, Math.max(5, Math.round(20 + rainChange * 0.4 + (tempChange > 2 ? 15 : 0) + (shadePercent < 45 ? 10 : 0))));
+  const simYieldDelta = Math.round((fertilizerDosage - 500) * 0.2 - (rainChange > 50 ? 40 : 0) + (tempChange < 0 ? 10 : -15));
+  const simYield = Math.max(100, baseYield + simYieldDelta);
+  const simHealth = Math.min(100, Math.max(30, Math.round(baseHealth - (simDiseaseRisk > 40 ? 12 : 0) + (fertilizerDosage >= 400 && fertilizerDosage <= 600 ? 5 : -5))));
+
+  return (
+    <div className="bg-gradient-to-br from-[#17331F] to-[#1F5E3B] text-white rounded-[24px] p-6 shadow-xl space-y-5 border border-[#5C8D4E]/40">
+      <div className="flex items-center justify-between border-b border-white/20 pb-4 flex-wrap gap-2">
+        <div>
+          <h4 className="text-base font-black font-poppins text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#C9A227]" />
+            What-If Agro Simulation Studio
+          </h4>
+          <p className="text-xs text-[#DDEFD9] font-medium mt-0.5">
+            Simulate weather shifts, shade density, & fertilizer inputs to forecast yield & disease vulnerability before taking field action.
+          </p>
+        </div>
+        <span className="px-3 py-1 rounded-full bg-[#C9A227]/20 border border-[#C9A227] text-[#C9A227] text-xs font-bold">
+          ⚡ Predictive AI Engine
+        </span>
+      </div>
+
+      {/* Simulator Sliders */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-xs">
+        {/* Rainfall Shift */}
+        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2">
+          <div className="flex justify-between font-bold">
+            <span>Rainfall Forecast:</span>
+            <span className="text-[#C9A227]">{rainChange >= 0 ? `+${rainChange}%` : `${rainChange}%`}</span>
+          </div>
+          <input 
+            type="range" min="-50" max="100" step="5"
+            value={rainChange} onChange={(e) => setRainChange(Number(e.target.value))}
+            className="w-full accent-[#C9A227] cursor-pointer"
+          />
+          <span className="text-[10px] text-[#DDEFD9] block">
+            {rainChange > 40 ? '⚠️ High rain alert: Capsule rot risk increases' : 'Normal rainfall range'}
+          </span>
+        </div>
+
+        {/* Temperature Delta */}
+        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2">
+          <div className="flex justify-between font-bold">
+            <span>Temperature Shift:</span>
+            <span className="text-[#C9A227]">{tempChange >= 0 ? `+${tempChange}°C` : `${tempChange}°C`}</span>
+          </div>
+          <input 
+            type="range" min="-5" max="5" step="1"
+            value={tempChange} onChange={(e) => setTempChange(Number(e.target.value))}
+            className="w-full accent-[#C9A227] cursor-pointer"
+          />
+          <span className="text-[10px] text-[#DDEFD9] block">
+            {tempChange > 2 ? '⚠️ High heat stress on flowering' : 'Optimal thermal zone'}
+          </span>
+        </div>
+
+        {/* Fertilizer Dosage */}
+        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2">
+          <div className="flex justify-between font-bold">
+            <span>Neem & NPK Dosage:</span>
+            <span className="text-[#C9A227]">{fertilizerDosage}g / clump</span>
+          </div>
+          <input 
+            type="range" min="100" max="1000" step="50"
+            value={fertilizerDosage} onChange={(e) => setFertilizerDosage(Number(e.target.value))}
+            className="w-full accent-[#C9A227] cursor-pointer"
+          />
+          <span className="text-[10px] text-[#DDEFD9] block">Recommended: 500g / clump</span>
+        </div>
+
+        {/* Canopy Shade */}
+        <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2">
+          <div className="flex justify-between font-bold">
+            <span>Canopy Shade:</span>
+            <span className="text-[#C9A227]">{shadePercent}%</span>
+          </div>
+          <input 
+            type="range" min="30" max="80" step="5"
+            value={shadePercent} onChange={(e) => setShadePercent(Number(e.target.value))}
+            className="w-full accent-[#C9A227] cursor-pointer"
+          />
+          <span className="text-[10px] text-[#DDEFD9] block">Optimal: 50% - 60% shade</span>
+        </div>
+      </div>
+
+      {/* Simulation Result Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-center">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#DDEFD9]">Simulated Health Index</span>
+          <div className="text-2xl font-black text-emerald-300 font-poppins mt-1">{simHealth} / 100</div>
+          <span className="text-[10px] font-bold text-emerald-200">Base: {baseHealth}</span>
+        </div>
+
+        <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-center">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#DDEFD9]">Fungal Disease Risk</span>
+          <div className={`text-2xl font-black font-poppins mt-1 ${simDiseaseRisk > 40 ? 'text-rose-400' : 'text-emerald-300'}`}>
+            {simDiseaseRisk}% Risk
+          </div>
+          <span className="text-[10px] font-bold text-[#DDEFD9]">
+            {simDiseaseRisk > 40 ? 'High vulnerability' : 'Low disease risk'}
+          </span>
+        </div>
+
+        <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-center">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#DDEFD9]">Forecasted Harvest Yield</span>
+          <div className="text-2xl font-black text-[#C9A227] font-poppins mt-1">{simYield} kg</div>
+          <span className="text-[10px] font-bold text-amber-200">
+            {simYieldDelta >= 0 ? `+${simYieldDelta} kg vs baseline` : `${simYieldDelta} kg vs baseline`}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

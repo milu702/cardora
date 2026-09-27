@@ -80,7 +80,9 @@ CORE RULES & BEHAVIOR:
     }
 
     // Compute structured badges & actionable cards from response content
-    const queryLower = (userQuery || '').toLowerCase();
+    const queryLower = (userQuery || '').toLowerCase().trim();
+    const isConversationalOnly = queryLower === 'thanks' || queryLower === 'thank you' || queryLower === 'ok thanky' || queryLower.includes('thank') || queryLower === 'ok' || queryLower === 'got it' || queryLower === 'hi' || queryLower === 'hello' || queryLower === 'how' || queryLower.includes('escalate');
+
     let diseaseRisk = 'LOW';
     let riskScore = 15;
     let weatherRisk = 'NORMAL';
@@ -109,7 +111,7 @@ CORE RULES & BEHAVIOR:
     return {
       replyText: aiResponseText,
       contextUsed: usePlantationData ? contextSnapshot : null,
-      structuredData: {
+      structuredData: isConversationalOnly && !hasImage ? null : {
         diseaseRisk,
         riskScore,
         weatherRisk,

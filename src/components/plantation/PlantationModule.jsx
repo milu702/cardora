@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Leaf 
+import {
+  Plus, Search, Leaf, GitCompare, X, Sparkles
 } from 'lucide-react';
-
-
 
 import PlantationCard from './PlantationCard';
 import AddPlantationModal from './AddPlantationModal';
@@ -22,6 +20,7 @@ const PlantationModule = ({ onToast }) => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
   const [editingPlantation, setEditingPlantation] = useState(null);
 
   // Search, Filter & Sort state
@@ -106,7 +105,7 @@ const PlantationModule = ({ onToast }) => {
     try {
       await apiService.updatePlantation(id, partialData);
       if (onToast) onToast('Plantation telemetry updated');
-      
+
       // Update state locally
       setPlantations((prev) =>
         prev.map((p) => {
@@ -165,7 +164,7 @@ const PlantationModule = ({ onToast }) => {
 
   return (
     <div className="space-y-6">
-      
+
       {/* VIEW MODE ROUTER: DETAILS DASHBOARD vs LIST VIEW */}
       {viewMode === 'details' && selectedPlantation ? (
         <PlantationDetailsDashboard
@@ -180,7 +179,7 @@ const PlantationModule = ({ onToast }) => {
         />
       ) : (
         <div className="space-y-6">
-          
+
           {/* HEADER BAR */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -194,6 +193,14 @@ const PlantationModule = ({ onToast }) => {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="md"
+                icon={GitCompare}
+                onClick={() => setCompareModalOpen(true)}
+              >
+                Compare Plots
+              </Button>
               <Button
                 variant="primary"
                 size="md"
@@ -210,7 +217,7 @@ const PlantationModule = ({ onToast }) => {
 
           {/* SEARCH, FILTERS & SORT CONTROLS BAR */}
           <div className="bg-white rounded-[20px] border border-[#D7E6D5] p-4 shadow-soft space-y-3">
-            
+
             {/* Search Input Row */}
             <div className="relative">
               <Search className="w-4 h-4 text-[#5C8D4E] absolute left-3.5 top-3.5" />
@@ -350,6 +357,106 @@ const PlantationModule = ({ onToast }) => {
         onSave={handleSavePlantation}
         editingPlantation={editingPlantation}
       />
+
+      {/* PLANTATION COMPARISON MODAL */}
+      {compareModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl rounded-2xl border border-[#D7E6D5] p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
+              <div>
+                <h3 className="text-lg font-black text-[#17331F] flex items-center gap-2 font-poppins">
+                  <GitCompare className="w-5 h-5 text-[#5C8D4E]" />
+                  Cardora Plot Intelligence Comparison Matrix
+                </h3>
+                <p className="text-xs text-[#4A5568]">Side-by-side performance analysis, health vectors, and telemetry across your plots</p>
+              </div>
+              <button 
+                onClick={() => setCompareModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {plantations.length === 0 ? (
+              <p className="text-sm text-gray-500 py-6 text-center">No plantations available to compare. Please add plots first.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#F4F9F2] text-[#17331F]">
+                      <th className="p-3 border-b border-[#D7E6D5] font-bold">Metric / Vector</th>
+                      {plantations.map((p) => (
+                        <th key={p._id || p.id} className="p-3 border-b border-[#D7E6D5] font-bold text-center">
+                          {p.name}
+                          <span className="block text-[10px] text-[#4A5568] font-normal">{p.district || p.location}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 font-medium text-[#2D3748]">
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">Variety</td>
+                      {plantations.map((p) => (
+                        <td key={p._id || p.id} className="p-3 text-center">{p.variety || 'Njallani'}</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">Total Area (Acres)</td>
+                      {plantations.map((p) => (
+                        <td key={p._id || p.id} className="p-3 text-center">{p.area || 5} ac</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">Health Index</td>
+                      {plantations.map((p) => {
+                        const score = p.healthScore ?? p.health ?? 90;
+                        return (
+                          <td key={p._id || p.id} className="p-3 text-center">
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                              score >= 85 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {score}%
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">Est. Yield Potential</td>
+                      {plantations.map((p) => (
+                        <td key={p._id || p.id} className="p-3 text-center font-bold text-[#1F5E3B]">
+                          {Math.round((p.area || 5) * 320)} kg/yr
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">Soil Nitrogen (N)</td>
+                      {plantations.map((p) => (
+                        <td key={p._id || p.id} className="p-3 text-center">{p.soilParameters?.nitrogen || 42} mg/kg</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">Soil pH</td>
+                      {plantations.map((p) => (
+                        <td key={p._id || p.id} className="p-3 text-center">{p.soilParameters?.ph || 6.2}</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold bg-[#FAFDF9]">AI Action Recommendation</td>
+                      {plantations.map((p) => (
+                        <td key={p._id || p.id} className="p-3 text-center text-[10px] text-[#2D3748]">
+                          {(p.healthScore ?? 90) < 85 ? 'Apply Trichoderma soil drench' : 'Optimal maintenance schedule'}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

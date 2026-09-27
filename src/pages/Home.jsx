@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Leaf, 
   Cloud, 
@@ -26,13 +26,16 @@ import CardamomGrowthJourney from '../components/animations/CardamomGrowthJourne
 import NatureBackground from '../components/animations/NatureBackground';
 import { useAuth } from '../context/AuthContext';
 
-// Cardamom Image URLs
+// High Quality Cardamom Local Images (User-Provided Authentic Cardamom Photography)
 const CARDAMOM_IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1599077614303-81a9f2cbe185?w=1200&q=80',
-  plantation: 'https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?w=800&q=80',
-  farmer: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80',
-  cardamomPods: 'https://images.unsplash.com/photo-1599077614303-81a9f2cbe185?w=600&q=80',
-  greenCardamom: 'https://images.unsplash.com/photo-1599077614303-81a9f2cbe185?w=400&q=80',
+  hero: '/images/cardamom/cardamom_plantation_forest.jpg',
+  plantation: '/images/cardamom/cardamom_plantation_forest.jpg',
+  farmer: '/images/cardamom/cardamom_wooden_spoon.jpg',
+  cardamomPods: '/images/cardamom/cardamom_pods_pile.jpg',
+  greenCardamom: '/images/cardamom/cardamom_hanging_pods.jpg',
+  weather: '/images/cardamom/cardamom_tillers_soil.jpg',
+  analytics: '/images/cardamom/cardamom_wooden_spoon.jpg',
+  organic: '/images/cardamom/cardamom_tillers_soil.jpg',
 };
 
 // ===== TRANSLATIONS =====
@@ -200,33 +203,35 @@ const VoiceAssistant = ({ language, onTranscript }) => {
 
   if (!isSupported) {
     return (
-      <div className="flex items-center gap-2 text-[#4A5568] text-xs">
-        <span>Voice not supported</span>
+      <div className="flex items-center justify-center p-2 text-[#4A5568] dark:text-emerald-300 text-xs font-semibold">
+        <span>Voice not supported in this browser</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center text-center p-1">
       <motion.button
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         onClick={startListening}
-        className={`relative p-3 rounded-full transition-all duration-300 ${
+        className={`relative p-3.5 rounded-full transition-all duration-300 cursor-pointer ${
           isListening 
-            ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/30' 
-            : 'bg-[#1F5E3B] hover:bg-[#5C8D4E] shadow-md text-white'
+            ? 'bg-rose-500 animate-pulse shadow-lg shadow-rose-500/40 text-white' 
+            : 'bg-gradient-to-r from-[#1F5E3B] to-[#2E7D4E] hover:from-[#2E7D4E] hover:to-[#1F5E3B] shadow-md text-white border border-emerald-400/30'
         }`}
       >
-        <Mic className="w-5 h-5 text-white" />
+        <Mic className="w-5 h-5" />
       </motion.button>
-      <p className="mt-1 text-[10px] md:text-xs text-[#4A5568] font-bold">
-        {isListening ? '🔴 ' + (language === 'ml' ? 'ശ്രദ്ധിക്കുന്നു...' : 'Listening...') : (language === 'ml' ? 'സംസാരിക്കാൻ ക്ലിക്ക് ചെയ്യുക' : 'Voice Command')}
+      <p className="mt-2 text-xs text-[#17331F] dark:text-emerald-100 font-extrabold">
+        {isListening ? (language === 'ml' ? '🔴 ശ്രദ്ധിക്കുന്നു...' : '🔴 Listening...') : (language === 'ml' ? 'സംസാരിക്കാൻ ക്ലിക്ക് ചെയ്യുക' : 'Click to Speak')}
       </p>
       {transcript && (
-        <p className="mt-1 text-xs text-[#1F5E3B] font-bold max-w-[160px] text-center truncate">
-          "{transcript}"
-        </p>
+        <div className="mt-2 p-2 bg-[#DDEFD9]/50 dark:bg-emerald-950/60 rounded-xl border border-[#5C8D4E]/30 w-full">
+          <p className="text-xs text-[#1F5E3B] dark:text-emerald-300 font-bold truncate">
+            "{transcript}"
+          </p>
+        </div>
       )}
     </div>
   );
@@ -278,10 +283,14 @@ const FeatureCard = ({ icon: Icon, title, description, delay = 0, image }) => (
     <Card className="group relative overflow-hidden h-full flex flex-col justify-between transition-all duration-300">
       <div>
         {image && (
-          <div className="relative h-48 -mx-6 -mt-6 mb-5 overflow-hidden rounded-t-[20px]">
+          <div className="relative h-48 -mx-6 -mt-6 mb-5 overflow-hidden rounded-t-[20px] bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E]">
             <img 
               src={image} 
               alt={title} 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = CARDAMOM_IMAGES.plantation;
+              }}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#17331F]/80 via-transparent to-transparent" />
@@ -315,7 +324,15 @@ const TestimonialCard = ({ name, role, quote, delay = 0, image }) => (
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E] flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-md">
             {image ? (
-              <img src={image} alt={name} className="w-full h-full object-cover" />
+              <img 
+                src={image} 
+                alt={name} 
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                }}
+                className="w-full h-full object-cover" 
+              />
             ) : (
               name.charAt(0)
             )}
@@ -341,33 +358,37 @@ const TestimonialCard = ({ name, role, quote, delay = 0, image }) => (
   </AnimatedSection>
 );
 
-// FAQ Item Component with Rotation animation (NO opacity fade)
+// FAQ Item Component with Smooth Accordion Expansion
 const FAQItem = ({ question, answer, isOpen, onToggle }) => (
   <div className="border-b border-[#D7E6D5] last:border-0 py-4">
     <button 
       onClick={onToggle} 
-      className="w-full flex items-center justify-between text-left font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors py-1"
+      className="w-full flex items-center justify-between text-left font-bold text-[#17331F] hover:text-[#1F5E3B] transition-colors py-1 cursor-pointer"
     >
       <span className="text-sm md:text-base pr-4">{question}</span>
       <motion.span 
         animate={{ rotate: isOpen ? 180 : 0 }} 
         transition={{ duration: 0.3 }} 
-        className="text-[#1F5E3B] flex-shrink-0 p-1 rounded-full bg-[#DDEFD9]"
+        className="text-[#1F5E3B] flex-shrink-0 p-1.5 rounded-full bg-[#DDEFD9]"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="w-4 h-4" />
       </motion.span>
     </button>
-    {isOpen && (
-      <motion.div
-        initial={{ scaleY: 0 }}
-        animate={{ scaleY: 1 }}
-        style={{ transformOrigin: 'top center' }}
-        transition={{ duration: 0.3 }}
-        className="pt-3 pb-1 text-xs md:text-sm text-[#4A5568] leading-relaxed font-medium"
-      >
-        {answer}
-      </motion.div>
-    )}
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="overflow-hidden"
+        >
+          <p className="pt-3 pb-1 text-xs md:text-sm text-[#4A5568] leading-relaxed font-medium">
+            {answer}
+          </p>
+        </motion.div>
+      )}
+    </AnimatePresence>
   </div>
 );
 
@@ -402,7 +423,7 @@ const Home = () => {
       description: lang === 'en'
         ? 'Stay informed with accurate weather forecasts and real-time weather conditions for your plantation.'
         : 'കൃത്യമായ കാലാവസ്ഥാ പ്രവചനങ്ങളും നിങ്ങളുടെ തോട്ടത്തിനുള്ള തത്സമയ കാലാവസ്ഥാ സാഹചര്യങ്ങളും അറിയുക.',
-      image: CARDAMOM_IMAGES.plantation
+      image: CARDAMOM_IMAGES.weather
     },
     { 
       icon: Sparkles, 
@@ -418,7 +439,7 @@ const Home = () => {
       description: lang === 'en'
         ? 'Monitor the overall health of your plantation with an easy-to-understand health score indicator.'
         : 'എളുപ്പത്തിൽ മനസ്സിലാക്കാവുന്ന ആരോഗ്യ സ്കോർ സൂചകം ഉപയോഗിച്ച് നിങ്ങളുടെ തോട്ടത്തിന്റെ മൊത്തത്തിലുള്ള ആരോഗ്യം നിരീക്ഷിക്കുക.',
-      image: CARDAMOM_IMAGES.farmer
+      image: CARDAMOM_IMAGES.analytics
     },
     { 
       icon: Zap, 
@@ -426,7 +447,7 @@ const Home = () => {
       description: lang === 'en'
         ? 'Get timely alerts about weather changes, pest risks, and important plantation events.'
         : 'കാലാവസ്ഥാ മാറ്റങ്ങൾ, കീട അപകടങ്ങൾ, പ്രധാന തോട്ടം സംഭവങ്ങൾ എന്നിവയെക്കുറിച്ചുള്ള സമയബന്ധിതമായ അലേർട്ടുകൾ നേടുക.',
-      image: CARDAMOM_IMAGES.cardamomPods
+      image: CARDAMOM_IMAGES.organic
     },
   ];
 
@@ -437,7 +458,7 @@ const Home = () => {
       quote: lang === 'en' 
         ? 'Cardora has transformed how I manage my plantation. The AI recommendations helped me increase my yield by 30%!'
         : 'എന്റെ തോട്ടം എങ്ങനെ കൈകാര്യം ചെയ്യണമെന്ന് കാർഡോറ മാറ്റിമറിച്ചു. എഐ ശുപാർശകൾ എന്റെ വിളവ് 30% വർദ്ധിപ്പിക്കാൻ സഹായിച്ചു!',
-      image: CARDAMOM_IMAGES.farmer
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'
     },
     { 
       name: lang === 'en' ? 'Sneha Nair' : 'സ്നേഹ നായർ', 
@@ -445,7 +466,7 @@ const Home = () => {
       quote: lang === 'en'
         ? 'The soil analysis feature is a game-changer. I can now make informed decisions about fertilizer application.'
         : 'മണ്ണ് വിശകലന സവിശേഷത ഒരു ഗെയിം ചേഞ്ചർ ആണ്. വളപ്രയോഗത്തെക്കുറിച്ച് അറിവുള്ള തീരുമാനങ്ങൾ എടുക്കാൻ എനിക്ക് ഇപ്പോൾ കഴിയും.',
-      image: CARDAMOM_IMAGES.farmer
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
     },
     { 
       name: lang === 'en' ? 'Vikram Singh' : 'വിക്രം സിംഗ്', 
@@ -453,7 +474,7 @@ const Home = () => {
       quote: lang === 'en'
         ? 'Real-time weather alerts have saved my crop multiple times. This is exactly what farmers need!'
         : 'തത്സമയ കാലാവസ്ഥാ അലേർട്ടുകൾ എന്റെ വിള ഒന്നിലധികം തവണ രക്ഷിച്ചു. കർഷകർക്ക് ഇത് കൃത്യമായി ആവശ്യമുള്ളതാണ്!',
-      image: CARDAMOM_IMAGES.farmer
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80'
     },
   ];
 
@@ -462,25 +483,25 @@ const Home = () => {
       title: lang === 'en' ? 'Alleppey Green Pods (AGEB)' : 'ആലപ്പുഴ ഗ്രീൻ ഏലം',
       tag: lang === 'en' ? 'Grade A Superior' : 'ഗ്രേഡ് എ സുപ്പീരിയർ',
       location: 'Idukki, Kerala (1100m MSL)',
-      image: CARDAMOM_IMAGES.cardamomPods
+      image: '/images/cardamom/cardamom_pods_pile.jpg'
     },
     { 
       title: lang === 'en' ? 'Eco Shade Cultivated' : 'ഇക്കോ ഷേഡ് കൃഷി',
       tag: lang === 'en' ? '100% Organic' : '100% ജൈവം',
       location: 'Western Ghats Bio-Reserve',
-      image: CARDAMOM_IMAGES.greenCardamom
+      image: '/images/cardamom/cardamom_plantation_forest.jpg'
     },
     { 
       title: lang === 'en' ? 'High Essential Oil Yield' : 'ഉയർന്ന എണ്ണ ലഭ്യത',
       tag: lang === 'en' ? 'Aroma Score 98%' : 'സുഗന്ധ സ്കോർ 98%',
       location: 'Vandanmedu Spice Belt',
-      image: CARDAMOM_IMAGES.plantation
+      image: '/images/cardamom/cardamom_wooden_spoon.jpg'
     },
     { 
       title: lang === 'en' ? 'Precision Harvested' : 'കൃത്യതയാർന്ന വിളവെടുപ്പ്',
       tag: lang === 'en' ? 'AI Harvest Timed' : 'എഐ വിളവെടുപ്പ്',
       location: 'Certified Organic Plantation',
-      image: CARDAMOM_IMAGES.farmer
+      image: '/images/cardamom/cardamom_hanging_pods.jpg'
     },
   ];
 
@@ -503,17 +524,17 @@ const Home = () => {
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleLang}
-            className="flex items-center gap-2 px-3 py-2 bg-white/90 backdrop-blur-md rounded-full shadow-md border border-[#D7E6D5] hover:border-[#1F5E3B] transition-all"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white/95 dark:bg-[#06150D]/95 backdrop-blur-md rounded-full shadow-lg border border-[#D7E6D5] dark:border-[#1A402D] hover:border-[#1F5E3B] transition-all cursor-pointer"
           >
-            <Languages className="w-4 h-4 text-[#1F5E3B]" />
-            <span className="text-xs font-extrabold text-[#17331F]">
+            <Languages className="w-4 h-4 text-[#1F5E3B] dark:text-emerald-400" />
+            <span className="text-xs font-black text-[#17331F] dark:text-white">
               {lang === 'en' ? '🇬🇧 EN' : '🇮🇳 ML'}
             </span>
           </motion.button>
 
           <button 
             onClick={() => setIsWidgetExpanded(!isWidgetExpanded)}
-            className="p-2 bg-white/90 backdrop-blur-md rounded-full shadow-md border border-[#D7E6D5] text-[#1F5E3B]"
+            className="p-2.5 bg-[#1F5E3B] hover:bg-[#2E7D4E] text-white rounded-full shadow-lg border border-emerald-400/30 transition-all cursor-pointer"
             title="Toggle Voice Assistant"
           >
             <Mic className="w-4 h-4" />
@@ -521,12 +542,16 @@ const Home = () => {
         </div>
 
         {isWidgetExpanded && (
-          <div className="bg-white/95 backdrop-blur-md rounded-[20px] shadow-xl border border-[#D7E6D5] p-3 mt-1">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white/95 dark:bg-[#06150D]/95 backdrop-blur-md rounded-[20px] shadow-2xl border border-[#D7E6D5] dark:border-[#1A402D] p-4 mt-1 w-64"
+          >
             <VoiceAssistant 
               language={lang} 
               onTranscript={(text) => console.log('Voice prompt:', text)}
             />
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -536,6 +561,10 @@ const Home = () => {
           <img 
             src={CARDAMOM_IMAGES.hero} 
             alt="Cardamom Plantation" 
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = CARDAMOM_IMAGES.plantation;
+            }}
             className="w-full h-full object-cover scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#17331F]/95 via-[#17331F]/85 to-[#1F5E3B]/70" />
@@ -683,10 +712,14 @@ const Home = () => {
                 viewport={{ once: true }}
                 className="group relative overflow-hidden rounded-[20px] bg-white shadow-soft border border-[#D7E6D5] hover:border-[#1F5E3B] transition-all duration-300"
               >
-                <div className="relative h-52 overflow-hidden">
+                <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#1F5E3B] to-[#5C8D4E]">
                   <img 
                     src={item.image} 
                     alt={item.title} 
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = CARDAMOM_IMAGES.plantation;
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#17331F]/80 via-transparent to-transparent" />

@@ -508,9 +508,11 @@ If Language Preference is Malayalam ('ml'), reply in warm, clear Malayalam.`;
         : 'Consultation received. Inspect affected tiller bases for rot and apply Trichoderma viride bio-fungicide or 1% Bordeaux spray.';
     }
 
+    const validPlantationId = (plantation && mongoose.Types.ObjectId.isValid(plantation)) ? plantation : null;
+
     const consultation = await ExpertConsultation.create({
       farmer: userId,
-      plantation: plantation || null,
+      plantation: validPlantationId,
       title,
       category: cleanCategory,
       questionText,

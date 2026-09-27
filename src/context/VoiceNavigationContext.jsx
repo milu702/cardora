@@ -269,7 +269,7 @@ export const VoiceNavigationProvider = ({ children }) => {
   const [matchedFeature, setMatchedFeature] = useState(null);
   const [ambiguousMatches, setAmbiguousMatches] = useState([]);
   const [micVolume, setMicVolume] = useState(0);
-  
+
   // UI Overlays
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [voiceHelpOpen, setVoiceHelpOpen] = useState(false);
@@ -286,13 +286,13 @@ export const VoiceNavigationProvider = ({ children }) => {
     if (audioStreamRef.current) {
       try {
         audioStreamRef.current.getTracks().forEach((t) => t.stop());
-      } catch (e) {}
+      } catch (e) { }
       audioStreamRef.current = null;
     }
     if (audioCtxRef.current) {
       try {
         audioCtxRef.current.close();
-      } catch (e) {}
+      } catch (e) { }
       audioCtxRef.current = null;
     }
     setMicVolume(0);
@@ -307,7 +307,7 @@ export const VoiceNavigationProvider = ({ children }) => {
         utterance.lang = langCode;
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        
+
         // Pick preferred voice if available
         const voices = window.speechSynthesis.getVoices();
         const prefVoice = voices.find((v) => v.lang.includes(langCode.substring(0, 2)));
@@ -463,8 +463,8 @@ export const VoiceNavigationProvider = ({ children }) => {
     setRecognitionStatus('matched');
     setMatchedFeature(feature);
 
-    const spokenText = voiceLang === 'ml' 
-      ? `${feature.labelMl} തുറക്കുന്നു...` 
+    const spokenText = voiceLang === 'ml'
+      ? `${feature.labelMl} തുറക്കുന്നു...`
       : `Opening ${feature.labelEn}...`;
 
     setStatusMessage(spokenText);
@@ -525,7 +525,7 @@ export const VoiceNavigationProvider = ({ children }) => {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const recognition = new SpeechRecognition();
@@ -665,7 +665,7 @@ export const VoiceNavigationProvider = ({ children }) => {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch (e) {}
+      } catch (e) { }
     }
     setIsListening(false);
     setOverlayOpen(false);

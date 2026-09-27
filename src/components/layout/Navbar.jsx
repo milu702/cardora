@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Leaf,
@@ -22,7 +22,8 @@ import {
   MessageSquare,
   ShieldCheck,
   Gavel,
-  Mic
+  Mic,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useVoiceNavigation } from '../../context/VoiceNavigationContext';
@@ -37,6 +38,8 @@ const Navbar = ({ onToggleMobileSidebar }) => {
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -71,6 +74,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
     : [
       ...(isAdminUser ? [{ name: 'Admin Portal', href: '/dashboard?tab=admin', icon: Shield }] : []),
       { name: 'Dashboard', href: '/dashboard?tab=dashboard', icon: Home },
+      { name: 'Yield Prediction', href: '/dashboard?tab=yield-prediction', icon: TrendingUp },
       { name: 'Live Auctions', href: '/dashboard?tab=auctions', icon: Gavel },
       { name: 'Live Intelligence', href: '/dashboard?tab=intelligence', icon: Sparkles },
       { name: 'Expert Consultation', href: '/dashboard?tab=expert', icon: UserCheck },
@@ -107,15 +111,15 @@ const Navbar = ({ onToggleMobileSidebar }) => {
     >
       <div className="h-full w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
 
-        {/* Left Section: Mobile Menu Toggle & Brand Logo */}
-        <div className="flex items-center gap-3">
+        {/* Left Section: Menu Toggle & Brand Logo */}
+        <div className="flex items-center gap-2.5">
           {isAuthenticated && (
             <button
               onClick={handleMobileToggle}
-              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-[#0D261B] transition-colors focus:outline-none"
-              title="Toggle Menu"
+              className="p-2 rounded-xl text-slate-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-[#0D261B] transition-colors focus:outline-none cursor-pointer border border-[#CDE3D5] dark:border-[#1A402D] shadow-xs"
+              title="Toggle Navigation Menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
 
@@ -127,7 +131,7 @@ const Navbar = ({ onToggleMobileSidebar }) => {
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg md:text-xl font-black tracking-wider text-[#06150D] dark:text-white font-poppins flex items-center gap-1">
+              <span className="text-base sm:text-lg md:text-xl font-black tracking-wider text-[#06150D] dark:text-white font-poppins flex items-center gap-1">
                 CARDORA
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               </span>
@@ -177,11 +181,10 @@ const Navbar = ({ onToggleMobileSidebar }) => {
           {/* Universal Voice Navigation Button */}
           <button
             onClick={startListening}
-            className={`p-1.5 px-3 rounded-full text-xs font-black transition-all flex items-center gap-1.5 border cursor-pointer ${
-              isListening
+            className={`p-1.5 px-3 rounded-full text-xs font-black transition-all flex items-center gap-1.5 border cursor-pointer ${isListening
                 ? 'bg-rose-600 border-rose-500 text-white animate-pulse shadow-lg shadow-rose-900/40'
                 : 'bg-gradient-to-r from-amber-400 to-amber-500 border-amber-300 text-slate-950 hover:scale-105 shadow-md shadow-amber-950/20'
-            }`}
+              }`}
             title="Voice Navigation (പറയൂ, Cardora ചെയ്യും)"
           >
             <Mic className={`w-4 h-4 ${isListening ? 'text-white' : 'text-slate-950'}`} />
@@ -191,11 +194,10 @@ const Navbar = ({ onToggleMobileSidebar }) => {
           {/* Farmer Easy Mode Toggle */}
           <button
             onClick={toggleEasyMode}
-            className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 border cursor-pointer ${
-              easyMode
+            className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 border cursor-pointer ${easyMode
                 ? 'bg-[#059669] border-emerald-400 text-white font-black shadow-md ring-2 ring-emerald-400/40'
                 : 'bg-[#EAF4EE] dark:bg-[#0B2117] border-[#CDE3D5] dark:border-[#1A402D] text-[#06150D] dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-[#0D261B]'
-            }`}
+              }`}
             title="Farmer Easy Mode / വലിയ അക്ഷരങ്ങൾ"
           >
             <span className="text-sm">🌿</span>
@@ -216,8 +218,8 @@ const Navbar = ({ onToggleMobileSidebar }) => {
           <button
             onClick={toggleDarkMode}
             className={`p-2 rounded-full text-xs font-bold transition-all border ${darkMode
-                ? 'bg-[#0B2117] border-[#1A402D] text-amber-300 hover:bg-[#0D261B] shadow-inner'
-                : 'bg-[#EAF4EE] border-[#CDE3D5] text-[#06150D] hover:bg-emerald-100 shadow-xs'
+              ? 'bg-[#0B2117] border-[#1A402D] text-amber-300 hover:bg-[#0D261B] shadow-inner'
+              : 'bg-[#EAF4EE] border-[#CDE3D5] text-[#06150D] hover:bg-emerald-100 shadow-xs'
               }`}
             title="Toggle Dark / Light Mode"
           >
@@ -311,8 +313,8 @@ const Navbar = ({ onToggleMobileSidebar }) => {
                                 else navigate('/dashboard');
                               }}
                               className={`p-3 rounded-2xl transition-all cursor-pointer border flex items-start gap-2.5 ${!n.read
-                                  ? 'bg-[#EAF3E8]/80 dark:bg-slate-800 border-[#1F5E3B]/40 shadow-xs'
-                                  : 'bg-slate-50/70 dark:bg-slate-850 border-slate-100 dark:border-slate-800 hover:bg-slate-100'
+                                ? 'bg-[#EAF3E8]/80 dark:bg-slate-800 border-[#1F5E3B]/40 shadow-xs'
+                                : 'bg-slate-50/70 dark:bg-slate-850 border-slate-100 dark:border-slate-800 hover:bg-slate-100'
                                 }`}
                             >
                               <span className="text-base shrink-0 mt-0.5">{iconSymbol}</span>

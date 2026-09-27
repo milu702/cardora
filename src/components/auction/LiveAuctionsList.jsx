@@ -237,30 +237,48 @@ const LiveAuctionsList = ({ onSelectAuction, onCreateClick, onMyAuctionsClick, u
           ))}
         </div>
       ) : (
-        /* EMPTY STATE */
-        <div className="py-20 text-center space-y-4 bg-white dark:bg-slate-900 rounded-3xl border border-[#D7E6D5] dark:border-slate-800 p-10 shadow-md">
-          <Gavel size={48} className="mx-auto text-[#1F5E3B]" />
-          <h3 className="text-xl font-black text-[#17331F] dark:text-white">No Live Auctions Available</h3>
-          <p className="text-sm text-slate-500 font-medium max-w-md mx-auto">
-            New cardamom plantation auctions will appear here when approved by Admin.
-          </p>
-          <p className="text-xs text-amber-700 dark:text-amber-300 font-extrabold bg-amber-50 dark:bg-amber-950/40 py-2 px-4 rounded-xl max-w-md mx-auto border border-amber-200 dark:border-amber-800">
-            ⏳ Submitted listings pending Admin approval can be tracked under <strong>"My Auctions"</strong> (top right button).
-          </p>
-          <div className="flex justify-center gap-3 pt-2">
-            <button
-              onClick={handleSeedAuctions}
-              className="px-5 py-3 rounded-2xl bg-[#DDEFD9] text-[#1F5E3B] font-black text-sm hover:bg-[#1F5E3B] hover:text-white transition-all cursor-pointer"
-            >
-              ⚡ Load Demo Auctions
-            </button>
+        /* EMPTY STATE WITH CARDAMOM PLANTATION BACKGROUND */
+        <div className="relative overflow-hidden py-20 text-center space-y-4 bg-slate-900 text-white rounded-3xl border border-emerald-500/30 p-10 shadow-2xl group">
+          {/* Cardamom Plantation Image Backdrop */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/images/cardamom/cardamom_plantation_forest.jpg" 
+              alt="Cardamom Plantation Background" 
+              className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#06150D]/90 via-[#0B2117]/80 to-[#17331F]/90 backdrop-blur-[2px]" />
+          </div>
 
-            <button
-              onClick={onCreateClick}
-              className="px-6 py-3 rounded-2xl bg-[#1F5E3B] text-white font-black text-sm shadow-md cursor-pointer"
-            >
-              List Your Plantation
-            </button>
+          <div className="relative z-10 space-y-4 max-w-xl mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto text-[#C9A227] shadow-lg">
+              <Gavel size={36} />
+            </div>
+
+            <h3 className="text-2xl font-black text-white font-poppins tracking-wide">No Live Auctions Available</h3>
+
+            <p className="text-sm text-emerald-100/90 font-medium max-w-md mx-auto leading-relaxed">
+              New cardamom plantation auctions will appear here when approved by Admin.
+            </p>
+
+            <div className="text-xs text-amber-200 font-extrabold bg-amber-950/70 py-2.5 px-4 rounded-xl max-w-md mx-auto border border-amber-500/40 backdrop-blur-md shadow-md">
+              ⏳ Submitted listings pending Admin approval can be tracked under <strong>"My Auctions"</strong> (top right button).
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4 pt-3">
+              <button
+                onClick={handleSeedAuctions}
+                className="px-6 py-3 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500 text-white font-black text-sm border border-emerald-400/40 hover:border-emerald-400 transition-all duration-300 shadow-md cursor-pointer flex items-center gap-2"
+              >
+                <span>⚡ Load Demo Auctions</span>
+              </button>
+
+              <button
+                onClick={onCreateClick}
+                className="px-7 py-3 rounded-2xl bg-gradient-to-r from-[#1F5E3B] to-[#2E7D4E] hover:from-[#2E7D4E] hover:to-[#1F5E3B] text-white font-black text-sm shadow-xl border border-emerald-400/30 transition-all duration-300 cursor-pointer"
+              >
+                List Your Plantation
+              </button>
+            </div>
           </div>
         </div>
       )}

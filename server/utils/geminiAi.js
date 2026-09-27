@@ -131,12 +131,26 @@ async function analyzeDocumentWithGemini(fileBuffer, mimeType, prompt = '') {
 function fallbackAgronomist(prompt) {
   const q = (prompt || '').toLowerCase().trim();
 
-  // 0. Malayalam Friendly Greetings & Small Talk
-  if (q.includes('sugamano') || q.includes('സുഖമാണോ') || q.includes('namaskaram') || q.includes('നമസ്കാരം') || q.includes('entokkexundu') || q.includes('എന്തൊക്കെയുണ്ട്')) {
-    return `😊 **സുഖമാണ്! കാർഡോറ AI-ലേക്ക് സ്വാഗതം.**\n\nഞാൻ കാർഡോറ സ്മാർട്ട് കാർഷിക AI അസിസ്റ്റന്റാണ്. ഏലം കൃഷി, തരങ്ങൾ, രോഗനിയന്ത്രണം, വിപണി വില, വളപ്രയോഗം തുടങ്ങിയ ചോദ്യങ്ങൾക്ക് ഉത്തരം നൽകാൻ ഞാൻ സജ്ജനാണ്. ഇന്ന് ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?`;
+  // 0. Gratitude, Pleasantries & Thanks (English & Malayalam)
+  if (q === 'thanks' || q === 'thank you' || q === 'ok thanky' || q.includes('thank') || q === 'ok' || q === 'got it' || q === 'nandi' || q.includes('നന്ദി')) {
+    return `😊 **You're very welcome!**\n\nGlad I could assist with your cardamom plantation query! Feel free to ask anytime if you need advice on soil nutrients, fertilizers, disease management, irrigation, or auction market rates.`;
   }
 
-  // 1. English Greetings & Small Talk
+  // 0b. How to Escalate & Human Expert Guidance
+  if (q === 'how' || q.includes('escalate') || q.includes('how to ask') || q.includes('human expert') || q.includes('contact expert') || q.includes('how do i')) {
+    return `📋 **How to Consult Certified Human Agronomists**:\n\n` +
+      `1. **Direct Escalation**: Click the **"Escalate to Human Agronomist Ticket"** button below any response.\n` +
+      `2. **Top Header Button**: Click **"+ Ask Human Expert"** at the top right of the Expert Desk.\n` +
+      `3. **Submit Details**: Fill in your crop symptoms, select your estate, and attach photos of affected leaves/pods.\n\n` +
+      `Senior agronomists from ICAR & Spice Board Research Stations will review your ticket and provide custom solutions!`;
+  }
+
+  // 1. Malayalam Friendly Greetings & Small Talk
+  if (q.includes('sugamano') || q.includes('സുഖമാണോ') || q.includes('namaskaram') || q.includes('നമസ്കാരം') || q.includes('entokkexundu') || q.includes('എന്തൊക്കെയുണ്ട്')) {
+    return `😊 **സുഖമാണ്! കാർഡോറ AI-ലേക്ക് സ്വാഗതം.**\n\nഞാൻ കാർഡോറ സ്മാർട്ട് കാർഷിക AI അസിസ്റ്റന്റാണ്. ഏലം കൃഷി, രോഗനിയന്ത്രണം, വിപണി വില, വളപ്രയോഗം തുടങ്ങിയ ചോദ്യങ്ങൾക്ക് ഉത്തരം നൽകാൻ ഞാൻ സജ്ജനാണ്. ഇന്ന് ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?`;
+  }
+
+  // 1b. English Greetings & Small Talk
   if (q.includes('hello') || q.includes('hi') || q === 'hey' || q.includes('how are you') || q.includes('who are you')) {
     return `Hello! I am **CARDORA AI**, your intelligent agricultural agronomist and universal AI assistant. I can help you analyze cardamom crop health, check types of cardamom, auction market prices, verify land title deeds, or answer questions about science, technology, and farming. How can I help you today?`;
   }

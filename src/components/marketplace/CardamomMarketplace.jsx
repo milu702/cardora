@@ -197,7 +197,14 @@ const CardamomMarketplace = () => {
       plants: '3,400 Njallani Plants',
       owner: 'K. J. Joseph',
       ownerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-      image: 'https://images.unsplash.com/photo-1599813390237-7756770d10c0?auto=format&fit=crop&q=80&w=800',
+      image: '/images/cardamom/cardamom_plantation_forest.jpg',
+      images: [
+        '/images/cardamom/cardamom_plantation_forest.jpg',
+        '/images/cardamom/cardamom_drone_aerial.jpg',
+        '/images/cardamom/cardamom_tillers_soil.jpg',
+        '/images/cardamom/cardamom_hanging_pods.jpg',
+        '/images/cardamom/cardamom_panorama_360.jpg'
+      ],
       verified: true,
       organic: true,
       roadAccess: true,
@@ -221,7 +228,14 @@ const CardamomMarketplace = () => {
       plants: '1,800 Green Gold Plants',
       owner: 'Mathew Abraham',
       ownerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
+      image: '/images/cardamom/cardamom_tillers_soil.jpg',
+      images: [
+        '/images/cardamom/cardamom_tillers_soil.jpg',
+        '/images/cardamom/cardamom_panorama_360.jpg',
+        '/images/cardamom/cardamom_hanging_pods.jpg',
+        '/images/cardamom/cardamom_drone_aerial.jpg',
+        '/images/cardamom/cardamom_pods_pile.jpg'
+      ],
       verified: true,
       organic: true,
       roadAccess: true,
@@ -245,7 +259,13 @@ const CardamomMarketplace = () => {
       plants: '5,000 Plants',
       owner: 'Dr. Suresh Kumar',
       ownerAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
-      image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800',
+      image: '/images/cardamom/cardamom_drone_aerial.jpg',
+      images: [
+        '/images/cardamom/cardamom_drone_aerial.jpg',
+        '/images/cardamom/cardamom_plantation_forest.jpg',
+        '/images/cardamom/cardamom_hanging_pods.jpg',
+        '/images/cardamom/cardamom_panorama_360.jpg'
+      ],
       verified: true,
       organic: false,
       roadAccess: true,
@@ -269,7 +289,12 @@ const CardamomMarketplace = () => {
       plants: '2,200 Plants',
       owner: 'Anil Varghese',
       ownerAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
-      image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=800',
+      image: '/images/cardamom/cardamom_hanging_pods.jpg',
+      images: [
+        '/images/cardamom/cardamom_hanging_pods.jpg',
+        '/images/cardamom/cardamom_tillers_soil.jpg',
+        '/images/cardamom/cardamom_pods_pile.jpg'
+      ],
       verified: true,
       organic: true,
       roadAccess: true,

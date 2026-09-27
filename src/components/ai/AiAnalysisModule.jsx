@@ -411,25 +411,22 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
             <div className="flex bg-slate-800/80 p-1 rounded-xl border border-emerald-900/60">
               <button
                 onClick={() => setActiveTab('scan')}
-                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-1.5 ${
-                  activeTab === 'scan' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-1.5 ${activeTab === 'scan' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <Camera className="w-4 h-4" /> AI Scan
               </button>
               <button
                 onClick={() => { setActiveTab('history'); loadDiagnosisHistory(); }}
-                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-1.5 ${
-                  activeTab === 'history' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-1.5 ${activeTab === 'history' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <History className="w-4 h-4" /> History
               </button>
               <button
                 onClick={() => setActiveTab('compare')}
-                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-1.5 ${
-                  activeTab === 'compare' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-1.5 ${activeTab === 'compare' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                  }`}
               >
                 <GitCompare className="w-4 h-4" /> Compare Images
               </button>
@@ -512,13 +509,12 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                         return (
                           <div
                             key={step.id}
-                            className={`flex items-center gap-3 text-xs p-2 rounded-xl transition-all duration-300 ${
-                              isCurrent
+                            className={`flex items-center gap-3 text-xs p-2 rounded-xl transition-all duration-300 ${isCurrent
                                 ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 font-bold scale-[1.02]'
                                 : isDone
-                                ? 'text-emerald-400/70 font-medium'
-                                : 'text-slate-500 font-normal'
-                            }`}
+                                  ? 'text-emerald-400/70 font-medium'
+                                  : 'text-slate-500 font-normal'
+                              }`}
                           >
                             <div className={`p-1 rounded-lg ${isCurrent ? 'bg-emerald-500 text-white animate-spin' : isDone ? 'text-emerald-400' : 'text-slate-600'}`}>
                               {isDone ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
@@ -536,11 +532,10 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
-                    isDragging 
-                      ? 'border-emerald-400 bg-emerald-950/50 scale-[1.01]' 
+                  className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${isDragging
+                      ? 'border-emerald-400 bg-emerald-950/50 scale-[1.01]'
                       : 'border-emerald-700/60 bg-slate-800/40 hover:border-emerald-500 hover:bg-slate-800/60'
-                  }`}
+                    }`}
                 >
                   <input
                     ref={fileInputRef}
@@ -611,11 +606,10 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                   <button
                     disabled={scanningImage || (!imagePreview && !imageFile)}
                     onClick={handleRunRealDiagnosis}
-                    className={`w-full max-w-md py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition transform active:scale-98 ${
-                      scanningImage || (!imagePreview && !imageFile)
+                    className={`w-full max-w-md py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-xl transition transform active:scale-98 ${scanningImage || (!imagePreview && !imageFile)
                         ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                         : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-950/50'
-                    }`}
+                      }`}
                   >
                     <Sparkles className="w-5 h-5 text-amber-300" />
                     Diagnose Actual Crop Image Now
@@ -668,11 +662,10 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setShowMalayalam(!showMalayalam)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border flex items-center gap-1.5 ${
-                      showMalayalam
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border flex items-center gap-1.5 ${showMalayalam
                         ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
                         : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <Globe className="w-3.5 h-3.5" />
                     {showMalayalam ? 'English' : 'മലയാളം'}
@@ -680,11 +673,10 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
 
                   <button
                     onClick={handleToggleVoicePlayback}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border flex items-center gap-1.5 ${
-                      isSpeaking
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border flex items-center gap-1.5 ${isSpeaking
                         ? 'bg-red-500/20 border-red-500/50 text-red-300 animate-pulse'
                         : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
-                    }`}
+                      }`}
                   >
                     {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                     {isSpeaking ? 'Stop' : '🔊 Listen'}
@@ -772,13 +764,12 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                     {/* SEVERITY CARD */}
                     <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-center">
                       <p className="text-[10px] uppercase font-bold text-slate-400">Severity Level</p>
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold mt-1 ${
-                        diagnosisResult.severity === 'High' || diagnosisResult.severity === 'Critical'
+                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold mt-1 ${diagnosisResult.severity === 'High' || diagnosisResult.severity === 'Critical'
                           ? 'bg-red-500/20 text-red-300 border border-red-500/40'
                           : diagnosisResult.severity === 'Moderate'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      }`}>
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        }`}>
                         {diagnosisResult.severity || 'Undetermined'}
                       </span>
                     </div>
@@ -786,11 +777,10 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                     {/* IMAGE QUALITY CARD */}
                     <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-center">
                       <p className="text-[10px] uppercase font-bold text-slate-400">Image Quality</p>
-                      <p className={`text-xs font-bold mt-1 ${
-                        diagnosisResult.imageQuality === 'Poor' || diagnosisResult.imageQuality === 'Insufficient'
+                      <p className={`text-xs font-bold mt-1 ${diagnosisResult.imageQuality === 'Poor' || diagnosisResult.imageQuality === 'Insufficient'
                           ? 'text-red-400'
                           : 'text-emerald-400'
-                      }`}>
+                        }`}>
                         {diagnosisResult.imageQuality || 'Good'}
                       </p>
                     </div>
@@ -1157,11 +1147,10 @@ const AiAnalysisModule = ({ plantation, onToast, hideHeader = false }) => {
                   </div>
 
                   <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-800">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      item.severity === 'High' || item.severity === 'Critical'
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.severity === 'High' || item.severity === 'Critical'
                         ? 'bg-red-500/20 text-red-300'
                         : 'bg-emerald-500/20 text-emerald-300'
-                    }`}>
+                      }`}>
                       {item.severity}
                     </span>
                     <span className="text-emerald-400 text-xs flex items-center gap-1 group-hover:translate-x-1 transition">

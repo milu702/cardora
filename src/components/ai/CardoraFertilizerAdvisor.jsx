@@ -139,7 +139,7 @@ const CardoraFertilizerAdvisor = ({ plantation, onToast }) => {
 
   return (
     <div className="bg-white rounded-[24px] border border-[#D7E6D5] p-6 shadow-soft space-y-6">
-      
+
       {/* HEADER BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
         <div className="flex items-center gap-3">
@@ -187,7 +187,7 @@ const CardoraFertilizerAdvisor = ({ plantation, onToast }) => {
 
       {/* GRID SECTION: SOIL HEALTH & WEATHER */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        
+
         {/* CARD 1: SOIL HEALTH */}
         <div className="bg-[#F8FAF7] rounded-2xl border border-[#D7E6D5] p-4 space-y-3">
           <div className="flex items-center justify-between border-b border-[#D7E6D5] pb-2">

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CloudSun, Thermometer, Droplets, Wind, Gauge, Eye, Cloud, 
-  Sun, Sunset, RefreshCw, AlertTriangle, ShieldCheck, CheckCircle2, 
-  Sparkles, CloudRain, Calendar, MapPin, 
+import {
+  CloudSun, Thermometer, Droplets, Wind, Gauge, Eye, Cloud,
+  Sun, Sunset, RefreshCw, AlertTriangle, ShieldCheck, CheckCircle2,
+  Sparkles, CloudRain, Calendar, MapPin,
   ShieldAlert, Award, ChevronRight, Snowflake, Sprout, Activity
 } from 'lucide-react';
 import { apiService } from '../../services/api';
@@ -105,7 +105,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
   if (loading && !weatherData) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-[24px] border border-[#D7E6D5] p-8 md:p-12 shadow-sm text-center"
@@ -151,16 +151,16 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
   return (
     <div className="space-y-6">
-      
+
       {/* ===== 1. HEADER: DISTRICT SELECTOR & ALL DISTRICTS TOGGLE ===== */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="bg-white rounded-[24px] border border-[#D7E6D5] p-6 shadow-[0_10px_30px_rgba(31,94,59,0.05)] flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div className="flex items-center gap-3.5">
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.08, rotate: 5 }}
             className="bg-[#DDEFD9] p-3 rounded-2xl text-[#1F5E3B] shadow-inner shrink-0"
           >
@@ -203,11 +203,10 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => setShowAllDistricts(!showAllDistricts)}
-            className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 border cursor-pointer ${
-              showAllDistricts
+            className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1.5 border cursor-pointer ${showAllDistricts
                 ? 'bg-[#1F5E3B] text-white border-[#1F5E3B] shadow-sm'
                 : 'bg-[#F8FAF7] text-[#17331F] border-[#D7E6D5] hover:bg-[#EAF3E8]'
-            }`}
+              }`}
           >
             <CloudSun className="w-4 h-4" />
             <span>{showAllDistricts ? 'Hide All Districts Grid' : 'View All Districts Weather (18)'}</span>
@@ -248,13 +247,13 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
               animation-play-state: paused;
             }
           `}</style>
-          
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 text-amber-300 font-black text-xs uppercase tracking-wider shrink-0 z-10 border border-amber-400/40 shadow-sm">
               <AlertTriangle className="w-4 h-4 text-amber-300 animate-bounce" />
               <span>Region Alert</span>
             </div>
-            
+
             <div className="overflow-hidden whitespace-nowrap w-full">
               <div className="animate-running-ticker font-extrabold text-xs sm:text-sm tracking-wide text-amber-100">
                 ⚠️ UNSUITABLE CARDAMOM CULTIVATION REGION: {cleanDistrictName} is NOT suitable for cardamom cultivation! Cardamom requires high-altitude (700m–1500m MSL) cool hill micro-climates found naturally EXCLUSIVELY in Idukki and Wayanad districts.
@@ -311,11 +310,10 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
                       whileHover={{ scale: 1.03, translateY: -2 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => handleSelectDistrictFromGrid(d.district)}
-                      className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                        isSelected
+                      className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${isSelected
                           ? 'bg-[#EAF3E8] border-[#1F5E3B] ring-2 ring-[#1F5E3B]/30'
                           : 'bg-[#F8FAF7] border-[#D7E6D5] hover:border-[#1F5E3B]/50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-[#17331F] font-poppins">{d.district}</span>
@@ -342,7 +340,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
       {/* Error / Fallback Warning Notice */}
       {error && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-900 text-xs font-bold flex items-center gap-3 shadow-sm"
@@ -354,139 +352,248 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
       {/* ===== 2. HERO GRID: WEATHER CARD & SMART ADVISORY ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* LEFT CARD (7 cols): District Weather Card */}
-        <motion.div 
+
+        {/* LEFT CARD (7 cols): Advanced Micro-Climate Telemetry Hub */}
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="lg:col-span-7 bg-gradient-to-br from-[#17331F] via-[#1F5E3B] to-[#2B6E47] text-white rounded-[24px] p-6 md:p-8 relative overflow-hidden shadow-xl flex flex-col justify-between"
+          className="lg:col-span-7 bg-gradient-to-br from-[#0B2117] via-[#17331F] to-[#1F5E3B] text-white rounded-[28px] p-6 md:p-8 relative overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col justify-between group"
         >
-          
+
+          {/* Ambient Lighting & Futuristic Radar Pattern Background */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-emerald-500/15 via-[#C9A227]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(#5C8D4E_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+
           {/* Animated Ambient Leaf Background */}
-          <motion.div 
-            animate={{ rotate: [0, 8, 0] }}
+          <motion.div
+            animate={{ rotate: [0, 8, 0], scale: [1, 1.05, 1] }}
             transition={{ repeat: Infinity, duration: 12, ease: 'easeInOut' }}
             className="absolute -bottom-8 -right-8 text-9xl opacity-10 pointer-events-none select-none"
           >
             🌿
           </motion.div>
 
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#5C8D4E]/30 text-[#DDEFD9] text-xs font-extrabold border border-[#5C8D4E]/40">
-                <Sparkles className="w-3.5 h-3.5 text-[#C9A227]" />
-                Micro-Climate Telemetry
-              </span>
-              <span className="text-[11px] font-bold text-[#DDEFD9]/80">
-                Updated: {currentWeather.lastUpdated}
+          <div className="relative z-10">
+            
+            {/* Top Telemetry Header Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-6 pb-4 border-b border-white/15">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1F5E3B]/80 text-[#DDEFD9] text-xs font-black border border-emerald-400/40 shadow-inner">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C9A227] animate-spin" style={{ animationDuration: '6s' }} />
+                  Micro-Climate Telemetry
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  SATELLITE SYNC
+                </span>
+              </div>
+              <span className="text-[11px] font-extrabold text-[#DDEFD9]/80 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                Updated: {currentWeather.lastUpdated || '02:35 PM'}
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            {/* Main Temperature & Weather Condition Display */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl md:text-7xl font-black font-poppins tracking-tight">{currentWeather.temp}°</span>
-                  <span className="text-2xl font-black text-[#DDEFD9] font-poppins">C</span>
+                  <span className="text-6xl sm:text-7xl md:text-8xl font-black font-poppins tracking-tight bg-gradient-to-r from-white via-[#DDEFD9] to-[#C9A227] bg-clip-text text-transparent">
+                    {currentWeather.temp}°
+                  </span>
+                  <span className="text-3xl font-black text-[#DDEFD9] font-poppins">C</span>
                 </div>
-                <p className="text-xs text-[#DDEFD9] font-bold mt-1">
-                  Feels like {currentWeather.feelsLike}°C • {currentWeather.description}
-                </p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <p className="text-xs md:text-sm text-[#DDEFD9] font-bold">
+                    Feels like {currentWeather.feelsLike}°C • Live Rain & Moisture Telemetry
+                  </p>
+                </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-md px-5 py-4 rounded-2xl border border-white/20 flex items-center gap-3">
-                <img src={currentWeather.iconUrl} alt={currentWeather.condition} className="w-12 h-12 object-contain" />
+              {/* Weather Condition Glass Box with Icon & Visual Meter */}
+              <div className="bg-white/10 backdrop-blur-xl px-5 py-4 rounded-2xl border border-white/20 flex items-center gap-4 shadow-glass shrink-0 hover:bg-white/15 transition-all">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-md" />
+                  <img src={currentWeather.iconUrl} alt={currentWeather.condition} className="w-14 h-14 object-contain relative z-10" />
+                </div>
                 <div>
-                  <span className="text-base font-black font-poppins block">{currentWeather.condition}</span>
-                  <span className="text-[10px] text-[#DDEFD9] font-semibold uppercase tracking-wider">Condition</span>
+                  <span className="text-lg font-black font-poppins block text-white tracking-wide">{currentWeather.condition}</span>
+                  <span className="text-[10px] text-[#C9A227] font-black uppercase tracking-widest block -mt-0.5">Condition</span>
+                  <div className="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-200 font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                    <Activity className="w-3 h-3 text-emerald-400" />
+                    <span>UV Index: 3.2 (Moderate)</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* 6 SUB-METRICS GRID */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-white/15">
-              <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                  <Droplets className="w-3.5 h-3.5 text-cyan-300" />
-                  <span>Humidity</span>
+            {/* FIRST ROW: 4 PRIMARY METRIC CARDS WITH PROGRESS BARS */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-2">
+              
+              {/* Humidity */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-cyan-400/50 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                    <div className="flex items-center gap-1.5">
+                      <Droplets className="w-4 h-4 text-cyan-300" />
+                      <span>Humidity</span>
+                    </div>
+                    <span className="text-[10px] text-cyan-300 font-bold">HIGH</span>
+                  </div>
+                  <span className="text-xl md:text-2xl font-black text-white font-poppins">{currentWeather.humidity}%</span>
                 </div>
-                <span className="text-base font-black text-white">{currentWeather.humidity}%</span>
+                {/* Progress bar */}
+                <div className="mt-2.5">
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-cyan-400 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(currentWeather.humidity, 100)}%` }} />
+                  </div>
+                  <span className="text-[9px] text-[#DDEFD9]/80 font-bold mt-1 block">Optimal for Cardamom</span>
+                </div>
               </motion.div>
 
-              <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                  <CloudRain className="w-3.5 h-3.5 text-blue-300" />
-                  <span>Rainfall</span>
+              {/* Rainfall */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-blue-400/50 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                    <div className="flex items-center gap-1.5">
+                      <CloudRain className="w-4 h-4 text-blue-300" />
+                      <span>Rainfall</span>
+                    </div>
+                    <span className="text-[10px] text-blue-300 font-bold">PRECIP</span>
+                  </div>
+                  <span className="text-xl md:text-2xl font-black text-white font-poppins">{currentWeather.rain} mm</span>
                 </div>
-                <span className="text-base font-black text-white">{currentWeather.rain} mm</span>
+                {/* Progress bar */}
+                <div className="mt-2.5">
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-blue-400 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((currentWeather.rain / 20) * 100, 100)}%` }} />
+                  </div>
+                  <span className="text-[9px] text-[#DDEFD9]/80 font-bold mt-1 block">Light Canopy Drizzle</span>
+                </div>
               </motion.div>
 
-              <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                  <Wind className="w-3.5 h-3.5 text-teal-300" />
-                  <span>Wind Speed</span>
+              {/* Wind Speed */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-teal-400/50 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                    <div className="flex items-center gap-1.5">
+                      <Wind className="w-4 h-4 text-teal-300" />
+                      <span>Wind Speed</span>
+                    </div>
+                    <span className="text-[10px] text-teal-300 font-bold">NE 45°</span>
+                  </div>
+                  <span className="text-xl md:text-2xl font-black text-white font-poppins">{currentWeather.windSpeed} <span className="text-xs font-semibold">km/h</span></span>
                 </div>
-                <span className="text-base font-black text-white">{currentWeather.windSpeed} km/h</span>
+                {/* Progress bar */}
+                <div className="mt-2.5">
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-teal-400 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((currentWeather.windSpeed / 40) * 100, 100)}%` }} />
+                  </div>
+                  <span className="text-[9px] text-[#DDEFD9]/80 font-bold mt-1 block">Gentle Estate Breeze</span>
+                </div>
               </motion.div>
 
-              <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                  <Gauge className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Pressure</span>
+              {/* Pressure */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-emerald-400/50 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                    <div className="flex items-center gap-1.5">
+                      <Gauge className="w-4 h-4 text-emerald-300" />
+                      <span>Pressure</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-300 font-bold">BARO</span>
+                  </div>
+                  <span className="text-xl md:text-2xl font-black text-white font-poppins">{currentWeather.pressure} <span className="text-xs font-semibold">hPa</span></span>
                 </div>
-                <span className="text-base font-black text-white">{currentWeather.pressure} hPa</span>
+                {/* Progress bar */}
+                <div className="mt-2.5">
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-emerald-400 h-full rounded-full transition-all duration-1000" style={{ width: '75%' }} />
+                  </div>
+                  <span className="text-[9px] text-[#DDEFD9]/80 font-bold mt-1 block">Steady Atmospheric</span>
+                </div>
               </motion.div>
+
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-3 pt-3 mt-3 border-t border-white/15">
-            <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-              <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                <Eye className="w-3.5 h-3.5 text-indigo-300" />
-                <span>Visibility</span>
-              </div>
-              <span className="text-base font-black text-white">{currentWeather.visibility} km</span>
-            </motion.div>
+            {/* SECOND ROW: 3 SECONDARY OPTICS & SOLAR METRICS */}
+            <div className="grid grid-cols-3 gap-3.5 pt-3.5 mt-1 border-t border-white/15">
+              
+              {/* Visibility */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-indigo-400/50 transition-all"
+              >
+                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                  <Eye className="w-4 h-4 text-indigo-300" />
+                  <span>Visibility</span>
+                </div>
+                <span className="text-lg md:text-xl font-black text-white font-poppins">{currentWeather.visibility} km</span>
+                <span className="text-[9px] text-indigo-200 font-bold block mt-1">100% Clear Optics</span>
+              </motion.div>
 
-            <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-              <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                <Cloud className="w-3.5 h-3.5 text-slate-300" />
-                <span>Clouds</span>
-              </div>
-              <span className="text-base font-black text-white">{currentWeather.cloudCoverage}%</span>
-            </motion.div>
+              {/* Clouds */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-slate-300/50 transition-all"
+              >
+                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                  <Cloud className="w-4 h-4 text-slate-300" />
+                  <span>Clouds</span>
+                </div>
+                <span className="text-lg md:text-xl font-black text-white font-poppins">{currentWeather.cloudCoverage}%</span>
+                <span className="text-[9px] text-slate-300 font-bold block mt-1">Partly Cloud Canopy</span>
+              </motion.div>
 
-            <motion.div whileHover={{ scale: 1.04 }} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-              <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1 font-bold">
-                <Sun className="w-3.5 h-3.5 text-yellow-300" />
-                <span>Sunrise</span>
-              </div>
-              <span className="text-base font-black text-white">{currentWeather.sunrise}</span>
-            </motion.div>
+              {/* Sunrise */}
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }} 
+                className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 hover:border-amber-300/50 transition-all"
+              >
+                <div className="flex items-center gap-1.5 text-xs text-[#DDEFD9] mb-1.5 font-extrabold">
+                  <Sun className="w-4 h-4 text-amber-300" />
+                  <span>Sunrise</span>
+                </div>
+                <span className="text-lg md:text-xl font-black text-amber-200 font-poppins">{currentWeather.sunrise}</span>
+                <span className="text-[9px] text-amber-300/80 font-bold block mt-1">Sunset: {currentWeather.sunset || '06:45 PM'}</span>
+              </motion.div>
+
+            </div>
+
           </div>
 
         </motion.div>
 
         {/* RIGHT CARD (5 cols): Smart Plantation Advisory for Farmers vs Admin Telemetry Overview */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="lg:col-span-5 bg-white rounded-[24px] border border-[#D7E6D5] p-6 md:p-8 shadow-sm flex flex-col justify-between"
         >
-          
+
           <div>
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#D7E6D5]">
               <h3 className="text-lg font-black text-[#17331F] font-poppins flex items-center gap-2">
                 <Award className="w-5 h-5 text-[#1F5E3B]" />
                 <span>{isAdmin ? 'Administrative Weather Telemetry' : 'Smart Plantation Advisory'}</span>
               </h3>
-              <motion.span 
+              <motion.span
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ repeat: Infinity, duration: 3 }}
-                className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${
-                  isAdmin ? 'bg-[#1F5E3B] text-white' : suitability.badgeColor
-                }`}
+                className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${isAdmin ? 'bg-[#1F5E3B] text-white' : suitability.badgeColor
+                  }`}
               >
                 {isAdmin ? '🟢 System Operational' : `${suitability.statusEmoji} ${suitability.status}`}
               </motion.span>
@@ -496,7 +603,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
               /* ADMIN TELEMETRY OVERVIEW BOX */
               <div className="my-6 bg-[#F8FAF7] p-5 rounded-2xl border border-[#D7E6D5] space-y-3">
                 <span className="text-xs font-bold text-[#17331F] block">District Telemetry Uptime & Sync Status</span>
-                
+
                 <div className="grid grid-cols-2 gap-3 text-xs font-semibold">
                   <div className="p-3 rounded-xl bg-white border border-[#D7E6D5]">
                     <span className="text-[10px] text-[#4A5568] block">Barometric Pressure</span>
@@ -523,9 +630,9 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
                   <span className="text-xs font-bold text-[#17331F]">Cardamom Cultivation Suitability</span>
                   <span className="text-2xl font-black text-[#1F5E3B] font-poppins">{suitability.score}%</span>
                 </div>
-                
+
                 <div className="w-full h-3.5 bg-[#D7E6D5] rounded-full overflow-hidden p-0.5">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${suitability.score}%` }}
                     transition={{ duration: 1.2, ease: 'easeOut' }}
@@ -542,11 +649,10 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
             )}
 
             {/* Region Banner */}
-            <div className={`p-4 rounded-2xl border text-xs font-medium leading-relaxed ${
-              weatherData?.isRecognizedCardamomRegion
+            <div className={`p-4 rounded-2xl border text-xs font-medium leading-relaxed ${weatherData?.isRecognizedCardamomRegion
                 ? 'bg-[#DDEFD9]/50 border-[#5C8D4E]/40 text-[#1F5E3B]'
                 : 'bg-[#F8FAF7] border-[#D7E6D5] text-[#17331F]'
-            }`}>
+              }`}>
               <div className="flex items-start gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-[#1F5E3B] flex-shrink-0 mt-0.5" />
                 <div>
@@ -579,7 +685,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
       {/* ===== 3. WEATHER ALERTS BANNER FOR FARMERS ONLY ===== */}
       {!isAdmin && weatherAlerts && weatherAlerts.length > 0 && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
@@ -598,13 +704,12 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.08 }}
                 whileHover={{ scale: 1.02 }}
-                className={`p-4 rounded-2xl border transition-all ${
-                  alert.type === 'danger'
+                className={`p-4 rounded-2xl border transition-all ${alert.type === 'danger'
                     ? 'bg-red-50 border-red-200 text-red-900'
                     : alert.type === 'warning'
-                    ? 'bg-amber-50 border-amber-200 text-amber-900'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                }`}
+                      ? 'bg-amber-50 border-amber-200 text-amber-900'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  }`}
               >
                 <h4 className="text-xs font-black font-poppins mb-1 flex items-center justify-between">
                   <span>{alert.title}</span>
@@ -618,7 +723,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
       {/* ===== 4. AI CROP RECOMMENDATIONS FOR FARMERS ONLY ===== */}
       {!isAdmin && aiRecommendations.length > 0 && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -639,7 +744,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
                 Live agronomic action steps tailored specifically to current weather conditions
               </p>
             </div>
-            
+
             <span className="px-3 py-1 rounded-full bg-[#DDEFD9] text-[#1F5E3B] text-xs font-extrabold border border-[#5C8D4E]/30 flex items-center gap-1.5 self-start sm:self-auto">
               <Sprout className="w-3.5 h-3.5 text-[#1F5E3B] animate-bounce" />
               Weather-Driven Rules
@@ -648,7 +753,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {aiRecommendations.map((rec, idx) => (
-              <motion.div 
+              <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -656,10 +761,9 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
                 whileHover={{ scale: 1.02, translateY: -4 }}
                 className="p-5 rounded-2xl bg-[#F8FAF7] border border-[#D7E6D5] hover:border-[#1F5E3B] hover:shadow-md transition-all space-y-3 relative overflow-hidden"
               >
-                <div className={`absolute top-0 left-0 right-0 h-1 ${
-                  rec.severity === 'critical' ? 'bg-red-500' :
-                  rec.severity === 'high' ? 'bg-amber-500' : 'bg-[#1F5E3B]'
-                }`} />
+                <div className={`absolute top-0 left-0 right-0 h-1 ${rec.severity === 'critical' ? 'bg-red-500' :
+                    rec.severity === 'high' ? 'bg-amber-500' : 'bg-[#1F5E3B]'
+                  }`} />
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs font-black text-[#17331F] font-poppins flex items-center gap-2">
@@ -700,18 +804,17 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
                     <span>{rec.title}</span>
                   </span>
 
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                    rec.severity === 'critical' ? 'bg-red-100 text-red-700' :
-                    rec.severity === 'high' ? 'bg-amber-100 text-amber-800' : 'bg-[#DDEFD9] text-[#1F5E3B]'
-                  }`}>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${rec.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                      rec.severity === 'high' ? 'bg-amber-100 text-amber-800' : 'bg-[#DDEFD9] text-[#1F5E3B]'
+                    }`}>
                     {rec.category}
                   </span>
                 </div>
 
                 <ul className="space-y-2 pt-1">
                   {rec.actions.map((act, aIdx) => (
-                    <motion.li 
-                      key={aIdx} 
+                    <motion.li
+                      key={aIdx}
                       whileHover={{ x: 3 }}
                       className="text-xs text-[#4A5568] font-semibold flex items-start gap-2 leading-relaxed"
                     >
@@ -727,13 +830,13 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
       )}
 
       {/* ===== 5. INTERACTIVE FORECAST & CLIMATE TRENDS ===== */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
         className="bg-white rounded-[24px] border border-[#D7E6D5] p-6 md:p-8 shadow-sm"
       >
-        
+
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#D7E6D5]">
           <h3 className="text-lg font-black text-[#17331F] font-poppins flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#1F5E3B]" />
@@ -744,11 +847,10 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
             <button
               type="button"
               onClick={() => setActiveForecastTab('hourly')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                activeForecastTab === 'hourly'
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${activeForecastTab === 'hourly'
                   ? 'bg-[#1F5E3B] text-white shadow-sm'
                   : 'text-[#4A5568] hover:text-[#1F5E3B]'
-              }`}
+                }`}
             >
               24-Hour Hourly
             </button>
@@ -756,11 +858,10 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
             <button
               type="button"
               onClick={() => setActiveForecastTab('daily')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                activeForecastTab === 'daily'
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${activeForecastTab === 'daily'
                   ? 'bg-[#1F5E3B] text-white shadow-sm'
                   : 'text-[#4A5568] hover:text-[#1F5E3B]'
-              }`}
+                }`}
             >
               5-Day Outlook
             </button>
