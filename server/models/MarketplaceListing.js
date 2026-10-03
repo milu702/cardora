@@ -50,6 +50,31 @@ const marketplaceListingSchema = new mongoose.Schema(
       enum: ['active', 'sold', 'leased'],
       default: 'active',
     },
+    verificationPhoto: {
+      type: String,
+      default: null,
+    },
+    verificationCapturedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    verificationStatus: {
+      type: String,
+      enum: ['Pending', 'Verified', 'Rejected'],
+      default: 'Pending',
+    },
+    verificationRemark: {
+      type: String,
+      default: '',
+    },
+    pattayamFileName: {
+      type: String,
+      default: '',
+    },
+    pattayamDoc: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

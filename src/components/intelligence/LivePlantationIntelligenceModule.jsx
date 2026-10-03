@@ -189,7 +189,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
       if (res && res.success && Array.isArray(res.history)) {
         setHistoryList(res.history);
       }
-    } catch (err) {}
+    } catch (err) { }
   };
 
   useEffect(() => {
@@ -294,13 +294,20 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 min-h-screen bg-[#F8FAF7] dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans text-slate-800 dark:text-slate-100 transition-colors">
-      
+
       {/* ========================================================================= */}
       {/* MODULE HEADER BAR & PLANTATION SELECTOR */}
       {/* ========================================================================= */}
-      <div className="bg-gradient-to-r from-[#17331F] via-[#1F5E3B] to-[#2E7D4E] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-        
+      <div className="bg-[#17331F] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6 group">
+        {/* Photorealistic High-Definition Cardamom Flower & Pods Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-right sm:bg-center opacity-55 group-hover:scale-105 group-hover:opacity-70 transition-all duration-1000 pointer-events-none"
+          style={{ backgroundImage: `url('/images/cardamom_flower_hero_bg.jpg')` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#17331F] via-[#17331F]/75 to-black/20 pointer-events-none" />
+
+        <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none" />
+
         <div className="flex items-start gap-4 relative z-10">
           <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center font-bold shadow-md shrink-0">
             <Sparkles size={28} />
@@ -400,15 +407,15 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
       ) : (
         /* MAIN INTELLIGENCE DASHBOARD */
         <div className="space-y-8">
-          
+
           {/* ========================================================================= */}
           {/* SECTION 1: PLANTATION CONDITION SCORE & BREAKDOWN */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            
+
             {/* RADIAL SCORE RING CARD (col-span-4) */}
             <div className="lg:col-span-4 p-8 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md flex flex-col items-center justify-center text-center space-y-5">
-              
+
               <span className="text-xs font-black uppercase text-gray-500 tracking-wider">Overall Plantation Health</span>
 
               {/* Radial Progress Ring */}
@@ -496,7 +503,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
           {/* SECTION 2 & 3: REAL-TIME ENVIRONMENT & SOIL TELEMETRY */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
+
             {/* REAL-TIME WEATHER TELEMETRY CARD */}
             <div className="p-7 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-5">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -581,11 +588,10 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
                     <span>✏️ Input Soil Test Data</span>
                   </button>
 
-                  <span className={`text-xs font-black px-3 py-1 rounded-full ${
-                    intelligence.dataSources?.soil?.isSensorBased
-                      ? 'bg-emerald-100 text-[#1F5E3B] dark:bg-emerald-950 dark:text-emerald-400'
-                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                  }`}>
+                  <span className={`text-xs font-black px-3 py-1 rounded-full ${intelligence.dataSources?.soil?.isSensorBased
+                    ? 'bg-emerald-100 text-[#1F5E3B] dark:bg-emerald-950 dark:text-emerald-400'
+                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    }`}>
                     {intelligence.dataSources?.soil?.isSensorBased ? '● IoT Sensor Data' : 'Manual Soil Test'}
                   </span>
                 </div>
@@ -634,7 +640,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
           {/* SECTION 4: CLEAR FARMER RECOMMENDATIONS ("🌱 What You Should Do Now") */}
           {/* ========================================================================= */}
           <div className="p-7 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-6">
-            
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-[#17331F] dark:text-slate-100 flex items-center gap-2 font-poppins">
@@ -656,11 +662,10 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
                   <button
                     key={tab.id}
                     onClick={() => setRecommendationTab(tab.id)}
-                    className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                      recommendationTab === tab.id
-                        ? 'bg-white dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shadow-xs font-black'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }`}
+                    className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${recommendationTab === tab.id
+                      ? 'bg-white dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
                   >
                     {tab.label}
                   </button>
@@ -680,7 +685,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
 
             {/* ACTION TIERS LIST */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              
+
               {/* IMMEDIATE ACTIONS (🔴) */}
               {(recommendationTab === 'all' || recommendationTab === 'immediate') && (
                 <div className="p-5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-4">
@@ -800,9 +805,8 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
                 <div key={idx} className="p-5 rounded-2xl bg-[#F8FAF7] dark:bg-slate-800 border border-[#D7E6D5] dark:border-slate-700 space-y-3 text-xs sm:text-sm">
                   <div className="flex justify-between items-center">
                     <span className="font-extrabold text-[#17331F] dark:text-slate-100 text-sm">{nut.name}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-black ${
-                      nut.data?.status === 'Needs Attention' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-[#1F5E3B]'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-black ${nut.data?.status === 'Needs Attention' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-[#1F5E3B]'
+                      }`}>
                       {nut.data?.status || 'Good'}
                     </span>
                   </div>
@@ -828,7 +832,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
           {/* SECTION 7 & 8: WEATHER IMPACT ANALYSIS & 72-HOUR FORECAST */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
+
             {/* WEATHER IMPACT ANALYSIS */}
             <div className="p-7 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-5">
               <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -893,7 +897,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
           {/* SECTION 9 & 10: RISK MONITOR & ANALYSIS CONFIDENCE */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
+
             {/* RISK MONITOR LIST (col-span-8) */}
             <div className="lg:col-span-8 p-7 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md space-y-5">
               <div className="pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -973,7 +977,7 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
           {/* BOTTOM ACTIONS FOOTER */}
           {/* ========================================================================= */}
           <div className="p-7 rounded-3xl bg-white dark:bg-slate-900 border border-[#D7E6D5] dark:border-slate-800 shadow-md flex flex-col sm:flex-row items-center justify-between gap-6">
-            
+
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#1F5E3B] text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
                 <FileText size={24} />
@@ -999,11 +1003,10 @@ const LivePlantationIntelligenceModule = ({ onToast }) => {
               <button
                 onClick={handleSubmitToAdmin}
                 disabled={submitting || intelligence.isSubmittedToAdmin}
-                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-95 ${
-                  intelligence.isSubmittedToAdmin
-                    ? 'bg-emerald-100 text-[#1F5E3B] cursor-default'
-                    : 'bg-[#1F5E3B] hover:bg-[#17331F] text-white'
-                }`}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-95 ${intelligence.isSubmittedToAdmin
+                  ? 'bg-emerald-100 text-[#1F5E3B] cursor-default'
+                  : 'bg-[#1F5E3B] hover:bg-[#17331F] text-white'
+                  }`}
               >
                 <Send size={16} />
                 <span>{intelligence.isSubmittedToAdmin ? '✔ Submitted to Admin' : '📤 Submit Analysis to Admin'}</span>

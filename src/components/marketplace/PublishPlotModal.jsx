@@ -1,25 +1,41 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, Plus, Upload, ShieldCheck, MapPin, Sparkles, CheckCircle2, 
+import {
+  X, Plus, Upload, ShieldCheck, MapPin, Sparkles, CheckCircle2,
   FileText, Camera, DollarSign, Mountain, Droplets, Check, AlertCircle, Mail, Loader2,
   Tag, Layers, User as UserIcon, Phone as PhoneIcon, Eye
 } from 'lucide-react';
-import { KERALA_DISTRICTS } from '../../utils/districts';
+import { KERALA_DISTRICTS, getLocalitiesForDistrict } from '../../utils/districts';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import FullScreenFormModal from '../ui/FullScreenFormModal';
 
+import PersonVerificationScanner from './PersonVerificationScanner';
+import PattayamDocumentScanner from './PattayamDocumentScanner';
+
 const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang }) => {
   const { user } = useAuth();
-  const [step, setStep] = useState(1); // 1: Info & Specifications, 2: Document OCR & Preview, 3: Success
+  const [step, setStep] = useState(1); // 1: Info & Specs, 2: Pattayam OCR, 3: Person Verification Scan, 4: Preview & Submit
   const [submitting, setSubmitting] = useState(false);
+  const [verificationPhotoData, setVerificationPhotoData] = useState(
+    editPlot?.verificationPhoto ? { photoUrl: editPlot.verificationPhoto, capturedAt: editPlot.verificationCapturedAt || new Date().toLocaleString() } : null
+  );
+
+  const initialDistrict = editPlot?.district || 'Idukki, Kerala';
+  const rawLocation = editPlot?.location ? editPlot.location.replace(/,.*$/, '').trim() : '';
+  const initialLocalities = getLocalitiesForDistrict(initialDistrict);
+  
+  // Find matching village from district localities list or set default
+  const matchedLoc = initialLocalities.find(
+    (item) => item.village.toLowerCase() === rawLocation.toLowerCase()
+  );
 
   const [formData, setFormData] = useState({
     title: editPlot?.title || '',
     listingType: editPlot?.listingType || editPlot?.type || 'sale', // 'sale' | 'lease'
-    district: editPlot?.district || 'Idukki',
-    location: editPlot?.location ? editPlot.location.replace(/,.*$/, '').trim() : '',
+    district: initialDistrict,
+    location: matchedLoc ? matchedLoc.village : (rawLocation || (initialLocalities[0]?.village || 'Vandanmedu')),
+    customLocation: matchedLoc || !rawLocation ? '' : rawLocation,
     area: editPlot?.area ? editPlot.area.toString().replace(/acres?/i, '').trim() : '',
     price: editPlot?.price || '',
     altitude: editPlot?.altitude || '1,100m',
@@ -37,8 +53,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
   const initialImages = editPlot?.images && editPlot.images.length > 0
     ? editPlot.images
     : (editPlot?.image ? [editPlot.image] : [
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'
-      ]);
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'
+    ]);
 
   const [images, setImages] = useState(initialImages);
   const [newImageUrl, setNewImageUrl] = useState('');
@@ -137,7 +153,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
       newErrors.ownerPhone = 'Valid phone number with at least 8 digits is required.';
     }
 
-    if (!formData.location || formData.location.trim().length < 2) {
+    const activeLoc = formData.location === 'Other' ? formData.customLocation : formData.location;
+    if (!activeLoc || activeLoc.trim().length < 2) {
       newErrors.location = 'Village or local area name is required.';
     }
 
@@ -154,6 +171,20 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleDistrictSelectChange = (newDistrict) => {
+    const places = getLocalitiesForDistrict(newDistrict);
+    const defPlace = places[0]?.village || 'Vandanmedu';
+    setFormData((prev) => ({
+      ...prev,
+      district: newDistrict,
+      location: defPlace,
+      customLocation: '',
+    }));
+    if (errors.location) {
+      setErrors((prev) => ({ ...prev, location: undefined }));
+    }
+  };
+
   const handleNextStep = (e) => {
     e.preventDefault();
     if (validateStep1()) {
@@ -161,7 +192,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
     }
   };
 
-  const [ocrData, setOcrData] = useState(null); 
+  const [ocrData, setOcrData] = useState(null);
   // { status: 'scanning' | 'verified' | 'mismatch', fileName, fileSize, score, docType, matches, message }
 
   const handleAnalyzeDocument = async (e) => {
@@ -179,7 +210,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
       if (file.type.includes('text') || file.name.endsWith('.txt')) {
         insideTextContent = await file.text();
       }
-    } catch (err) {}
+    } catch (err) { }
 
     // Call Real Google Gemini AI API Backend to read inside content
     try {
@@ -237,16 +268,20 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
 
     setSubmitting(true);
 
-    const formattedPrice = formData.price.startsWith('₹') 
-      ? formData.price 
+    const formattedPrice = formData.price.startsWith('₹')
+      ? formData.price
       : (formData.listingType === 'lease' && !formData.price.toLowerCase().includes('year') && !formData.price.toLowerCase().includes('yr')
-          ? `₹${formData.price} / Year`
-          : `₹${formData.price}`);
+        ? `₹${formData.price} / Year`
+        : `₹${formData.price}`);
+
+    const activeLocationName = formData.location === 'Other'
+      ? (formData.customLocation.trim() || 'Central Area')
+      : formData.location.trim();
 
     const payload = {
       title: formData.title.trim(),
       description: formData.description.trim() || 'Prime Organic Cardamom plantation plot situated in Western Ghats, Kerala.',
-      location: `${formData.location.trim()}, ${formData.district}`,
+      location: `${activeLocationName}, ${formData.district}`,
       area: `${formData.area.toString().replace(/acres?/i, '').trim()} Acres`,
       price: formattedPrice,
       type: formData.listingType,
@@ -260,6 +295,12 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
       plants: formData.plants,
       images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'],
       image: images[0] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
+      verificationPhoto: verificationPhotoData?.photoUrl || null,
+      verificationCapturedAt: verificationPhotoData?.capturedAt || new Date().toLocaleString(),
+      verificationStatus: 'Pending',
+      verificationRemark: '',
+      pattayamFileName: ocrData?.fileName || 'Pattayam_Title_Deed.pdf',
+      pattayamDoc: ocrData?.docType || 'Official Kerala Govt Revenue Land Title (Pattayam)',
     };
 
     if (editPlot) {
@@ -282,10 +323,13 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
         organic: formData.organic,
         roadAccess: formData.roadAccess,
         listingType: formData.listingType,
+        verificationPhoto: payload.verificationPhoto,
+        verificationCapturedAt: payload.verificationCapturedAt,
+        verificationStatus: payload.verificationStatus,
       };
 
       setSubmitting(false);
-      setStep(3);
+      setStep(4);
       setTimeout(() => {
         if (onUpdate) onUpdate(updatedPlot);
         else onPublish(updatedPlot);
@@ -312,10 +356,13 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
         organic: formData.organic,
         roadAccess: formData.roadAccess,
         listingType: formData.listingType,
+        verificationPhoto: payload.verificationPhoto,
+        verificationCapturedAt: payload.verificationCapturedAt,
+        verificationStatus: payload.verificationStatus,
       };
 
       setSubmitting(false);
-      setStep(3);
+      setStep(4);
       setTimeout(() => {
         onPublish(newPlot);
       }, 1800);
@@ -361,7 +408,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
           <div className="absolute bottom-3 left-3 right-3 text-white">
             <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1 mb-0.5">
               <MapPin className="w-3 h-3" />
-              📍 {formData.location || 'Idukki, Kerala'}
+              📍 {formData.location === 'Other' ? (formData.customLocation || 'Central Area') : formData.location || 'Idukki, Kerala'}
             </span>
             <h4 className="text-sm font-black truncate">{formData.title || 'Prime Cardamom Estate Listing'}</h4>
           </div>
@@ -414,8 +461,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
       badgeText="MARKETPLACE LAND PUBLISHER"
       badgeIcon={MapPin}
       currentStep={step}
-      totalSteps={2}
-      steps={['Plot Specs & Pricing', 'Verification & Preview']}
+      totalSteps={3}
+      steps={['Plot Specs & Pricing', 'Pattayam Document', 'Person Verification Scan']}
       onStepClick={(s) => setStep(s)}
       rightPanel={rightMarketplacePreview}
     >
@@ -439,11 +486,10 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                         handleChange('price', '');
                       }
                     }}
-                    className={`py-3 rounded-2xl font-black text-xs transition-all border flex items-center justify-center gap-2 ${
-                      formData.listingType === 'sale'
+                    className={`py-3 rounded-2xl font-black text-xs transition-all border flex items-center justify-center gap-2 ${formData.listingType === 'sale'
                         ? 'bg-[#1B5E20] text-white border-[#66BB6A] shadow-md'
                         : 'bg-[#F8FFF8] dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-[#2E7D32]/20 hover:border-[#2E7D32]'
-                    }`}
+                      }`}
                   >
                     <Tag className="w-4 h-4 text-[#66BB6A]" />
                     <span>For Sale (വിൽപ്പനയ്ക്ക്)</span>
@@ -456,11 +502,10 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                         handleChange('price', '');
                       }
                     }}
-                    className={`py-3 rounded-2xl font-black text-xs transition-all border flex items-center justify-center gap-2 ${
-                      formData.listingType === 'lease'
+                    className={`py-3 rounded-2xl font-black text-xs transition-all border flex items-center justify-center gap-2 ${formData.listingType === 'lease'
                         ? 'bg-[#1B5E20] text-white border-[#66BB6A] shadow-md'
                         : 'bg-[#F8FFF8] dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-[#2E7D32]/20 hover:border-[#2E7D32]'
-                    }`}
+                      }`}
                   >
                     <Layers className="w-4 h-4 text-[#66BB6A]" />
                     <span>For Lease (പാട്ടത്തിന്)</span>
@@ -478,9 +523,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   placeholder="e.g. Vandenmedu 10 Acre Green Gold Estate"
                   value={formData.title}
                   onChange={(e) => handleChange('title', e.target.value)}
-                  className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${
-                    errors.title ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30 focus:border-[#1B5E20]'
-                  }`}
+                  className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${errors.title ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30 focus:border-[#1B5E20]'
+                    }`}
                 />
                 {errors.title && (
                   <p className="text-[11px] font-bold text-red-500 mt-1 flex items-center gap-1">
@@ -500,9 +544,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                     placeholder="e.g. K. J. Joseph"
                     value={formData.ownerName}
                     onChange={(e) => handleChange('ownerName', e.target.value)}
-                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${
-                      errors.ownerName ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
-                    }`}
+                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${errors.ownerName ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
+                      }`}
                   />
                   {errors.ownerName && (
                     <p className="text-[11px] font-bold text-red-500 mt-1">{errors.ownerName}</p>
@@ -518,9 +561,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                     placeholder="e.g. planter@gmail.com"
                     value={formData.ownerEmail}
                     onChange={(e) => handleChange('ownerEmail', e.target.value)}
-                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${
-                      errors.ownerEmail ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
-                    }`}
+                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${errors.ownerEmail ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
+                      }`}
                   />
                   {errors.ownerEmail && (
                     <p className="text-[11px] font-bold text-red-500 mt-1">{errors.ownerEmail}</p>
@@ -536,9 +578,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                     placeholder="e.g. +91 98470 54321"
                     value={formData.ownerPhone}
                     onChange={(e) => handleChange('ownerPhone', e.target.value)}
-                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${
-                      errors.ownerPhone ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
-                    }`}
+                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${errors.ownerPhone ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
+                      }`}
                   />
                   {errors.ownerPhone && (
                     <p className="text-[11px] font-bold text-red-500 mt-1">{errors.ownerPhone}</p>
@@ -546,7 +587,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                 </div>
               </div>
 
-              {/* District & Village Location */}
+              {/* District & Village Location Dropdowns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-black text-[#1B5E20] dark:text-emerald-400 uppercase block mb-1">
@@ -554,8 +595,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   </label>
                   <select
                     value={formData.district}
-                    onChange={(e) => handleChange('district', e.target.value)}
-                    className="w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-white"
+                    onChange={(e) => handleDistrictSelectChange(e.target.value)}
+                    className="w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-white cursor-pointer"
                   >
                     {KERALA_DISTRICTS.map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -567,15 +608,35 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   <label className="text-xs font-black text-[#1B5E20] dark:text-emerald-400 uppercase block mb-1">
                     Village / Locality *
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Vandenmedu / Kattappana / Meppadi"
+                  <select
                     value={formData.location}
                     onChange={(e) => handleChange('location', e.target.value)}
-                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all ${
-                      errors.location ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
-                    }`}
-                  />
+                    className={`w-full p-3 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800 border text-xs font-bold text-[#1B5E20] dark:text-white transition-all cursor-pointer ${errors.location ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/30'
+                      }`}
+                  >
+                    {getLocalitiesForDistrict(formData.district).map((p) => (
+                      <option key={p.village} value={p.village}>
+                        {p.village} {p.taluk ? `(${p.taluk} Taluk)` : ''}
+                      </option>
+                    ))}
+                    {formData.location &&
+                      formData.location !== 'Other' &&
+                      !getLocalitiesForDistrict(formData.district).some((p) => p.village.toLowerCase() === formData.location.toLowerCase()) && (
+                        <option value={formData.location}>{formData.location}</option>
+                      )}
+                    <option value="Other">➕ Other / Custom Locality</option>
+                  </select>
+
+                  {formData.location === 'Other' && (
+                    <input
+                      type="text"
+                      placeholder="Enter village or locality name"
+                      value={formData.customLocation || ''}
+                      onChange={(e) => handleChange('customLocation', e.target.value)}
+                      className="w-full p-3 mt-2 rounded-2xl bg-white dark:bg-slate-900 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-white transition-all focus:ring-2 focus:ring-[#1B5E20]"
+                    />
+                  )}
+
                   {errors.location && (
                     <p className="text-[11px] font-bold text-red-500 mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" /> {errors.location}
@@ -584,7 +645,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                 </div>
               </div>
 
-              {/* Price & Valuation Section with Super Convenient Quick Chips */}
+              {/* Price & Valuation Section */}
               <div className="space-y-2 p-4 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800/80 border border-[#2E7D32]/20">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-[#1B5E20] dark:text-emerald-400 uppercase">
@@ -600,9 +661,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   placeholder={formData.listingType === 'sale' ? 'e.g. ₹1.85 Cr or ₹95 Lakhs' : 'e.g. ₹12 Lakhs / Year'}
                   value={formData.price}
                   onChange={(e) => handleChange('price', e.target.value)}
-                  className={`w-full p-3 rounded-2xl bg-white dark:bg-slate-900 border text-xs font-black text-[#1B5E20] dark:text-white transition-all ${
-                    errors.price ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/40 focus:border-[#1B5E20]'
-                  }`}
+                  className={`w-full p-3 rounded-2xl bg-white dark:bg-slate-900 border text-xs font-black text-[#1B5E20] dark:text-white transition-all ${errors.price ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/40 focus:border-[#1B5E20]'
+                    }`}
                 />
                 {errors.price && (
                   <p className="text-[11px] font-bold text-red-500 flex items-center gap-1">
@@ -618,11 +678,10 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                       key={preset}
                       type="button"
                       onClick={() => handleQuickPrice(preset.startsWith('₹') ? preset : `₹${preset}`)}
-                      className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border ${
-                        formData.price.includes(preset)
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border ${formData.price.includes(preset)
                           ? 'bg-[#1B5E20] text-white border-[#66BB6A]'
                           : 'bg-white dark:bg-slate-700 text-[#1B5E20] dark:text-emerald-300 border-[#2E7D32]/30 hover:bg-emerald-50'
-                      }`}
+                        }`}
                     >
                       {preset}
                     </button>
@@ -630,7 +689,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                 </div>
               </div>
 
-              {/* Area Section with Quick Presets */}
+              {/* Area Section */}
               <div className="space-y-2 p-4 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800/80 border border-[#2E7D32]/20">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-[#1B5E20] dark:text-emerald-400 uppercase">
@@ -646,9 +705,8 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   placeholder="e.g. 5.5"
                   value={formData.area}
                   onChange={(e) => handleChange('area', e.target.value)}
-                  className={`w-full p-3 rounded-2xl bg-white dark:bg-slate-900 border text-xs font-black text-[#1B5E20] dark:text-white transition-all ${
-                    errors.area ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/40'
-                  }`}
+                  className={`w-full p-3 rounded-2xl bg-white dark:bg-slate-900 border text-xs font-black text-[#1B5E20] dark:text-white transition-all ${errors.area ? 'border-red-500 ring-2 ring-red-500/20' : 'border-[#2E7D32]/40'
+                    }`}
                 />
                 {errors.area && (
                   <p className="text-[11px] font-bold text-red-500 flex items-center gap-1">
@@ -664,11 +722,10 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                       key={a}
                       type="button"
                       onClick={() => handleQuickArea(a)}
-                      className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border ${
-                        formData.area === a
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition-all border ${formData.area === a
                           ? 'bg-[#1B5E20] text-white border-[#66BB6A]'
                           : 'bg-white dark:bg-slate-700 text-[#1B5E20] dark:text-emerald-300 border-[#2E7D32]/30 hover:bg-emerald-50'
-                      }`}
+                        }`}
                     >
                       {a} Acres
                     </button>
@@ -724,7 +781,7 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                 </div>
               </div>
 
-              {/* Plantation Photo Gallery (Up to 10 Photos) */}
+              {/* Photo Gallery Upload */}
               <div className="space-y-3 p-4 rounded-2xl bg-[#F8FFF8] dark:bg-slate-800/80 border border-[#2E7D32]/20">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-[#1B5E20] dark:text-emerald-400 uppercase flex items-center gap-1.5">
@@ -736,7 +793,6 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   </span>
                 </div>
 
-                {/* Photo Thumbnails Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {images.map((imgUrl, idx) => (
                     <div key={idx} className="relative group rounded-xl overflow-hidden border border-[#2E7D32]/30 bg-black/10 aspect-video sm:aspect-square">
@@ -757,7 +813,6 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                     </div>
                   ))}
 
-                  {/* Add File Upload Box */}
                   {images.length < 10 && (
                     <label className="border-2 border-dashed border-[#2E7D32]/40 rounded-xl p-3 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-900 cursor-pointer hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all aspect-video sm:aspect-square">
                       <Upload className="w-5 h-5 text-[#1B5E20] dark:text-emerald-400 mb-1" />
@@ -773,32 +828,6 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                     </label>
                   )}
                 </div>
-
-                {/* Add Photo by URL Input */}
-                {images.length < 10 && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="url"
-                      placeholder="Or paste image URL (https://images.unsplash.com/...)"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddImage(newImageUrl);
-                        }
-                      }}
-                      className="flex-1 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAddImage(newImageUrl)}
-                      className="px-4 py-2.5 rounded-xl bg-[#1B5E20] text-white font-black text-xs hover:bg-[#2E7D32] transition-all"
-                    >
-                      + Add URL
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div className="pt-3 flex justify-end">
@@ -806,146 +835,21 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                   type="submit"
                   className="px-8 py-3.5 rounded-2xl bg-[#1B5E20] hover:bg-[#2E7D32] text-white font-black text-xs shadow-xl transition-all flex items-center gap-2"
                 >
-                  <span>Next: Document Scan & Preview →</span>
+                  <span>Next: Upload Pattayam Document →</span>
                 </button>
               </div>
             </form>
           )}
 
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 100% SECURE AI OCR VERIFICATION BANNER */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950 via-[#1B5E20] to-emerald-900 text-white border border-[#66BB6A]/50 shadow-xl flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300">
-                    <ShieldCheck className="w-7 h-7 text-[#66BB6A]" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-xs font-black font-poppins text-white uppercase tracking-wide">
-                        Cardora 100% Secure AI Legal Document Engine
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[9px] font-black border border-emerald-400/30 flex items-center gap-1">
-                        🔒 256-BIT SSL ENCRYPTED
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-emerald-200 mt-0.5">
-                      Upload your Pattayam deed or survey sketch. Our AI Legal Engine verifies Revenue Records with 100% security & end-to-end encryption. An official PDF certificate will be auto-emailed to <strong>{formData.ownerEmail}</strong>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Intelligent AI Document OCR Section */}
-              <div className="border-2 border-dashed border-[#2E7D32]/40 rounded-3xl p-6 text-center bg-[#F8FFF8] dark:bg-slate-800 space-y-4">
-                <div className="space-y-2">
-                  <Upload className="w-10 h-10 text-[#1B5E20] dark:text-emerald-400 mx-auto animate-bounce" />
-                  <h4 className="text-xs font-black text-[#1B5E20] dark:text-white">
-                    Upload Land Ownership Title (Pattayam) or Survey Sketch
-                  </h4>
-                  <p className="text-[10px] text-gray-500">Supports PDF, JPG, PNG up to 25MB • 100% Secure SSL Storage</p>
-
-                  <input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                    onChange={handleAnalyzeDocument}
-                    className="hidden"
-                    id="pattayam-upload-input"
-                  />
-
-                  <label
-                    htmlFor="pattayam-upload-input"
-                    className="inline-block px-5 py-2.5 rounded-2xl bg-[#1B5E20] text-white font-black text-xs cursor-pointer hover:bg-[#2E7D32] shadow-md transition-all"
-                  >
-                    {ocrData ? 'Select Different Document' : 'Select Land Document from Computer'}
-                  </label>
-                </div>
-
-                {/* OCR Status & Detailed Breakdown */}
-                {ocrData?.status === 'scanning' && (
-                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-slate-900 border border-amber-300 space-y-2">
-                    <div className="text-xs font-black text-amber-700 dark:text-amber-300 animate-pulse flex items-center justify-center gap-2">
-                      <Sparkles className="w-4 h-4 animate-spin text-amber-500" />
-                      <span>🔒 100% Secure AI Scanning document OCR & revenue record matching...</span>
-                    </div>
-                    <p className="text-[10px] text-amber-600 font-bold">Encrypting & Analyzing {ocrData.fileName} ({ocrData.fileSize})...</p>
-                  </div>
-                )}
-
-                {ocrData?.status === 'verified' && (
-                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-slate-900 border-2 border-emerald-500/60 space-y-3 text-left shadow-lg">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-black text-xs">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                        <span>🔒 100% SECURE & VERIFIED TITLE DEED ({ocrData.score}% Score)</span>
-                      </div>
-                      <span className="px-3 py-1 rounded-full bg-[#1B5E20] text-emerald-300 text-[10px] font-black uppercase flex items-center gap-1 border border-emerald-400/40 shadow-sm">
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#66BB6A]" /> 100% SECURE AUDIT
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-bold text-gray-700 dark:text-slate-200 p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300/40">
-                      <div>📄 Document: <span className="text-[#1B5E20] dark:text-emerald-400">{ocrData.fileName}</span> ({ocrData.fileSize})</div>
-                      <div>📊 Doc Type: <span className="text-[#1B5E20] dark:text-emerald-400">{ocrData.docType}</span></div>
-                      <div>🔐 Security Hash: <span className="text-emerald-600 font-mono text-[10px]">CARDORA-SECURE-SHA256-OK</span></div>
-                      <div>🏛️ Status: <span className="text-emerald-600">Govt Land Title Confirmed</span></div>
-                    </div>
-
-                    {/* Gemini AI Inside Content Reader Summary */}
-                    {ocrData.summary && (
-                      <div className="p-3 rounded-xl bg-[#1B5E20]/10 dark:bg-slate-800 border border-[#66BB6A]/30 text-xs text-[#1B5E20] dark:text-emerald-300 space-y-1">
-                        <div className="flex items-center gap-1.5 font-black text-[11px] uppercase text-[#1B5E20] dark:text-emerald-400">
-                          <Sparkles className="w-3.5 h-3.5 text-[#66BB6A]" /> Gemini AI Inside Content Summary:
-                        </div>
-                        <p className="font-semibold text-[11px] leading-relaxed">{ocrData.summary}</p>
-                      </div>
-                    )}
-
-                    {ocrData.matches && ocrData.matches.length > 0 && (
-                      <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-emerald-200 dark:border-slate-800">
-                        <span className="text-[10px] font-black text-emerald-800 dark:text-emerald-400">Extracted Revenue Tokens:</span>
-                        {ocrData.matches.map((m, idx) => (
-                          <span key={idx} className="px-2 py-0.5 rounded-md bg-emerald-200/60 dark:bg-emerald-900/60 text-[#1B5E20] dark:text-emerald-200 text-[10px] font-bold">
-                            ✓ {m}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {ocrData?.status === 'mismatch' && (
-                  <div className="p-4 rounded-2xl bg-red-50 dark:bg-slate-900 border-2 border-red-500/60 space-y-3 text-left shadow-lg">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-black text-xs">
-                        <AlertCircle className="w-5 h-5 text-red-500" />
-                        <span>🔒 SECURITY AUDIT FAILED ({ocrData.score}% Score)</span>
-                      </div>
-                      <span className="px-3 py-1 rounded-full bg-red-600 text-white text-[10px] font-black uppercase">
-                        UNVERIFIED FILE
-                      </span>
-                    </div>
-
-                    <p className="text-xs font-bold text-red-700 dark:text-red-300">
-                      {ocrData.message}
-                    </p>
-
-                    {/* Gemini AI Inside Content Analysis explanation */}
-                    {ocrData.summary && (
-                      <div className="p-3 rounded-xl bg-red-100 dark:bg-slate-800 border border-red-300 text-xs text-red-800 dark:text-red-300 space-y-1">
-                        <div className="flex items-center gap-1.5 font-black text-[11px] uppercase text-red-900 dark:text-red-400">
-                          <Sparkles className="w-3.5 h-3.5 text-red-500" /> Gemini AI Inside Content Analysis:
-                        </div>
-                        <p className="font-semibold text-[11px] leading-relaxed">{ocrData.summary}</p>
-                      </div>
-                    )}
-
-                    <p className="text-[11px] text-gray-600 dark:text-slate-400">
-                      Cardora Security Protocol rejects general software diagrams, photos, drawings, or non-land PDFs. Please upload an official Govt Revenue Pattayam or Survey Sketch.
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div className="space-y-6">
+              {/* REAL VISUAL PATTAYAM DOCUMENT SCANNER */}
+              <PattayamDocumentScanner
+                initialDoc={ocrData ? { name: ocrData.fileName, type: ocrData.docType, summary: ocrData.summary, extractedTokens: ocrData.matches || [] } : null}
+                onScanComplete={(scanResult) => {
+                  setOcrData(scanResult);
+                }}
+              />
 
               {/* Description */}
               <div>
@@ -961,78 +865,95 @@ const PublishPlotModal = ({ onClose, onPublish, onUpdate, editPlot = null, lang 
                 />
               </div>
 
-              {/* Live Preview Card */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-black text-[#1B5E20] dark:text-emerald-400 uppercase">
-                  <Eye className="w-4 h-4 text-[#66BB6A]" />
-                  <span>Live Card Preview (How buyers will see your plot)</span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-[#2E7D32]/30 shadow-lg flex flex-col sm:flex-row gap-4 items-center">
-                  <img
-                    src={formData.image || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'}
-                    alt="Preview"
-                    className="w-full sm:w-40 h-28 object-cover rounded-xl border border-gray-200"
-                  />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#1B5E20] text-emerald-200 text-[10px] font-black uppercase">
-                        FOR {formData.listingType.toUpperCase()}
-                      </span>
-                      <span className="text-xs font-black text-amber-600 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> 99.4% AI Verified
-                      </span>
-                    </div>
-
-                    <h4 className="text-sm font-black text-[#1B5E20] dark:text-white font-poppins">
-                      {formData.title || 'Untitled Plantation Plot'}
-                    </h4>
-
-                    <p className="text-xs font-bold text-[#2E7D32] dark:text-emerald-400">
-                      {formData.price.startsWith('₹') ? formData.price : `₹${formData.price || '0'}`} • {formData.area || '0'} Acres
-                    </p>
-
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#1B5E20]" />
-                      <span>{formData.location || 'Vandenmedu'}, {formData.district}</span>
-                      <span className="mx-1">•</span>
-                      <span>Owner: {formData.ownerName || 'Planter'}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               <div className="pt-4 flex justify-between">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
                   className="px-5 py-3 rounded-2xl border border-gray-300 dark:border-slate-700 font-bold text-xs hover:bg-gray-100 dark:hover:bg-slate-800"
-                  disabled={submitting}
                 >
-                  ← Back to Details
+                  ← Back to Plot Details
                 </button>
                 <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] text-white font-black text-xs shadow-xl hover:scale-105 transition-all flex items-center gap-2 border border-[#66BB6A]/40"
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="px-8 py-3.5 rounded-2xl bg-[#1B5E20] hover:bg-[#2E7D32] text-white font-black text-xs shadow-xl transition-all flex items-center gap-2"
                 >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{editPlot ? 'Updating PDF Report & Saving...' : 'Generating PDF Report & Publishing...'}</span>
-                    </>
-                  ) : (
-                    <span>{editPlot ? 'Save Changes & Update PDF' : 'Publish Listing & Dispatch PDF Email'}</span>
-                  )}
+                  <span>Next: Person Verification Scan →</span>
                 </button>
               </div>
-            </form>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6">
+              {/* LIVE PERSON VERIFICATION SCANNER */}
+              <PersonVerificationScanner
+                initialPhoto={verificationPhotoData?.photoUrl}
+                onCaptureConfirm={(data) => {
+                  setVerificationPhotoData(data);
+                }}
+                onCancel={() => setStep(2)}
+              />
+
+              {/* Summary Card if Photo Captured */}
+              {verificationPhotoData?.photoUrl && (
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-slate-900 border-2 border-emerald-500/60 flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={verificationPhotoData.photoUrl}
+                      alt="Verified Identity"
+                      className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
+                    />
+                    <div>
+                      <h4 className="text-xs font-black text-[#1B5E20] dark:text-emerald-300 uppercase">
+                        ✓ Person Verification Identity Photo Attached
+                      </h4>
+                      <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+                        Captured Live: {verificationPhotoData.capturedAt}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-[#1B5E20] text-emerald-300 text-[10px] font-black uppercase">
+                    Verification Ready
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-4 flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-5 py-3 rounded-2xl border border-gray-300 dark:border-slate-700 font-bold text-xs hover:bg-gray-100 dark:hover:bg-slate-800"
+                  disabled={submitting}
+                >
+                  ← Back to Pattayam Upload
+                </button>
+                <form onSubmit={handleSubmit}>
+                  <button
+                    type="submit"
+                    disabled={submitting || !verificationPhotoData?.photoUrl}
+                    className={`px-8 py-3.5 rounded-2xl font-black text-xs shadow-xl transition-all flex items-center gap-2 border ${
+                      verificationPhotoData?.photoUrl
+                        ? 'bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] text-white border-[#66BB6A]/40 hover:scale-105'
+                        : 'bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{editPlot ? 'Updating Listing & Dossier...' : 'Submitting Verified Listing...'}</span>
+                      </>
+                    ) : (
+                      <span>{editPlot ? 'Save Changes & Update Dossier' : 'Submit Listing & Verification Dossier'}</span>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
           )}
         </div>
       </div>
     </FullScreenFormModal>
-
-
   );
 };
 

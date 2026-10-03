@@ -30,6 +30,29 @@ const ALL_DISTRICTS = [
   'Kodagu, Karnataka',
 ];
 
+const getFrontendFallbackHourly = () => {
+  const list = [];
+  const now = new Date();
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getTime() + i * 3600 * 1000);
+    const timeFormatted = d.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const h = d.getHours();
+    const isDay = h >= 6 && h < 18;
+    list.push({
+      time: timeFormatted,
+      temp: Math.round(23 + Math.sin(((h - 6) / 12) * Math.PI) * 3),
+      pop: Math.max(10, Math.min(80, Math.round(20 + i * 2))),
+      condition: isDay ? 'Partly Cloudy' : 'Clear Night',
+      iconUrl: `https://openweathermap.org/img/wn/${isDay ? '02d' : '02n'}@2x.png`,
+    });
+  }
+  return list;
+};
+
 const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
   const { user } = useAuth();
   const isAdmin = user && (user.role || '').toLowerCase() === 'admin';
@@ -157,8 +180,12 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-white rounded-[24px] border border-[#D7E6D5] p-6 shadow-[0_10px_30px_rgba(31,94,59,0.05)] flex flex-col md:flex-row md:items-center justify-between gap-4"
+        className="bg-white rounded-[24px] border border-[#D7E6D5] p-6 shadow-[0_10px_30px_rgba(31,94,59,0.05)] flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden group"
       >
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-1/3 bg-cover bg-right opacity-15 pointer-events-none transition-opacity group-hover:opacity-25"
+          style={{ backgroundImage: `url('/images/weather_hero_bg.jpg')` }}
+        />
         <div className="flex items-center gap-3.5">
           <motion.div
             whileHover={{ scale: 1.08, rotate: 5 }}
@@ -358,12 +385,19 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="lg:col-span-7 bg-gradient-to-br from-[#0B2117] via-[#17331F] to-[#1F5E3B] text-white rounded-[28px] p-6 md:p-8 relative overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col justify-between group"
+          className="lg:col-span-7 bg-[#0B2117] text-white rounded-[28px] p-6 md:p-8 relative overflow-hidden shadow-2xl border border-emerald-500/30 flex flex-col justify-between group"
         >
 
+          {/* Photorealistic High-Altitude Cardamom Plantation Hills Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-75 group-hover:scale-105 group-hover:opacity-90 transition-all duration-1000 pointer-events-none"
+            style={{ backgroundImage: `url('/images/weather_hero_bg.jpg')` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B2117] via-[#0B2117]/50 to-black/20 pointer-events-none" />
+
           {/* Ambient Lighting & Futuristic Radar Pattern Background */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-emerald-500/15 via-[#C9A227]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(#5C8D4E_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-emerald-500/20 via-[#C9A227]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(#5C8D4E_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
 
           {/* Animated Ambient Leaf Background */}
           <motion.div
@@ -580,7 +614,7 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="lg:col-span-5 bg-white rounded-[24px] border border-[#D7E6D5] p-6 md:p-8 shadow-sm flex flex-col justify-between"
+          className="lg:col-span-5 bg-gradient-to-br from-white via-[#F9FBF8] to-[#EEF6EC] rounded-[24px] border border-[#D7E6D5] p-6 md:p-8 shadow-[0_10px_30px_rgba(31,94,59,0.06)] flex flex-col justify-between relative overflow-hidden group"
         >
 
           <div>
@@ -870,28 +904,25 @@ const WeatherModule = ({ userLocation = 'Idukki, Kerala', onToast }) => {
 
         {/* Forecast Contents */}
         {activeForecastTab === 'hourly' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
-            {(forecast.hourly && forecast.hourly.length > 0 ? forecast.hourly : [
-              { time: '12:00 PM', temp: 25, pop: 20, condition: 'Clouds', iconUrl: 'https://openweathermap.org/img/wn/02d@2x.png' },
-              { time: '03:00 PM', temp: 26, pop: 30, condition: 'Clouds', iconUrl: 'https://openweathermap.org/img/wn/03d@2x.png' },
-              { time: '06:00 PM', temp: 23, pop: 60, condition: 'Rain', iconUrl: 'https://openweathermap.org/img/wn/10d@2x.png' },
-              { time: '09:00 PM', temp: 21, pop: 50, condition: 'Rain', iconUrl: 'https://openweathermap.org/img/wn/10n@2x.png' },
-              { time: '12:00 AM', temp: 20, pop: 30, condition: 'Clouds', iconUrl: 'https://openweathermap.org/img/wn/03n@2x.png' },
-              { time: '03:00 AM', temp: 19, pop: 20, condition: 'Clear', iconUrl: 'https://openweathermap.org/img/wn/01n@2x.png' },
-              { time: '06:00 AM', temp: 19, pop: 15, condition: 'Clear', iconUrl: 'https://openweathermap.org/img/wn/01d@2x.png' },
-              { time: '09:00 AM', temp: 22, pop: 25, condition: 'Clouds', iconUrl: 'https://openweathermap.org/img/wn/02d@2x.png' },
-            ]).map((hour, idx) => (
-              <motion.div
-                key={idx}
-                whileHover={{ scale: 1.05, translateY: -2 }}
-                className="p-3 rounded-2xl bg-[#F8FAF7] border border-[#D7E6D5] text-center space-y-1.5"
-              >
-                <span className="text-[11px] font-bold text-[#4A5568] block">{hour.time}</span>
-                <img src={hour.iconUrl} alt={hour.condition} className="w-8 h-8 mx-auto object-contain" />
-                <span className="text-base font-black text-[#17331F] font-poppins block">{hour.temp}°C</span>
-                <span className="text-[10px] font-extrabold text-[#5C8D4E] block">💧 {hour.pop}%</span>
-              </motion.div>
-            ))}
+          <div className="relative">
+            <div className="flex items-center justify-between text-[11px] font-extrabold text-[#5C8D4E] mb-2 px-1">
+              <span>Full 24-Hour Weather Forecast Timeline</span>
+              <span>Scroll right ➔</span>
+            </div>
+            <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 scrollbar-thin scrollbar-thumb-[#1F5E3B]/40 scrollbar-track-[#F8FAF7]">
+              {(forecast.hourly && forecast.hourly.length > 0 ? forecast.hourly : getFrontendFallbackHourly()).map((hour, idx) => (
+                <motion.div
+                  key={idx}
+                  whileHover={{ scale: 1.05, translateY: -2 }}
+                  className="min-w-[105px] p-3 rounded-2xl bg-[#F8FAF7] border border-[#D7E6D5] text-center space-y-1.5 shrink-0 hover:border-[#1F5E3B] transition-all"
+                >
+                  <span className="text-[11px] font-bold text-[#4A5568] block whitespace-nowrap">{hour.time}</span>
+                  <img src={hour.iconUrl} alt={hour.condition || ''} className="w-8 h-8 mx-auto object-contain" />
+                  <span className="text-base font-black text-[#17331F] font-poppins block">{hour.temp}°C</span>
+                  <span className="text-[10px] font-extrabold text-[#5C8D4E] block">💧 {hour.pop}%</span>
+                </motion.div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">

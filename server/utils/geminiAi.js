@@ -19,7 +19,7 @@ if (apiKey) {
  */
 async function askGemini(prompt, systemInstruction = '', model = 'gemini-3.6-flash') {
   const currentKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  
+
   if (!aiClient && currentKey && currentKey.trim()) {
     try {
       aiClient = new GoogleGenAI({ apiKey: currentKey.trim() });
@@ -75,7 +75,7 @@ async function analyzeDocumentWithGemini(fileBuffer, mimeType, prompt = '') {
   if (!aiClient && currentKey && currentKey.trim()) {
     try {
       aiClient = new GoogleGenAI({ apiKey: currentKey.trim() });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (!aiClient) {

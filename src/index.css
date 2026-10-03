@@ -407,16 +407,20 @@ textarea {
     transform: translateX(-10vw) translateY(0px) scale(0.9);
     opacity: 0;
   }
+
   10% {
     opacity: 0.8;
   }
+
   50% {
     transform: translateX(50vw) translateY(-15px) scale(1.05);
     opacity: 0.9;
   }
+
   90% {
     opacity: 0.8;
   }
+
   100% {
     transform: translateX(110vw) translateY(-5px) scale(0.95);
     opacity: 0;
@@ -424,18 +428,24 @@ textarea {
 }
 
 @keyframes wingFlap {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg) scaleY(1);
   }
+
   50% {
     transform: rotate(-12deg) scaleY(0.7);
   }
 }
 
 @keyframes swayTree {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   50% {
     transform: rotate(2.5deg);
   }
@@ -446,10 +456,12 @@ textarea {
     transform: translateY(0px) rotate(0deg);
     opacity: 0.3;
   }
+
   50% {
     transform: translateY(-25px) rotate(8deg);
     opacity: 0.8;
   }
+
   100% {
     transform: translateY(-50px) rotate(-8deg);
     opacity: 0;
@@ -461,10 +473,12 @@ textarea {
     transform: translateY(0px) scale(0.6);
     opacity: 0.5;
   }
+
   50% {
     transform: translateY(-20px) scale(1.1);
     opacity: 0.3;
   }
+
   100% {
     transform: translateY(-45px) scale(1.8);
     opacity: 0;
@@ -490,4 +504,100 @@ textarea {
 
 .animate-rise-smoke {
   animation: riseBarnSmoke 4.5s ease-out infinite;
+}
+
+/* ==========================================================================
+   CARDORA KERALA CARDAMOM PLANTATION ATMOSPHERIC BACKGROUND SYSTEM
+   ========================================================================== */
+
+.cardora-plantation-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Layer 1: Rich Multi-stop Natural Emerald Gradient Mesh */
+.cardora-bg-mesh {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.18) 0%, transparent 55%),
+    radial-gradient(circle at 85% 20%, rgba(245, 158, 11, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 50% 75%, rgba(5, 150, 105, 0.16) 0%, transparent 60%),
+    linear-gradient(135deg, #041F14 0%, #06281B 35%, #0A3624 70%, #052216 100%);
+  transition: background 0.5s ease;
+}
+
+.dark .cardora-bg-mesh {
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.25) 0%, transparent 55%),
+    radial-gradient(circle at 85% 20%, rgba(245, 158, 11, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 50% 75%, rgba(5, 150, 105, 0.22) 0%, transparent 60%),
+    linear-gradient(135deg, #02120B 0%, #052417 40%, #093623 75%, #04190F 100%);
+}
+
+/* Layer 2: Photorealistic Western Ghats Cardamom Hill Plantation Landscape Image */
+.cardora-bg-photo {
+  position: absolute;
+  inset: 0;
+  background-image: url('../public/images/weather_hero_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.22;
+  filter: contrast(1.15) saturate(1.1);
+  mix-blend-mode: soft-light;
+  transform: scale(1.02);
+}
+
+.dark .cardora-bg-photo {
+  opacity: 0.32;
+  filter: contrast(1.2) saturate(1.15);
+  mix-blend-mode: soft-light;
+}
+
+/* Layer 3: Ultra-subtle Micro Botanical Line Pattern Watermark (No Loud Circles) */
+.cardora-bg-leaf-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2310B981' fill-opacity='0.035' stroke='%2334D399' stroke-opacity='0.04' stroke-width='0.5'%3E%3Cpath d='M30 5C22 18 8 26 8 38c0 8 6 13 13 13 8 0 13-5 13-13 0-12-15-20-4-33zm0 0c8 13 22 21 22 33 0 8-6 13-13 13-7 0-13-5-13-13 0-12 15-20 4-33z'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+
+.dark .cardora-bg-leaf-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2334D399' fill-opacity='0.04' stroke='%2310B981' stroke-opacity='0.05' stroke-width='0.5'%3E%3Cpath d='M30 5C22 18 8 26 8 38c0 8 6 13 13 13 8 0 13-5 13-13 0-12-15-20-4-33zm0 0c8 13 22 21 22 33 0 8-6 13-13 13-7 0-13-5-13-13 0-12 15-20 4-33z'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.45;
+}
+
+/* Layer 4: Deep Natural Vignette Overlay */
+.cardora-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(180deg, rgba(2, 18, 11, 0.35) 0%, transparent 25%, transparent 75%, rgba(2, 18, 11, 0.50) 100%),
+    radial-gradient(circle at 50% 50%, transparent 45%, rgba(2, 18, 11, 0.35) 100%);
+}
+
+.dark .cardora-bg-vignette {
+  background: 
+    linear-gradient(180deg, rgba(2, 18, 11, 0.45) 0%, transparent 25%, transparent 75%, rgba(2, 18, 11, 0.60) 100%),
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(2, 18, 11, 0.50) 100%);
+}
+
+/* Translucent Surface Card Enhancement */
+.cardora-glass-surface {
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #CDE3D5;
+  box-shadow: 0 10px 30px -5px rgba(31, 94, 59, 0.06);
+}
+
+.dark .cardora-glass-surface {
+  background-color: rgba(7, 36, 24, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Plus, Search, Leaf, GitCompare, X, Sparkles
 } from 'lucide-react';
@@ -11,6 +12,7 @@ import { apiService } from '../../services/api';
 import Button from '../ui/Button';
 
 const PlantationModule = ({ onToast }) => {
+  const location = useLocation();
   const [plantations, setPlantations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +27,15 @@ const PlantationModule = ({ onToast }) => {
 
   // Search, Filter & Sort state
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync search query from URL parameter if navigated from Header search bar
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam !== null) {
+      setSearchQuery(searchParam);
+    }
+  }, [location.search]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedVariety, setSelectedVariety] = useState('');
   const [healthFilter, setHealthFilter] = useState(''); // '' | 'high' | 'moderate' | 'low'

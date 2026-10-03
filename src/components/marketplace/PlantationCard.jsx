@@ -136,7 +136,11 @@ const PlantationCard = ({ plot, onOpenDetail, onOpenContact, onEditPlot, onDelet
             />
             <div>
               <p className="font-bold text-[#1B5E20] dark:text-white leading-none">{plot.owner || 'Verified Planter'}</p>
-              <p className="text-[9px] text-gray-500 font-semibold">{plot.ownerRole || 'Pattayam Owner'}</p>
+              <p className="text-[9px] text-gray-500 font-semibold">
+                {plot.verificationStatus === 'Verified'
+                  ? '✓ Person & Pattayam Verified'
+                  : (plot.verificationStatus === 'Rejected' ? '❌ Verification Rejected' : '👤 Person Verification Pending')}
+              </p>
             </div>
           </div>
 

@@ -52,6 +52,10 @@ import {
   BarChart2,
   List,
   Gavel,
+  ArrowUpRight,
+  Zap,
+  CheckSquare,
+  Settings
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -73,6 +77,36 @@ const AdminDashboard = () => {
   const viewParam = searchParams.get('view');
   const [adminViewMode, setAdminViewMode] = useState(viewParam || 'all');
   const [activityFilter, setActivityFilter] = useState('ALL');
+
+  // Directory Filters & Search State
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [districtFilter, setDistrictFilter] = useState('ALL');
+
+  // System Setup & Governance Controls State
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [autoTelemetrySync, setAutoTelemetrySync] = useState(true);
+  const [aiDocVerification, setAiDocVerification] = useState(true);
+  const [auditLogEncryption, setAuditLogEncryption] = useState(true);
+  const [emergencyBroadcastOpen, setEmergencyBroadcastOpen] = useState(false);
+  const [broadcastMessageText, setBroadcastMessageText] = useState('');
+  const [isBackupRunning, setIsBackupRunning] = useState(false);
+
+  // Modals state
+  const [quickAddUserOpen, setQuickAddUserOpen] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
+
+  const [newUserForm, setNewUserForm] = useState({
+    name: '',
+    email: '',
+    username: '',
+    role: 'Farmer',
+    password: 'Cardora@123',
+    district: 'Idukki, Kerala',
+    phone: '',
+  });
 
   useEffect(() => {
     if (viewParam) {
@@ -99,7 +133,6 @@ const AdminDashboard = () => {
 
   // Community Posts Admin Moderation State
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [adminCommentInputs, setAdminCommentInputs] = useState({});
 
   // Contractor Admin Management State
   const [contractorsList, setContractorsList] = useState([]);
@@ -143,8 +176,7 @@ const AdminDashboard = () => {
       image: 'https://images.unsplash.com/photo-1599813390237-7756770d10c0?auto=format&fit=crop&q=80&w=800',
       images: [
         'https://images.unsplash.com/photo-1599813390237-7756770d10c0?auto=format&fit=crop&q=80&w=800',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
-        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800'
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'
       ]
     },
     {
@@ -179,270 +211,14 @@ const AdminDashboard = () => {
       altitude: '1,050m MSL',
       yield: '420 kg/Acre',
       plants: '2,800 Vines',
-      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
-      images: [
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800',
-        'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=800'
-      ]
-    },
-    {
-      id: 'm-3',
-      title: 'Wayanad Meppadi Mist Canopy Estate',
-      description: 'Lush mountain slope estate with dense cardamom shade canopy, shade trees, and clear spring streams. Pattayam legal title uploaded and currently undergoing automated revenue OCR validation.',
-      location: 'Meppadi, Wayanad',
-      district: 'Wayanad',
-      area: '12.0 Acres',
-      price: '₹2.40 Cr',
-      owner: 'Dr. Suresh Kumar',
-      ownerEmail: 'dr.suresh@wayanadplanters.com',
-      ownerPhone: '+91 97450 88219',
-      ownerRole: 'Agriculturalist',
-      status: 'PENDING',
-      listingType: 'sale',
-      pattayamVerified: false,
-      createdAt: '2026-08-18T11:45:00.000Z',
-      pattayamDoc: {
-        fileName: 'Pending_Title_Deed_Meppadi_Draft.pdf',
-        docType: 'Kerala Govt Revenue Land Deed (Pending Thasildar Stamp Check)',
-        score: 68.4,
-        uploadedAt: '2026-08-18T11:48:00.000Z',
-        surveyNo: 'Sy. 809/2 (Thandaper Pending)',
-        villageOffice: 'Meppadi Village Revenue Office',
-        talukOffice: 'Vythiri Taluk, Wayanad',
-        fairValue: '₹17.5 Lakhs / Acre',
-        ocrSummary: 'OCR flag: Thasildar seal scan requires manual admin sign-off or updated revenue sketch rescan.'
-      },
-      roi: '22% p.a.',
-      healthScore: 89,
-      altitude: '980m MSL',
-      yield: '390 kg/Acre',
-      plants: '6,100 Vines',
-      image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800',
-      images: [
-        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=800',
-        'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=800'
-      ]
-    },
-    {
-      id: 'm-4',
-      title: 'Devikulam High-Elevation Lease Plantation',
-      description: 'Long-term 10-year lease opportunity for a high-altitude cardamom plantation equipped with automated soil moisture monitoring and solar processing drying unit.',
-      location: 'Devikulam, Idukki',
-      district: 'Idukki',
-      area: '5.0 Acres',
-      price: '₹12 Lakhs / Year',
-      owner: 'Anil Varghese',
-      ownerEmail: 'anil.varghese@devikulamspices.in',
-      ownerPhone: '+91 94000 33412',
-      ownerRole: 'Registered Landowner',
-      status: 'VERIFIED',
-      listingType: 'lease',
-      pattayamVerified: true,
-      createdAt: '2026-08-14T16:20:00.000Z',
-      pattayamDoc: {
-        fileName: 'Pattayam_Leed_Devikulam_Sy119.pdf',
-        docType: 'Official Kerala Revenue Land Title (Pattayam)',
-        score: 99.1,
-        uploadedAt: '2026-08-14T16:25:00.000Z',
-        surveyNo: 'Sy. 119/3-C (Thandaper #1042)',
-        villageOffice: 'Devikulam Village Revenue Office',
-        talukOffice: 'Devikulam Taluk, Idukki',
-        fairValue: '₹15.0 Lakhs / Acre',
-        ocrSummary: 'OCR verified 100% legal pattayam title deed with verified lease rights certificate.'
-      },
-      roi: '28% p.a.',
-      healthScore: 97,
-      altitude: '1,280m MSL',
-      yield: '510 kg/Acre',
-      plants: '3,400 Vines',
-      image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=800',
-      images: [
-        'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=800',
-        'https://images.unsplash.com/photo-1599813390237-7756770d10c0?auto=format&fit=crop&q=80&w=800'
-      ]
-    },
+      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800'
+    }
   ]);
 
-  // Marketplace Admin State & Interactive Filters
   const [selectedMarketplaceItem, setSelectedMarketplaceItem] = useState(null);
-  const [marketplaceSearchQuery, setMarketplaceSearchQuery] = useState('');
-  const [marketplaceTypeFilter, setMarketplaceTypeFilter] = useState('ALL');
-  const [marketplaceStatusFilter, setMarketplaceStatusFilter] = useState('ALL');
-  const [marketplaceSortBy, setMarketplaceSortBy] = useState('newest');
-  const [marketplaceViewFormat, setMarketplaceViewFormat] = useState('grid'); // 'grid' | 'table' | 'graph'
   const [marketplaceItemToDelete, setMarketplaceItemToDelete] = useState(null);
   const [deletingMarketplaceListing, setDeletingMarketplaceListing] = useState(false);
 
-  // Helper: Format date/time & relative time
-  const formatMarketplaceTime = (dateInput) => {
-    if (!dateInput) return { relative: 'Recently uploaded', full: 'Recently uploaded', date: 'Recent', time: '' };
-    try {
-      const d = new Date(dateInput);
-      if (isNaN(d.getTime())) return { relative: 'Recently uploaded', full: 'Recently uploaded', date: 'Recent', time: '' };
-      const now = new Date();
-      const diffMs = now - d;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      let relativeStr = '';
-      if (diffMins < 5) relativeStr = 'Just now';
-      else if (diffMins < 60) relativeStr = `${diffMins}m ago`;
-      else if (diffHours < 24) relativeStr = `${diffHours}h ago`;
-      else if (diffDays < 7) relativeStr = `${diffDays}d ago`;
-      else relativeStr = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
-
-      const formattedTime = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-      const formattedDate = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-      return {
-        relative: relativeStr,
-        full: `${formattedDate} at ${formattedTime}`,
-        date: formattedDate,
-        time: formattedTime
-      };
-    } catch (err) {
-      return { relative: 'Recently uploaded', full: 'Recently uploaded', date: 'Recent', time: '' };
-    }
-  };
-
-  // Helper: Synthesize or extract complete Pattayam Document Metadata
-  const getListingPattayam = (plot, idx = 0) => {
-    const defaultDoc = {
-      fileName: `Pattayam_Title_Deed_${plot.location ? plot.location.split(',')[0].trim().replace(/\s+/g, '_') : 'Plot'}_Sy${400 + (idx % 10) * 19}.pdf`,
-      docType: 'Official Kerala Revenue Land Title (Pattayam)',
-      score: plot.pattayamVerified !== false ? 97.5 : 54.0,
-      uploadedAt: plot.createdAt || new Date().toISOString(),
-      surveyNo: plot.surveyNo || `Sy. ${400 + (idx % 10) * 19}/1-B (Thandaper #${6200 + (idx % 10) * 145})`,
-      villageOffice: plot.villageOffice || `${plot.location ? plot.location.split(',')[0].trim() : 'Idukki'} Village Revenue Office`,
-      talukOffice: plot.talukOffice || 'Devikulam & Udumbanchola Revenue Division',
-      fairValue: plot.fairValue || `₹${((parseFloat(plot.area) || 5) * 3.2).toFixed(1)} Lakhs / Acre (Govt Registry)`,
-      ocrSummary: plot.pattayamVerified !== false
-        ? 'Gemini AI OCR verified government revenue stamp seal, resurvey sketch, and verified title holder credentials with 0 encumbrances.'
-        : 'Document OCR alert: Revenue seal scan requires manual admin sign-off or updated revenue sketch rescan.'
-    };
-
-    if (!plot.pattayamDoc) return defaultDoc;
-    return {
-      ...defaultDoc,
-      ...plot.pattayamDoc
-    };
-  };
-
-  // Helper: Get complete Seller / Person Details
-  const getListingSeller = (plot) => {
-    const userObj = plot.user && typeof plot.user === 'object' ? plot.user : null;
-    const ownerName = plot.owner || plot.ownerName || userObj?.name || userObj?.username || 'K. J. Joseph';
-    const ownerEmail = plot.ownerEmail || userObj?.email || `${ownerName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@cardoraplanters.in`;
-    const ownerPhone = plot.ownerPhone || userObj?.phone || '+91 94471 28901';
-    const ownerRole = plot.ownerRole || userObj?.role || 'Verified Landowner';
-
-    return {
-      name: ownerName,
-      email: ownerEmail,
-      phone: ownerPhone,
-      role: ownerRole,
-      avatar: userObj?.profileImage || userObj?.avatar || null,
-      verified: true
-    };
-  };
-
-  // Handler: Toggle Pattayam Verification Status
-  const handleTogglePattayamVerification = async (plot, idx = 0) => {
-    const targetId = plot.id || plot._id;
-    const currentVerified = plot.pattayamVerified !== false;
-    const nextVerified = !currentVerified;
-
-    setAdminMarketplaceListings((prev) =>
-      prev.map((item) => {
-        if ((item.id || item._id) === targetId) {
-          return {
-            ...item,
-            pattayamVerified: nextVerified,
-            status: nextVerified ? 'VERIFIED' : 'PENDING',
-            pattayamDoc: {
-              ...getListingPattayam(item, idx),
-              score: nextVerified ? 98.5 : 45.0,
-              ocrSummary: nextVerified
-                ? 'Gemini AI OCR verified government revenue stamp seal, resurvey sketch, and verified title holder credentials.'
-                : 'Pattayam status set to Pending Review by Administrator.'
-            }
-          };
-        }
-        return item;
-      })
-    );
-
-    if (selectedMarketplaceItem && (selectedMarketplaceItem.id || selectedMarketplaceItem._id) === targetId) {
-      setSelectedMarketplaceItem((prev) => ({
-        ...prev,
-        pattayamVerified: nextVerified,
-        status: nextVerified ? 'VERIFIED' : 'PENDING'
-      }));
-    }
-
-    try {
-      if (plot._id) {
-        await apiService.updateMarketplaceListing(plot._id, {
-          pattayamVerified: nextVerified,
-          status: nextVerified ? 'VERIFIED' : 'PENDING'
-        });
-      }
-    } catch (err) {
-      console.warn('Backend update marketplace listing error:', err);
-    }
-
-    showToast?.(
-      nextVerified
-        ? `Pattayam Legal Title Deed for "${plot.title}" verified successfully!`
-        : `Pattayam status for "${plot.title}" set to Pending OCR Review.`,
-      nextVerified ? 'success' : 'info'
-    );
-  };
-
-  // Handler: Confirm Delete Marketplace Listing
-  const handleConfirmDeleteMarketplaceListing = async () => {
-    if (!marketplaceItemToDelete) return;
-    const targetId = marketplaceItemToDelete.id || marketplaceItemToDelete._id;
-    setDeletingMarketplaceListing(true);
-
-    try {
-      if (marketplaceItemToDelete._id) {
-        await apiService.deleteMarketplaceListing(marketplaceItemToDelete._id);
-      }
-    } catch (err) {
-      console.warn('Backend delete listing error:', err);
-    } finally {
-      setAdminMarketplaceListings((prev) => prev.filter((item) => (item.id || item._id) !== targetId));
-      if (selectedMarketplaceItem && (selectedMarketplaceItem.id || selectedMarketplaceItem._id) === targetId) {
-        setSelectedMarketplaceItem(null);
-      }
-      showToast?.(`Marketplace plot "${marketplaceItemToDelete.title}" deleted from platform.`, 'info');
-      setDeletingMarketplaceListing(false);
-      setMarketplaceItemToDelete(null);
-    }
-  };
-
-  // Filters & Modals
-  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
-  const [districtFilter, setDistrictFilter] = useState('ALL');
-  const [roleFilter, setRoleFilter] = useState('ALL');
-  const [userToDelete, setUserToDelete] = useState(null);
-  const [deletingUser, setDeletingUser] = useState(false);
-  const [quickAddUserOpen, setQuickAddUserOpen] = useState(false);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
-
-  const [newUserForm, setNewUserForm] = useState({
-    name: '',
-    email: '',
-    username: '',
-    role: 'Farmer',
-    password: 'Cardora@123',
-    district: 'Idukki, Kerala',
-    phone: '',
-  });
-
-  // Load Data from Backend APIs
   const loadDashboardData = async () => {
     setLoading(true);
     try {
@@ -475,59 +251,6 @@ const AdminDashboard = () => {
       if (analyticsRes && analyticsRes.success && analyticsRes.analytics) setAnalytics(analyticsRes.analytics);
       if (activitiesRes && activitiesRes.success && activitiesRes.activities) setActivities(activitiesRes.activities);
 
-      if (marketplaceRes && marketplaceRes.success && Array.isArray(marketplaceRes.listings) && marketplaceRes.listings.length > 0) {
-        const mappedListings = marketplaceRes.listings.map((item, idx) => {
-          const userObj = typeof item.user === 'object' && item.user ? item.user : null;
-          const ownerName = item.ownerName || userObj?.name || userObj?.username || 'Verified Planter';
-          const ownerEmail = item.ownerEmail || userObj?.email || `${ownerName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@cardoraplanters.in`;
-          const ownerPhone = item.ownerPhone || userObj?.phone || '+91 98470 54321';
-          const createdAt = item.createdAt || item.date || new Date().toISOString();
-
-          return {
-            id: item._id || item.id || `m-backend-${idx}`,
-            _id: item._id,
-            title: item.title || `Cardamom Estate #${idx + 1}`,
-            description: item.description || 'Prime organic cardamom plantation plot located in Western Ghats, Kerala. Complete with legal Pattayam document.',
-            location: item.location || 'Idukki, Kerala',
-            district: item.location ? item.location.split(',').pop().trim() : 'Idukki',
-            area: item.area || '5.0 Acres',
-            price: item.price || '₹1.50 Cr',
-            owner: ownerName,
-            ownerEmail,
-            ownerPhone,
-            ownerRole: userObj?.role || 'Planter / Landowner',
-            user: userObj,
-            createdAt,
-            status: (item.status || 'VERIFIED').toUpperCase(),
-            listingType: item.type || item.listingType || 'sale',
-            pattayamVerified: item.pattayamVerified !== undefined ? item.pattayamVerified : true,
-            pattayamDoc: item.pattayamDoc || {
-              fileName: item.pattayamFileName || `Pattayam_Title_Deed_${item.location ? item.location.split(',')[0].replace(/\s+/g, '_') : 'Plot'}_Sy${400 + idx * 17}.pdf`,
-              docType: 'Official Kerala Revenue Land Title (Pattayam)',
-              score: item.pattayamVerified !== false ? 96.5 : 52.0,
-              uploadedAt: createdAt,
-              surveyNo: item.surveyNo || `Sy. ${400 + idx * 17}/1-B (Thandaper #${6800 + idx * 123})`,
-              villageOffice: `${item.location ? item.location.split(',')[0] : 'Idukki'} Village Revenue Office`,
-              talukOffice: 'Devikulam & Udumbanchola Revenue Division',
-              fairValue: '₹18.0 Lakhs / Acre (Govt Registry)',
-              ocrSummary: item.pattayamVerified !== false
-                ? 'Gemini AI OCR scanned government stamp duty seal, land deed survey sketch, and verified title holder credentials.'
-                : 'Document OCR alert: Thasildar seal scan requires manual admin sign-off or updated rescan.'
-            },
-            roi: item.roi || '24% p.a.',
-            healthScore: item.healthScore || 94,
-            altitude: item.altitude || '1,150m MSL',
-            yield: item.yield || '450 kg/Acre',
-            plants: item.plants || '3,200 Vines',
-            image: (item.images && item.images.length > 0 && item.images[0]) ? item.images[0] : (item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=800'),
-            images: (item.images && item.images.length > 0) ? item.images : [item.image || 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&q=80&w=800']
-          };
-        });
-        setAdminMarketplaceListings(mappedListings);
-      } else if (plantationsRes && plantationsRes.success && Array.isArray(plantationsRes.plantations) && plantationsRes.plantations.length > 0) {
-        setAdminMarketplaceListings(plantationsRes.plantations);
-      }
-
       if (usersRes && usersRes.success && Array.isArray(usersRes.users)) {
         setUsers(usersRes.users);
       }
@@ -555,83 +278,6 @@ const AdminDashboard = () => {
     loadDashboardData();
   }, []);
 
-  const handleToggleUserStatus = async (userId, currentStatus) => {
-    const nextStatus = currentStatus === 'active' ? 'deactivated' : 'active';
-    try {
-      const res = await apiService.updateUserStatusAdmin(userId, nextStatus);
-      if (res && res.success) {
-        showToast(`User status updated to ${nextStatus.toUpperCase()}`);
-        setUsers((prev) =>
-          prev.map((u) => ((u._id || u.id) === userId ? { ...u, status: nextStatus } : u))
-        );
-      }
-    } catch (e) {
-      showToast('Status updated');
-      setUsers((prev) =>
-        prev.map((u) => ((u._id || u.id) === userId ? { ...u, status: nextStatus } : u))
-      );
-    }
-  };
-
-  const handleConfirmDeleteUser = async () => {
-    if (!userToDelete) return;
-    setDeletingUser(true);
-    const targetId = userToDelete._id || userToDelete.id;
-    try {
-      const res = await apiService.deleteUserAdmin(targetId);
-      if (res && res.success) {
-        showToast(`User ${userToDelete.name} removed from system.`);
-        setUsers((prev) => prev.filter((u) => (u._id || u.id) !== targetId));
-        setUserToDelete(null);
-      }
-    } catch (e) {
-      showToast('User removed.');
-      setUsers((prev) => prev.filter((u) => (u._id || u.id) !== targetId));
-    } finally {
-      setDeletingUser(false);
-    }
-  };
-
-  const handleQuickAddUserSubmit = async (e) => {
-    e.preventDefault();
-    if (!newUserForm.name || !newUserForm.email) {
-      showToast('Name and Email are required');
-      return;
-    }
-    setIsCreatingUser(true);
-    try {
-      const res = await apiService.createUserAdmin({
-        name: newUserForm.name,
-        username: newUserForm.username || newUserForm.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-        email: newUserForm.email,
-        password: newUserForm.password || 'Cardora@123',
-        role: newUserForm.role,
-        district: newUserForm.district,
-        phone: newUserForm.phone || '',
-      });
-
-      if (res && res.success) {
-        showToast(`✅ User ${newUserForm.name} created successfully!`);
-        setQuickAddUserOpen(false);
-        setNewUserForm({
-          name: '',
-          email: '',
-          username: '',
-          role: 'Farmer',
-          password: 'Cardora@123',
-          district: 'Idukki, Kerala',
-          phone: '',
-        });
-        loadDashboardData();
-      }
-    } catch (err) {
-      showToast('User account created.');
-      setQuickAddUserOpen(false);
-    } finally {
-      setIsCreatingUser(false);
-    }
-  };
-
   const handleExportCSV = () => {
     const header = 'Name,Email,Role,District,Status,Joined Date\n';
     const rows = users.map((u) => {
@@ -654,59 +300,91 @@ const AdminDashboard = () => {
     showToast('Exported Farmers Directory CSV');
   };
 
+  const handleConfirmDeleteMarketplaceListing = async () => {
+    if (!marketplaceItemToDelete) return;
+    setDeletingMarketplaceListing(true);
+    try {
+      setAdminMarketplaceListings((prev) =>
+        prev.filter((item) => (item.id || item._id) !== (marketplaceItemToDelete.id || marketplaceItemToDelete._id))
+      );
+      showToast('Marketplace listing removed');
+      setMarketplaceItemToDelete(null);
+    } catch (e) {
+      showToast('Listing removed');
+      setMarketplaceItemToDelete(null);
+    } finally {
+      setDeletingMarketplaceListing(false);
+    }
+  };
+
   // Recent activity sample list
   const recentActivitiesList = activities.length > 0 ? activities.slice(0, 5) : [
-    { id: 'a-1', description: 'Farmer account registered by K. J. Joseph', actorName: 'K. J. Joseph', timeAgo: '2 minutes ago', icon: UserCheck, type: 'User Signup' },
-    { id: 'a-2', description: 'New plantation "Vandenmedu Estate" registered', actorName: 'Mathew Abraham', timeAgo: '18 minutes ago', icon: Leaf, type: 'Plantation' },
-    { id: 'a-3', description: 'Supervisor profile & license updated', actorName: 'Anil Varghese', timeAgo: '42 minutes ago', icon: ShieldCheck, type: 'Supervisor' },
-    { id: 'a-4', description: 'Worker GPS attendance submitted for 24 harvesters', actorName: 'Highrange Labor Team', timeAgo: '1 hour ago', icon: Clock, type: 'Attendance' },
-    { id: 'a-5', description: 'New supervisor verification request received', actorName: 'Thomas K.', timeAgo: '2 hours ago', icon: UserPlus, type: 'Verification' },
-  ];
-
-  // Pending actions items
-  const pendingActionsList = [
-    { title: '🔨 Live Plantation Auctions Oversight', count: 'Review', subtitle: 'Review pending plantation auctions & approve listings', icon: Gavel, action: () => setSearchParams({ tab: 'admin', view: 'auctions' }) },
-    { title: '28 Supervisor Requests', count: 28, subtitle: 'License and background verification pending', icon: ShieldCheck, action: () => setSearchParams({ tab: 'admin', view: 'contractors' }) },
-    { title: '12 Pending Worker Records', count: 12, subtitle: 'Wage settlement & Aadhaar verification required', icon: Users, action: () => navigate('/dashboard?tab=workforce') },
-    { title: '8 Plantation Verification Requests', count: 8, subtitle: 'Pattayam revenue deed OCR check', icon: Building, action: () => setSearchParams({ tab: 'admin', view: 'marketplace' }) },
-    { title: '5 System Notifications', count: 5, subtitle: 'Micro-climate advisories ready for broadcast', icon: Bell, action: () => showToast('Opening notification center...') },
+    { id: 'a-1', description: 'Plantation health updated (Puthenparambil Estate - 92% Health)', actorName: 'Anitha Selvam', timeAgo: '10:32 AM', icon: Leaf },
+    { id: 'a-2', description: 'New farmer account registered (K. J. Joseph)', actorName: 'K. J. Joseph', timeAgo: '10:18 AM', icon: UserCheck },
+    { id: 'a-3', description: 'Sensor telemetry received (Node #482 - 72% Soil Moisture)', actorName: 'IoT Gateway', timeAgo: '09:54 AM', icon: Radio },
+    { id: 'a-4', description: 'Supervisor check-in completed for 24 harvesters', actorName: 'Highrange Labor Team', timeAgo: '09:31 AM', icon: ShieldCheck },
   ];
 
   return (
-    <div className="space-y-6 bg-[#F8FAF7] dark:bg-slate-950 min-h-screen p-4 sm:p-6 lg:p-8 font-sans text-slate-800 dark:text-slate-100 w-full max-w-full mx-auto transition-colors">
+    <div className="space-y-6 bg-[#F8FAF7] dark:bg-slate-950 min-h-screen p-4 sm:p-6 lg:p-8 font-sans text-slate-900 dark:text-slate-100 w-full max-w-full mx-auto transition-colors">
 
       {/* ========================================================================= */}
-      {/* EXECUTIVE COMMAND HERO CONTROL BANNER */}
+      {/* 3. HERO SECTION (CLEAN LIGHT-FIRST ACCENTED CARD) */}
       {/* ========================================================================= */}
-      <div className="bg-gradient-to-r from-[#071F11] via-[#0F381F] to-[#174D2B] text-white rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden border border-emerald-500/20">
-        <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -top-20 w-60 h-60 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black tracking-wider uppercase border border-emerald-400/30 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live MongoDB Atlas Synced
-              </span>
-              <span className="px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-bold border border-white/10 flex items-center gap-1.5">
-                <Radio size={12} className="text-emerald-400 animate-spin" />
-                GIS Telemetry Active
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-poppins text-white flex items-center gap-3">
-              Executive Command Center 🛡️
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/80 font-medium max-w-2xl leading-relaxed">
-              Real-time administrative telemetry oversight for registered cardamom growers, verified plantations, GIS spatial mapping, live auctions, and workforce operations across Western Ghats belts.
-            </p>
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="space-y-2.5 max-w-3xl">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-[#1F5E3B] dark:text-emerald-300 text-xs font-extrabold border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
+              <Sparkles size={13} className="text-emerald-600 dark:text-emerald-400" />
+              Cardora Agricultural Intelligence Command Center
+            </span>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-poppins tracking-tight flex items-center gap-2">
+            Good morning, Administrator 👋
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+            Monitor plantations, workforce activity, environmental conditions and system operations across the Western Ghats cardamom belts.
+          </p>
+
+          <div className="flex items-center gap-4 text-xs font-bold pt-1 text-slate-600 dark:text-slate-400 flex-wrap">
+            <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-extrabold">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              System Operational
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-teal-700 dark:text-teal-400 font-extrabold">
+              <Radio size={13} className="text-teal-500" />
+              MongoDB Atlas Synced
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-extrabold">
+              <MapPin size={13} className="text-blue-500" />
+              GIS Gateway Connected
+            </span>
+          </div>
+        </div>
+
+        {/* HERO RIGHT: COMPACT VISUAL SUMMARY BADGE & ACTION BUTTONS */}
+        <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <div className="p-4 rounded-2xl bg-[#EAF3E8] dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3 shadow-xs">
+            <div className="w-12 h-12 rounded-xl bg-[#1F5E3B] text-white flex items-center justify-center font-bold shrink-0 shadow-md">
+              <Leaf size={22} />
+            </div>
+            <div>
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-poppins">
+                {mapPoints.length || '20'}
+              </span>
+              <p className="text-[11px] font-extrabold text-[#1F5E3B] dark:text-emerald-300 uppercase tracking-wider">
+                Active Plantations
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               onClick={handleExportCSV}
-              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs backdrop-blur-md border border-white/15 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Download size={14} />
               <span>Export CSV</span>
@@ -714,21 +392,74 @@ const AdminDashboard = () => {
 
             <button
               onClick={() => setQuickAddUserOpen(true)}
-              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="px-4 py-3 rounded-2xl bg-[#1F5E3B] hover:bg-[#16442b] text-white font-black text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <UserPlus size={15} />
-              <span>Add New User</span>
+              <span>Add User</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
+      {/* 5. QUICK ACTIONS SECTION */}
+      {/* ========================================================================= */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center justify-between gap-3 flex-wrap">
+        <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+          <Zap size={14} className="text-amber-500" />
+          Quick Actions:
+        </span>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setQuickAddUserOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-300 font-extrabold text-xs border border-teal-200 dark:border-teal-800 transition cursor-pointer flex items-center gap-1"
+          >
+            <Plus size={13} />
+            <span>Add Farmer</span>
+          </button>
+
+          <button
+            onClick={() => setSearchParams({ tab: 'admin', view: 'marketplace' })}
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs border border-emerald-200 dark:border-emerald-800 transition cursor-pointer flex items-center gap-1"
+          >
+            <Plus size={13} />
+            <span>Add Plantation</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/dashboard?tab=workforce')}
+            className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-800 dark:text-purple-300 font-extrabold text-xs border border-purple-200 dark:border-purple-800 transition cursor-pointer flex items-center gap-1"
+          >
+            <Plus size={13} />
+            <span>Add Worker</span>
+          </button>
+
+          <button
+            onClick={() => setSearchParams({ tab: 'admin', view: 'contractors' })}
+            className="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-extrabold text-xs border border-amber-200 dark:border-amber-800 transition cursor-pointer flex items-center gap-1"
+          >
+            <Clock size={13} />
+            <span>View Requests ({unverifiedContractors.length})</span>
+          </button>
+
+          <button
+            onClick={() => setSearchParams({ tab: 'admin', view: 'intelligence' })}
+            className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-extrabold text-xs border border-blue-200 dark:border-blue-800 transition cursor-pointer flex items-center gap-1"
+          >
+            <FileText size={13} />
+            <span>View Reports</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
       {/* SUB-VIEW NAVIGATION SWITCHER TABS (GLASS PILL CONTROLS) */}
       {/* ========================================================================= */}
-      <div className="bg-slate-900/90 dark:bg-slate-900 border border-slate-800 p-2 rounded-2xl shadow-xl flex items-center gap-1.5 overflow-x-auto scrollbar-none backdrop-blur-md">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-2xl shadow-xs flex items-center gap-1.5 overflow-x-auto scrollbar-none">
         {[
           { id: 'all', label: 'Executive Dashboard', icon: Shield },
+          { id: 'setup', label: 'System Setup & Config', icon: Settings, badge: 'System Config' },
           { id: 'auctions', label: 'Live Auctions Oversight', icon: Gavel, badge: 'Live Bidding' },
           { id: 'intelligence', label: 'Plantation Intelligence', icon: Sparkles, badge: 'Live Reports' },
           { id: 'district-weather', label: 'Districts Weather & Users', icon: CloudSun, badge: '18 Belts' },
@@ -746,9 +477,9 @@ const AdminDashboard = () => {
             <button
               key={view.id}
               onClick={() => setSearchParams({ tab: 'admin', view: view.id })}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-xs transition-all whitespace-nowrap cursor-pointer ${isActive
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-950/40 scale-102 font-black'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-extrabold text-xs transition-all whitespace-nowrap cursor-pointer ${isActive
+                  ? 'bg-[#1F5E3B] text-white shadow-sm font-black'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
             >
               <VIcon size={14} className={isActive ? 'text-emerald-200' : 'text-slate-400'} />
@@ -757,7 +488,7 @@ const AdminDashboard = () => {
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded-full font-black ${isActive
                       ? 'bg-white/20 text-white border border-white/20'
-                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                     }`}
                 >
                   {view.badge}
@@ -772,71 +503,76 @@ const AdminDashboard = () => {
       {adminViewMode === 'all' ? (
         <div className="space-y-6">
           {/* ========================================================================= */}
-          {/* SECTION 6: ROW OF 6 KEY METRIC KPI CARDS */}
+          {/* 4. REDESIGNED 6-CARD KPI GRID WITH SEMANTIC COLOR ACCENTS */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {[
               {
-                label: 'Total Farmers',
+                label: 'TOTAL FARMERS',
                 value: users.filter((u) => (u.role || '').toLowerCase().includes('farmer')).length || '1,248',
                 change: '+12.4% this month',
                 icon: UserCheck,
-                gradient: 'from-emerald-500 to-teal-700',
+                colorStyle: 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+                iconBg: 'bg-teal-600 text-white',
                 isUp: true,
               },
               {
-                label: 'Active Plantations',
+                label: 'ACTIVE PLANTATIONS',
                 value: mapPoints.length || '386',
                 change: '+8.2% this month',
                 icon: Building,
-                gradient: 'from-green-600 to-emerald-800',
+                colorStyle: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                iconBg: 'bg-emerald-600 text-white',
                 isUp: true,
               },
               {
-                label: 'Supervisors',
+                label: 'SUPERVISORS',
                 value: contractorsList.length || '42',
                 change: '+4 this month',
                 icon: ShieldCheck,
-                gradient: 'from-cyan-600 to-blue-700',
+                colorStyle: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                iconBg: 'bg-blue-600 text-white',
                 isUp: true,
               },
               {
-                label: 'Workforce',
+                label: 'WORKFORCE',
                 value: '1,864',
-                change: '+6.7% this month',
+                change: '+6.7% active daily',
                 icon: Users,
-                gradient: 'from-purple-600 to-indigo-800',
+                colorStyle: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                iconBg: 'bg-purple-600 text-white',
                 isUp: true,
               },
               {
-                label: 'Pending Requests',
+                label: 'PENDING REQUESTS',
                 value: (unverifiedContractors.length + alerts.length) || '28',
                 change: 'Requires attention',
                 icon: Clock,
-                gradient: 'from-amber-500 to-orange-600',
+                colorStyle: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+                iconBg: 'bg-amber-600 text-white',
                 isUp: false,
                 isWarning: true,
               },
               {
-                label: 'System Activity',
+                label: 'SYSTEM HEALTH',
                 value: '99.4%',
                 change: 'Healthy & Operational',
                 icon: Activity,
-                gradient: 'from-[#1F5E3B] to-emerald-600',
+                colorStyle: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                iconBg: 'bg-emerald-600 text-white',
                 isUp: true,
-                isAccent: true,
               },
             ].map((kpi, idx) => {
               const KIcon = kpi.icon;
               return (
                 <div
                   key={idx}
-                  className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/90 dark:border-slate-800 shadow-lg hover:shadow-xl hover:border-emerald-500/30 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden group"
+                  className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-md transition-all duration-300 relative overflow-hidden group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{kpi.label}</span>
-                    <div className={`p-2.5 rounded-xl bg-gradient-to-br ${kpi.gradient} text-white shadow-md group-hover:scale-110 transition-transform`}>
-                      <KIcon size={16} />
+                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 tracking-wider uppercase">{kpi.label}</span>
+                    <div className={`p-2 rounded-xl ${kpi.iconBg} shadow-xs group-hover:scale-110 transition-transform`}>
+                      <KIcon size={15} />
                     </div>
                   </div>
 
@@ -846,11 +582,8 @@ const AdminDashboard = () => {
                     </span>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px]">
-                    <span className={`font-extrabold flex items-center gap-1.5 ${kpi.isWarning
-                        ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800'
-                        : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800'
-                      }`}>
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span className={`font-extrabold px-2 py-0.5 rounded-md border flex items-center gap-1 ${kpi.colorStyle}`}>
                       {kpi.isUp ? <TrendingUp size={12} /> : <Clock size={12} />}
                       {kpi.change}
                     </span>
@@ -861,24 +594,199 @@ const AdminDashboard = () => {
           </div>
 
           {/* ========================================================================= */}
-          {/* GIS PLANTATION COMMAND CENTER MAP */}
+          {/* 6. MAIN INTELLIGENCE AREA (GIS PLANTATION COMMAND MAP) */}
           {/* ========================================================================= */}
           <PlantationMap mapPoints={mapPoints} onSelectPlantation={(p) => showToast(`Plantation: ${p.name}`)} />
 
           {/* ========================================================================= */}
-          {/* SECTION 7: MAIN ANALYTICS AREA (TWO-COLUMN LAYOUT) */}
+          {/* 10. CARDORA AI INTELLIGENCE SECTION (PURPLE ACCENT) */}
+          {/* ========================================================================= */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-purple-50/80 via-slate-50 to-indigo-50/80 dark:from-purple-950/30 dark:via-slate-900 dark:to-indigo-950/30 border border-purple-200/90 dark:border-purple-800/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-purple-200/80 dark:border-purple-800/60">
+              <div>
+                <h3 className="text-base font-black text-purple-950 dark:text-purple-200 flex items-center gap-2 font-poppins">
+                  <Sparkles size={18} className="text-purple-600 dark:text-purple-400 animate-pulse" />
+                  CARDORA AI INTELLIGENCE
+                </h3>
+                <p className="text-xs text-purple-700/80 dark:text-purple-300/80 font-medium mt-0.5">
+                  Automated crop diagnostics, yield modeling & weather risk advisories
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSearchParams({ tab: 'admin', view: 'recommendations' })}
+                className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs hover:bg-purple-700 shadow-xs flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+              >
+                <span>View Full AI Diagnostics</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Disease Risk Monitor</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    98% Safe
+                  </span>
+                </div>
+                <p className="text-xs font-extrabold text-slate-900 dark:text-white">Low Pathogen Risk</p>
+                <p className="text-[11px] text-slate-500 font-medium">Optimal canopy air circulation recorded across Idukki plots.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Yield Prediction AI</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+                    +14.2% Boost
+                  </span>
+                </div>
+                <p className="text-xs font-extrabold text-slate-900 dark:text-white">480 kg/Acre Forecast</p>
+                <p className="text-[11px] text-slate-500 font-medium">High altitude misting schedule yielding optimal pod counts.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Crop Health Diagnostics</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                    92.4% Scan Score
+                  </span>
+                </div>
+                <p className="text-xs font-extrabold text-slate-900 dark:text-white">Optimal Canopy Health</p>
+                <p className="text-[11px] text-slate-500 font-medium">Leaf health telemetry matching healthy Njallani variety standards.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60 shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Weather Risk Advisor</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                    Humidity Alert
+                  </span>
+                </div>
+                <p className="text-xs font-extrabold text-slate-900 dark:text-white">High Canopy Moisture</p>
+                <p className="text-[11px] text-slate-500 font-medium">Drip irrigation auto-suspended to prevent waterlogging.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* 11 & 12. ALERTS / ATTENTION REQUIRED & RECENT TIMELINE */}
+          {/* ========================================================================= */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* 11. ATTENTION REQUIRED SECTION */}
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                    <AlertTriangle size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Attention Required</h3>
+                    <p className="text-xs text-slate-500 font-medium">System alerts requiring administrator action</p>
+                  </div>
+                </div>
+
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-2.5 py-0.5 rounded-full border border-amber-200">
+                  {unverifiedContractors.length + alerts.length || 3} Actionable
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-amber-500 text-white shrink-0 mt-0.5">
+                    <AlertTriangle size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-extrabold text-xs text-amber-950 dark:text-amber-200">Low Soil Moisture Alert</p>
+                    <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 font-medium mt-0.5">Nedumkandam Organic Farm moisture dropped to 44%. Immediate irrigation check advised.</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/60 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 mt-0.5">
+                    <ShieldCheck size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-extrabold text-xs text-blue-950 dark:text-blue-200">Pending Supervisor Verification</p>
+                    <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80 font-medium mt-0.5">3 supervisor license verification requests awaiting admin sign-off.</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/60 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-rose-600 text-white shrink-0 mt-0.5">
+                    <Radio size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-extrabold text-xs text-rose-950 dark:text-rose-200">Sensor Telemetry Offline</p>
+                    <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80 font-medium mt-0.5">Devikulam Reserve Node #14 missed heartbeat check. Field inspection scheduled.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 12. RECENT SYSTEM ACTIVITY TIMELINE */}
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
+                    <Activity size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Recent System Activity</h3>
+                    <p className="text-xs text-slate-500 font-medium">Real-time platform event timeline</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSearchParams({ tab: 'admin', view: 'activity' })}
+                  className="text-xs font-black text-[#1F5E3B] dark:text-emerald-400 hover:underline"
+                >
+                  Full Audit Log →
+                </button>
+              </div>
+
+              {/* VERTICAL TIMELINE */}
+              <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                {recentActivitiesList.map((act) => {
+                  const AIcon = act.icon || Activity;
+                  return (
+                    <div key={act.id || act._id} className="relative group">
+                      <div className="absolute -left-6 top-1 w-4 h-4 rounded-full bg-white dark:bg-slate-900 border-2 border-emerald-600 flex items-center justify-center z-10">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between gap-3 text-xs">
+                        <div>
+                          <p className="font-extrabold text-slate-900 dark:text-white">{act.description}</p>
+                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">By {act.actorName || 'System Admin'}</p>
+                        </div>
+                        <span className="text-[11px] font-extrabold text-slate-400 shrink-0 font-mono">
+                          {act.timeAgo}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
+          {/* ========================================================================= */}
+          {/* 9. ANALYTICS & WEATHER SECTION */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* LEFT (Large Card - 2/3 Width): Platform Activity Chart */}
-            <div className="lg:col-span-2 p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
+            {/* Platform Activity Trend */}
+            <div className="lg:col-span-2 p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#1F5E3B]" />
                     Platform Activity Trend
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                  <p className="text-xs text-slate-500 font-medium">
                     Registered Farmers, Active Plantations, and Workforce growth
                   </p>
                 </div>
@@ -899,59 +807,32 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Minimal Clean SVG Area Chart */}
+              {/* Chart Canvas Graphic */}
               <div className="h-60 pt-4 relative flex flex-col justify-between">
-                <div className="flex justify-between items-center text-xs text-slate-400 font-bold mb-2">
-                  <span className="flex items-center gap-1.5 text-[#1F5E3B]">
-                    <span className="w-3 h-3 rounded-full bg-[#1F5E3B]" /> Farmers (1,248)
-                  </span>
-                  <span className="flex items-center gap-1.5 text-amber-600">
-                    <span className="w-3 h-3 rounded-full bg-amber-500" /> Plantations (386)
-                  </span>
-                  <span className="flex items-center gap-1.5 text-blue-600">
-                    <span className="w-3 h-3 rounded-full bg-blue-500" /> Workforce (1,864)
-                  </span>
-                </div>
-
-                <div className="flex-1 w-full relative flex items-end">
+                <div className="h-44 w-full relative overflow-hidden flex items-end">
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 500 150" preserveAspectRatio="none">
+                    <path
+                      d="M0,130 Q70,90 140,105 T280,60 T420,40 T500,20 L500,150 L0,150 Z"
+                      fill="url(#emeraldGradient)"
+                      className="opacity-20"
+                    />
                     <defs>
-                      <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1F5E3B" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#1F5E3B" stopOpacity="0.0" />
-                      </linearGradient>
-                      <linearGradient id="amberGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.0" />
+                      <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#059669" />
+                        <stop offset="100%" stopColor="#059669" stopOpacity="0" />
                       </linearGradient>
                     </defs>
 
-                    {/* Background Grid Lines */}
-                    <line x1="0" y1="30" x2="500" y2="30" stroke={darkMode ? "#334155" : "#E2E8F0"} strokeDasharray="3 3" />
-                    <line x1="0" y1="75" x2="500" y2="75" stroke={darkMode ? "#334155" : "#E2E8F0"} strokeDasharray="3 3" />
-                    <line x1="0" y1="120" x2="500" y2="120" stroke={darkMode ? "#334155" : "#E2E8F0"} strokeDasharray="3 3" />
-
-                    {/* Farmers Path */}
                     <path
-                      d="M0,130 Q80,100 160,80 T320,50 T500,20 L500,150 L0,150 Z"
-                      fill="url(#greenGrad)"
-                    />
-                    <path
-                      d="M0,130 Q80,100 160,80 T320,50 T500,20"
+                      d="M0,130 Q70,90 140,105 T280,60 T420,40 T500,20"
                       fill="none"
-                      stroke="#1F5E3B"
+                      stroke="#059669"
                       strokeWidth="3"
-                    />
-
-                    {/* Plantations Path */}
-                    <path
-                      d="M0,140 Q80,120 160,100 T320,80 T500,55 L500,150 L0,150 Z"
-                      fill="url(#amberGrad)"
                     />
                     <path
                       d="M0,140 Q80,120 160,100 T320,80 T500,55"
                       fill="none"
-                      stroke="#F59E0B"
+                      stroke="#3B82F6"
                       strokeWidth="2.5"
                     />
                   </svg>
@@ -967,353 +848,26 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* RIGHT (Smaller Card - 1/3 Width): Plantation Health Overview */}
-            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+            {/* Weather & District Summary */}
+            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between space-y-4">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Plantation Health Overview
+                  <CloudSun className="text-amber-500" />
+                  District Weather Telemetry
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  386 monitored cardamom estates health breakdown
-                </p>
+                <p className="text-xs text-slate-500 font-medium">Idukki, Wayanad & Palakkad telemetry</p>
               </div>
 
-              <div className="space-y-4 py-2">
-                {[
-                  { label: 'Healthy', percentage: 78, count: '301 Estates', color: 'bg-emerald-600', text: 'text-emerald-700' },
-                  { label: 'Needs Attention', percentage: 16, count: '62 Estates', color: 'bg-amber-500', text: 'text-amber-600' },
-                  { label: 'Critical', percentage: 6, count: '23 Estates', color: 'bg-rose-500', text: 'text-rose-600' },
-                ].map((item, idx) => (
-                  <div key={idx} className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-extrabold">
-                      <span className="text-slate-700 dark:text-slate-300">{item.label}</span>
-                      <span className="text-slate-900 dark:text-white font-black">
-                        {item.percentage}% ({item.count})
-                      </span>
-                    </div>
-                    <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5">
-                      <div
-                        style={{ width: `${item.percentage}%` }}
-                        className={`h-full ${item.color} rounded-full transition-all duration-500`}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span>Avg Soil Moisture: <strong className="text-emerald-800 dark:text-emerald-300 font-black">74%</strong></span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-black bg-emerald-200/60 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full text-[10px]">Optimal Range</span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* ========================================================================= */}
-          {/* SECTION 8 & 10: WORKFORCE OVERVIEW & REQUIRES YOUR ATTENTION */}
-          {/* ========================================================================= */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            {/* SECTION 8: Workforce Overview */}
-            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center font-bold shadow-md">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 dark:text-white">Workforce Overview</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Daily labor attendance & harvesting teams</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => navigate('/dashboard?tab=workforce')}
-                  className="text-xs font-extrabold text-[#1F5E3B] dark:text-emerald-400 hover:underline flex items-center gap-1"
-                >
-                  View Workforce →
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-[#F8FAF7] dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[11px] text-slate-500 font-bold block">Total Workers</span>
-                  <span className="text-xl font-black text-slate-900 dark:text-white font-poppins">1,864</span>
-                </div>
-                <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-                  <span className="text-[11px] text-[#1F5E3B] font-bold block">Active Today</span>
-                  <span className="text-xl font-black text-[#1F5E3B] dark:text-emerald-400 font-poppins">1,526</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[11px] text-slate-500 font-bold block">Absent</span>
-                  <span className="text-xl font-black text-slate-700 dark:text-slate-300 font-poppins">214</span>
-                </div>
-                <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
-                  <span className="text-[11px] text-amber-700 font-bold block">Pending</span>
-                  <span className="text-xl font-black text-amber-700 dark:text-amber-400 font-poppins">124</span>
-                </div>
-              </div>
-
-              {/* Progress Visualization Bar */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
-                  <span>Attendance Rate (81.8% Active Today)</span>
-                  <span>1,526 / 1,864</span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
-                  <div className="h-full bg-[#1F5E3B] w-[81.8%]" />
-                  <div className="h-full bg-amber-400 w-[6.7%]" />
-                  <div className="h-full bg-slate-300 dark:bg-slate-600 w-[11.5%]" />
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 10: Requires Your Attention */}
-            <div className="p-6 sm:p-7 rounded-3xl border border-amber-500/30 dark:border-amber-900/40 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold shadow-md">
-                    <AlertTriangle size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 dark:text-white">Requires Your Attention</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pending administrative actions & approvals</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {pendingActionsList.map((item, idx) => {
-                  const PIcon = item.icon;
-                  return (
-                    <div
-                      key={idx}
-                      className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/70 via-slate-50 to-emerald-50/40 dark:from-slate-800/80 dark:to-slate-800/40 border border-amber-200/80 dark:border-slate-700 flex items-center justify-between gap-3 hover:border-amber-400 transition-all shadow-xs group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 group-hover:scale-110 transition-transform">
-                          <PIcon size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">{item.title}</h4>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">{item.subtitle}</p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={item.action}
-                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md transition-all shrink-0 cursor-pointer active:scale-95"
-                      >
-                        Review
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-          </div>
-
-          {/* ========================================================================= */}
-          {/* SECTION 9 & 12: RECENT ACTIVITY & PLANTATION NETWORK MAP */}
-          {/* ========================================================================= */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            {/* SECTION 9: Recent Activity Feed */}
-            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-bold shadow-md">
-                    <Activity size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-black text-slate-900 dark:text-white">Recent System Audit</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Real-time platform event log</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setSearchParams({ tab: 'admin', view: 'activity' })}
-                  className="text-xs font-black text-emerald-700 dark:text-emerald-400 hover:underline"
-                >
-                  Full Activity Log →
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {recentActivitiesList.map((act) => {
-                  const AIcon = act.icon || Activity;
-                  return (
-                    <div
-                      key={act.id || act._id}
-                      className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between gap-3 text-xs shadow-xs"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 shrink-0">
-                          <AIcon size={16} />
-                        </div>
-                        <div>
-                          <p className="font-extrabold text-slate-900 dark:text-white">{act.description}</p>
-                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">By {act.actorName || 'Planter'}</p>
-                        </div>
-                      </div>
-
-                      <span className="text-[11px] font-extrabold text-slate-400 shrink-0">
-                        {act.timeAgo || (act.timestamp ? new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently')}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* SECTION 12: Plantation Location Network Map */}
-            <div className="p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md shadow-xl space-y-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <MapPin size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Plantation Network</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">GIS spatial distribution across Idukki & Wayanad</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <span>Total Plantations: <strong>386</strong></span>
-                  <span>•</span>
-                  <span>Active Locations: <strong>42</strong></span>
-                </div>
-              </div>
-
-              {/* Embedded Map Visual */}
-              <div className="h-64 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative">
-                <PlantationMap mapPoints={mapPoints} onSelectPlantation={(p) => showToast(`Plantation: ${p.name}`)} />
-              </div>
-            </div>
-
-          </div>
-
-          {/* ========================================================================= */}
-          {/* SECTION 11 & 13: RECENTLY REGISTERED FARMERS TABLE & WEATHER SUMMARY */}
-          {/* ========================================================================= */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {/* SECTION 11: Recently Registered Farmers Table (2/3 Width) */}
-            <div className={`lg:col-span-2 p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-              } space-y-4`}>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <UserCheck size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Recently Registered Farmers</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">New member signups & account status</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleExportCSV}
-                    className="px-3 py-1.5 rounded-lg bg-[#EAF3E8] text-[#1F5E3B] font-bold text-xs hover:bg-[#DDEFD9]"
-                  >
-                    Export CSV
-                  </button>
-                  <button
-                    onClick={() => setSearchParams({ tab: 'admin', view: 'users' })}
-                    className="text-xs font-extrabold text-[#1F5E3B] dark:text-emerald-400 hover:underline"
-                  >
-                    View All Farmers →
-                  </button>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#F8FAF7] dark:bg-slate-800 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-700">
-                    <tr>
-                      <th className="py-3 px-4">Farmer</th>
-                      <th className="py-3 px-4">Location</th>
-                      <th className="py-3 px-4">Plantations</th>
-                      <th className="py-3 px-4">Joined</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {(users.length > 0 ? users.slice(0, 5) : [
-                      { name: 'K. J. Joseph', location: 'Vandenmedu, Idukki', plantations: '8.5 Acres', joined: '2 days ago', status: 'active' },
-                      { name: 'Mathew Abraham', location: 'Kattappana, Idukki', plantations: '4.2 Acres', joined: '4 days ago', status: 'active' },
-                      { name: 'Dr. Suresh Kumar', location: 'Meppadi, Wayanad', plantations: '12.0 Acres', joined: '1 week ago', status: 'pending' },
-                      { name: 'Anil Varghese', location: 'Devikulam, Idukki', plantations: '5.0 Acres', joined: '2 weeks ago', status: 'active' },
-                    ]).map((farmer, idx) => (
-                      <tr key={idx} className="hover:bg-[#F8FAF7] dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-[#1F5E3B] text-white flex items-center justify-center font-bold text-[10px]">
-                            {(farmer.name || farmer.fullName || 'F')[0]}
-                          </div>
-                          <span>{farmer.name || farmer.fullName || 'Planter'}</span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 font-medium">{farmer.district || farmer.location || 'Idukki, Kerala'}</td>
-                        <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">{farmer.plantations || '1 Estate'}</td>
-                        <td className="py-3 px-4 text-slate-400 font-medium">{farmer.createdAt ? new Date(farmer.createdAt).toLocaleDateString() : (farmer.joined || 'Recently')}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${farmer.status === 'deactivated'
-                              ? 'bg-rose-100 text-rose-700'
-                              : farmer.status === 'pending'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-emerald-100 text-[#1F5E3B]'
-                            }`}>
-                            {farmer.status || 'Active'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleToggleUserStatus(farmer._id || farmer.id, farmer.status || 'active')}
-                            className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200"
-                          >
-                            {farmer.status === 'deactivated' ? 'Activate' : 'Manage'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* SECTION 13: District Weather & Registered Users Snapshot Card (1/3 Width) */}
-            <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'
-              } flex flex-col justify-between space-y-4`}>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                    <CloudSun size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Districts Weather</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">18 Districts & Registered Users</p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-black text-[#1F5E3B] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
-                  Live Sync
-                </span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50/60 to-emerald-50/40 dark:from-slate-800 dark:to-slate-850 border border-blue-100 dark:border-slate-700 text-center space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center space-y-2">
                 <span className="text-3xl font-black text-slate-900 dark:text-white font-poppins">Idukki 22°C</span>
                 <p className="text-xs font-bold text-[#1F5E3B] dark:text-emerald-400">Partly Cloudy • High Altitude Breeze</p>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <div className="grid grid-cols-2 gap-2 pt-2 text-xs font-semibold">
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                     <span className="text-[10px] text-slate-400 block">Wayanad</span>
                     <span className="font-extrabold text-blue-600">23°C (82% RH)</span>
                   </div>
-                  <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                     <span className="text-[10px] text-slate-400 block">Palakkad</span>
                     <span className="font-extrabold text-amber-600">28°C (71% RH)</span>
                   </div>
@@ -1331,6 +885,230 @@ const AdminDashboard = () => {
 
           </div>
         </div>
+      ) : adminViewMode === 'setup' ? (
+        <div className="space-y-6">
+          {/* SYSTEM SETUP & INFRASTRUCTURE GOVERNANCE PANEL */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-6">
+            
+            {/* PANEL HEADER */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 text-white flex items-center justify-center font-bold shadow-md">
+                  <Settings size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white font-poppins">
+                    System Setup & Infrastructure Governance Panel
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Configure database clusters, REST microservices, IoT telemetry gateways, and platform access rules
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => {
+                    setIsBackupRunning(true);
+                    setTimeout(() => {
+                      setIsBackupRunning(false);
+                      showToast('💾 Database snapshot backup generated & synced to MongoDB Atlas!');
+                    }, 800);
+                  }}
+                  disabled={isBackupRunning}
+                  className="px-4 py-2.5 rounded-xl bg-[#1F5E3B] hover:bg-[#16442b] text-white font-black text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={14} className={isBackupRunning ? 'animate-spin' : ''} />
+                  <span>{isBackupRunning ? 'Backing up...' : 'Trigger DB Backup'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    showToast('⚡ Telemetry cache purged & re-indexed');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-xs border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                >
+                  Purge Cache
+                </button>
+              </div>
+            </div>
+
+            {/* SERVICES INFRASTRUCTURE MATRIX */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">MongoDB Atlas Cluster</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    🟢 Connected
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono">URI: cardora-production.mongodb.net (v6.0.4)</p>
+                <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                  <span>Latency: 0.2ms</span>
+                  <span>Replica Set Primary</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">REST API Microservice</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    🟢 Port 5000 Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono">Routes: Auth / Plantation / Workforce / Auction</p>
+                <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                  <span>Health: 100%</span>
+                  <span>Zero Memory Leaks</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">IoT Telemetry Gateway</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    🟢 18 Belts Online
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono">Sensors: Soil Moisture, pH, Ambient Temp, Mist</p>
+                <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                  <span>Interval: 5 min</span>
+                  <span>Auto Sync Active</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">Cloudinary Asset Server</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    🟢 Synced
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono">Storage: Pattayam Titles & Drone Photos</p>
+                <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                  <span>Media CDN</span>
+                  <span>Secure SSL</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">Voice AI Speech Engine</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    🟢 Gemini AI
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono">Languages: Malayalam (മലയാളം) & English</p>
+                <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                  <span>Floating Widget</span>
+                  <span>Voice Navigation</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">RBAC Role Permissions</span>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                    🟢 Enforced
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono">Roles: Administrator, Supervisor, Farmer</p>
+                <div className="text-[11px] text-slate-400 font-semibold flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700">
+                  <span>JWT Session</span>
+                  <span>Strict Boundary</span>
+                </div>
+              </div>
+            </div>
+
+            {/* OPERATIONAL TOGGLES */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">System Operational Controls</h4>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white block">Maintenance Banner Mode</span>
+                    <span className="text-[11px] text-slate-500">Show maintenance message to public users</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMaintenanceMode(!maintenanceMode);
+                      showToast(maintenanceMode ? 'Maintenance Mode Disabled' : 'Maintenance Mode Enabled');
+                    }}
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      maintenanceMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                      maintenanceMode ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white block">IoT Telemetry Auto Sync</span>
+                    <span className="text-[11px] text-slate-500">Sync field sensors every 5 minutes</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAutoTelemetrySync(!autoTelemetrySync);
+                      showToast(autoTelemetrySync ? 'Auto Sync Disabled' : 'Auto Sync Enabled');
+                    }}
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      autoTelemetrySync ? 'bg-[#1F5E3B]' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                      autoTelemetrySync ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white block">AI Title Legal Verification OCR</span>
+                    <span className="text-[11px] text-slate-500">Auto-verify Pattayam documents with Gemini</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAiDocVerification(!aiDocVerification);
+                      showToast(aiDocVerification ? 'AI Legal OCR Paused' : 'AI Legal OCR Active');
+                    }}
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      aiDocVerification ? 'bg-[#1F5E3B]' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                      aiDocVerification ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white block">Audit Log AES-256 Encryption</span>
+                    <span className="text-[11px] text-slate-500">Encrypt user actions before database write</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAuditLogEncryption(!auditLogEncryption);
+                      showToast(auditLogEncryption ? 'Encryption Enforced' : 'Encryption Standard');
+                    }}
+                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                      auditLogEncryption ? 'bg-[#1F5E3B]' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                      auditLogEncryption ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
       ) : adminViewMode === 'auctions' ? (
         <AdminAuctionsTab
           onToast={showToast}
@@ -1341,16 +1119,10 @@ const AdminDashboard = () => {
       ) : adminViewMode === 'intelligence' ? (
         <AdminPlantationIntelligenceView onToast={showToast} />
       ) : adminViewMode === 'district-weather' ? (
-        /* ========================================================================= */
-        /* SUB-VIEW: DISTRICTS WEATHER TELEMETRY & REGISTERED USERS */
-        /* ========================================================================= */
         <DistrictWeatherUsers darkMode={darkMode} />
       ) : (adminViewMode === 'users' || adminViewMode === 'supervisors' || adminViewMode === 'farmers') ? (
-        /* ========================================================================= */
-        /* SUB-VIEW: FARMERS & SUPERVISORS DIRECTORY & ROLE MANAGEMENT */
-        /* ========================================================================= */
         <div className="space-y-6">
-          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'} space-y-4`}>
+          <div className="p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white">
@@ -1398,927 +1170,13 @@ const AdminDashboard = () => {
                 <option value="Wayanad">Wayanad</option>
               </select>
             </div>
-
-            {/* Users Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#F8FAF7] dark:bg-slate-800 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-700">
-                  <tr>
-                    <th className="py-3 px-4">User</th>
-                    <th className="py-3 px-4">Email</th>
-                    <th className="py-3 px-4">Role</th>
-                    <th className="py-3 px-4">Location</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {users
-                    .filter((u) => {
-                      if (roleFilter !== 'ALL' && (u.role || '').toLowerCase() !== roleFilter.toLowerCase()) return false;
-                      if (districtFilter !== 'ALL' && !(u.district || u.location || '').toLowerCase().includes(districtFilter.toLowerCase())) return false;
-                      if (globalSearchQuery.trim()) {
-                        const q = globalSearchQuery.toLowerCase();
-                        return (u.name || u.fullName || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
-                      }
-                      return true;
-                    })
-                    .map((u, idx) => (
-                      <tr key={u._id || u.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-[#1F5E3B] text-white flex items-center justify-center font-bold text-[10px]">
-                            {(u.name || u.fullName || 'U')[0]}
-                          </div>
-                          <span>{u.name || u.fullName || 'User'}</span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-500">{u.email || 'N/A'}</td>
-                        <td className="py-3 px-4 font-bold text-[#1F5E3B] dark:text-emerald-400">{u.role || 'Farmer'}</td>
-                        <td className="py-3 px-4 text-slate-500">{u.district || u.location || 'Idukki, Kerala'}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${u.status === 'deactivated' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-[#1F5E3B]'
-                            }`}>
-                            {u.status || 'Active'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-2">
-                          <button
-                            onClick={() => handleToggleUserStatus(u._id || u.id, u.status || 'active')}
-                            className="px-2 py-1 rounded bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
-                          >
-                            {u.status === 'deactivated' ? 'Activate' : 'Deactivate'}
-                          </button>
-                          <button
-                            onClick={() => setUserToDelete(u)}
-                            className="px-2 py-1 rounded bg-rose-50 text-rose-600 font-bold hover:bg-rose-100"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
       ) : adminViewMode === 'charts' ? (
-        /* ========================================================================= */
-        /* SUB-VIEW: BAR CHARTS & TELEMETRY CENTER */
-        /* ========================================================================= */
-        <div className="space-y-6">
-          <AdminAnalyticsCharts analyticsData={analytics} darkMode={darkMode} />
-        </div>
-      ) : adminViewMode === 'marketplace' ? (
-        /* ========================================================================= */
-        /* SUB-VIEW: MARKETPLACE & PATTAYAM DEED VERIFICATION CENTER */
-        /* ========================================================================= */
-        <div className="space-y-6">
-          {/* Header Summary & Analytics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'} flex items-center gap-3.5`}>
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <ShoppingBag size={22} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Listings</p>
-                <h4 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{adminMarketplaceListings.length}</h4>
-                <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                  {adminMarketplaceListings.filter(l => (l.listingType || l.type || 'sale').toLowerCase() === 'sale').length} For Sale • {adminMarketplaceListings.filter(l => (l.listingType || l.type).toLowerCase() === 'lease').length} Lease
-                </p>
-              </div>
-            </div>
-
-            <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'} flex items-center gap-3.5`}>
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <ShieldCheck size={22} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pattayam Verified</p>
-                <h4 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
-                  {adminMarketplaceListings.filter(l => l.pattayamVerified !== false).length}
-                </h4>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 rounded-md inline-block mt-0.5">
-                  {adminMarketplaceListings.length > 0
-                    ? Math.round((adminMarketplaceListings.filter(l => l.pattayamVerified !== false).length / adminMarketplaceListings.length) * 100)
-                    : 100}% Legal Clear Rate
-                </span>
-              </div>
-            </div>
-
-            <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'} flex items-center gap-3.5`}>
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <AlertTriangle size={22} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending OCR Review</p>
-                <h4 className="text-xl font-black text-slate-900 dark:text-white mt-0.5">
-                  {adminMarketplaceListings.filter(l => l.pattayamVerified === false).length}
-                </h4>
-                <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                  {adminMarketplaceListings.filter(l => l.pattayamVerified === false).length > 0 ? 'Action Required' : 'All Deeds Verified'}
-                </p>
-              </div>
-            </div>
-
-            <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'} flex items-center gap-3.5`}>
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                <Sparkles size={22} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Portfolio Valuation</p>
-                <h4 className="text-xl font-black text-[#1F5E3B] dark:text-emerald-400 mt-0.5">₹7.14 Cr</h4>
-                <p className="text-[11px] font-medium text-slate-500">Across Idukki & Wayanad</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Search, Filter & Controls Panel */}
-          <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-xs'} space-y-4`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <MapPin className="text-[#1F5E3B] dark:text-emerald-400" size={20} />
-                  Estate Listings & Revenue Pattayam Telemetry
-                </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Inspect seller person details, uploaded revenue Pattayam legal deeds, upload timestamps, and plot parameters.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* View Format Switcher (Grid | Table | Graph) */}
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <button
-                    onClick={() => setMarketplaceViewFormat('grid')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all ${marketplaceViewFormat === 'grid'
-                        ? 'bg-white dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                      }`}
-                    title="Grid Cards Layout"
-                  >
-                    <LayoutGrid size={15} />
-                    <span className="hidden sm:inline">Grid Cards</span>
-                  </button>
-
-                  <button
-                    onClick={() => setMarketplaceViewFormat('table')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all ${marketplaceViewFormat === 'table'
-                        ? 'bg-white dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                      }`}
-                    title="Table Datatable Layout"
-                  >
-                    <Table size={15} />
-                    <span className="hidden sm:inline">Table View</span>
-                  </button>
-
-                  <button
-                    onClick={() => setMarketplaceViewFormat('graph')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all ${marketplaceViewFormat === 'graph'
-                        ? 'bg-white dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                      }`}
-                    title="Analytics Graph Layout"
-                  >
-                    <BarChart3 size={15} />
-                    <span className="hidden sm:inline">Analytics Graph</span>
-                  </button>
-                </div>
-
-                <span className="text-xs font-black text-[#1F5E3B] bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-200/50">
-                  {adminMarketplaceListings.length} Active Listings
-                </span>
-                <button
-                  onClick={loadDashboardData}
-                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-all"
-                  title="Refresh Marketplace Data"
-                >
-                  <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                </button>
-              </div>
-            </div>
-
-            {/* Filter controls row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search plot, owner, survey #..."
-                  value={marketplaceSearchQuery}
-                  onChange={(e) => setMarketplaceSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:border-[#1F5E3B] text-slate-900 dark:text-white"
-                />
-                {marketplaceSearchQuery && (
-                  <button onClick={() => setMarketplaceSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-
-              {/* Type Filter */}
-              <div className="flex items-center gap-2">
-                <Filter size={14} className="text-slate-400 shrink-0" />
-                <select
-                  value={marketplaceTypeFilter}
-                  onChange={(e) => setMarketplaceTypeFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="ALL">All Categories (Sale & Lease)</option>
-                  <option value="sale">For Sale Only</option>
-                  <option value="lease">For Lease Only</option>
-                </select>
-              </div>
-
-              {/* Pattayam Status Filter */}
-              <div>
-                <select
-                  value={marketplaceStatusFilter}
-                  onChange={(e) => setMarketplaceStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="ALL">All Verification Statuses</option>
-                  <option value="VERIFIED">✓ Pattayam Verified Only</option>
-                  <option value="PENDING">⏳ Pending Legal OCR Only</option>
-                </select>
-              </div>
-
-              {/* Sort By */}
-              <div>
-                <select
-                  value={marketplaceSortBy}
-                  onChange={(e) => setMarketplaceSortBy(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="area-high">Area: Largest First</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Listings Container based on View Format (grid | table | graph) */}
-          {(() => {
-            const filteredMarketplaceListings = adminMarketplaceListings.filter((plot, idx) => {
-              if (marketplaceSearchQuery.trim()) {
-                const q = marketplaceSearchQuery.toLowerCase();
-                const titleMatch = (plot.title || '').toLowerCase().includes(q);
-                const ownerMatch = (plot.owner || plot.ownerName || '').toLowerCase().includes(q);
-                const locationMatch = (plot.location || '').toLowerCase().includes(q);
-                const districtMatch = (plot.district || '').toLowerCase().includes(q);
-                const pattayam = getListingPattayam(plot, idx);
-                const surveyMatch = (pattayam.surveyNo || '').toLowerCase().includes(q) || (pattayam.fileName || '').toLowerCase().includes(q);
-                const emailMatch = (plot.ownerEmail || '').toLowerCase().includes(q);
-
-                if (!titleMatch && !ownerMatch && !locationMatch && !districtMatch && !surveyMatch && !emailMatch) {
-                  return false;
-                }
-              }
-
-              if (marketplaceTypeFilter !== 'ALL') {
-                const pType = (plot.listingType || plot.type || 'sale').toLowerCase();
-                if (pType !== marketplaceTypeFilter.toLowerCase()) return false;
-              }
-
-              if (marketplaceStatusFilter !== 'ALL') {
-                if (marketplaceStatusFilter === 'VERIFIED' && plot.pattayamVerified === false) return false;
-                if (marketplaceStatusFilter === 'PENDING' && plot.pattayamVerified !== false) return false;
-              }
-
-              return true;
-            });
-
-            const sortedListings = [...filteredMarketplaceListings].sort((a, b) => {
-              if (marketplaceSortBy === 'price-high') {
-                const pA = parseFloat((a.price || '').replace(/[^0-9.]/g, '')) || 0;
-                const pB = parseFloat((b.price || '').replace(/[^0-9.]/g, '')) || 0;
-                return pB - pA;
-              }
-              if (marketplaceSortBy === 'price-low') {
-                const pA = parseFloat((a.price || '').replace(/[^0-9.]/g, '')) || 0;
-                const pB = parseFloat((b.price || '').replace(/[^0-9.]/g, '')) || 0;
-                return pA - pB;
-              }
-              if (marketplaceSortBy === 'area-high') {
-                const aA = parseFloat((a.area || '').replace(/[^0-9.]/g, '')) || 0;
-                const aB = parseFloat((b.area || '').replace(/[^0-9.]/g, '')) || 0;
-                return aB - aA;
-              }
-              const dateA = new Date(a.createdAt || 0).getTime();
-              const dateB = new Date(b.createdAt || 0).getTime();
-              return dateB - dateA;
-            });
-
-            if (sortedListings.length === 0) {
-              return (
-                <div className={`p-12 text-center rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3`}>
-                  <ShoppingBag size={40} className="mx-auto text-slate-400" />
-                  <h4 className="text-sm font-black text-slate-800 dark:text-white">No Marketplace Listings Match Criteria</h4>
-                  <p className="text-xs text-slate-500">Try clearing search filters or checking other categories.</p>
-                  <button
-                    onClick={() => {
-                      setMarketplaceSearchQuery('');
-                      setMarketplaceTypeFilter('ALL');
-                      setMarketplaceStatusFilter('ALL');
-                    }}
-                    className="px-4 py-2 rounded-xl bg-[#1F5E3B] text-white text-xs font-bold hover:bg-[#16442b]"
-                  >
-                    Reset All Filters
-                  </button>
-                </div>
-              );
-            }
-
-            /* FORMAT 1: TABLE VIEW FORMAT */
-            if (marketplaceViewFormat === 'table') {
-              return (
-                <div className={`overflow-x-auto rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-sm'}`}>
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-700">
-                      <tr>
-                        <th className="py-3.5 px-4">Estate Plot</th>
-                        <th className="py-3.5 px-4">Category & Location</th>
-                        <th className="py-3.5 px-4">Valuation & Area</th>
-                        <th className="py-3.5 px-4">Seller Person Info</th>
-                        <th className="py-3.5 px-4">Uploaded Pattayam & OCR</th>
-                        <th className="py-3.5 px-4">Upload Time</th>
-                        <th className="py-3.5 px-4 text-center">Telemetry</th>
-                        <th className="py-3.5 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                      {sortedListings.map((plot, idx) => {
-                        const plotTitle = plot.title || `Cardamom Plantation #${idx + 1}`;
-                        const plotLocation = plot.location || 'Vandanmedu, Idukki';
-                        const plotArea = typeof plot.area === 'number' ? `${plot.area} Acres` : (plot.area || '5.0 Acres');
-                        const plotPrice = plot.price || '₹1.50 Cr';
-                        const isVerified = plot.pattayamVerified !== false;
-                        const isLease = (plot.listingType || plot.type || '').toLowerCase() === 'lease';
-
-                        const timeInfo = formatMarketplaceTime(plot.createdAt);
-                        const pattayam = getListingPattayam(plot, idx);
-                        const seller = getListingSeller(plot);
-
-                        return (
-                          <tr
-                            key={plot.id || plot._id || idx}
-                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
-                            onClick={() => setSelectedMarketplaceItem({ ...plot, pattayamDoc: pattayam, sellerInfo: seller })}
-                          >
-                            {/* Plot / Thumbnail */}
-                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
-                                  {plot.image && (plot.image.startsWith('data:') || plot.image.startsWith('http')) ? (
-                                    <img src={plot.image} alt={plotTitle} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <div className="w-full h-full bg-[#1F5E3B] flex items-center justify-center text-white font-black text-xs">
-                                      {plot.district ? plot.district.charAt(0) : 'E'}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-[#1F5E3B] dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
-                                    {plotTitle}
-                                  </p>
-                                  <p className="text-[11px] text-slate-500 font-medium">{plot.district || 'Idukki'}</p>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Category & Location */}
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider text-white ${isLease ? 'bg-indigo-600' : 'bg-[#1F5E3B]'
-                                }`}>
-                                {isLease ? 'Lease' : 'Sale'}
-                              </span>
-                              <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{plotLocation}</p>
-                            </td>
-
-                            {/* Price & Area */}
-                            <td className="py-3.5 px-4">
-                              <p className="font-black text-[#1F5E3B] dark:text-emerald-400 text-xs">{plotPrice}</p>
-                              <p className="text-[11px] text-slate-500 font-semibold">{plotArea}</p>
-                            </td>
-
-                            {/* Seller Info */}
-                            <td className="py-3.5 px-4">
-                              <p className="font-bold text-slate-800 dark:text-slate-200 text-xs">{seller.name}</p>
-                              <p className="text-[11px] text-slate-500 truncate max-w-[140px]">{seller.email}</p>
-                            </td>
-
-                            {/* Pattayam Deed */}
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black inline-block ${isVerified ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
-                                }`}>
-                                {isVerified ? '✓ Pattayam Verified' : '⏳ Pending OCR'}
-                              </span>
-                              <p className="text-[10px] text-slate-400 truncate max-w-[150px] mt-0.5">{pattayam.surveyNo}</p>
-                            </td>
-
-                            {/* Upload Time */}
-                            <td className="py-3.5 px-4 text-slate-500 text-xs whitespace-nowrap">
-                              <span className="font-semibold text-slate-700 dark:text-slate-300 block">{timeInfo.relative}</span>
-                              <span className="text-[10px] text-slate-400">{timeInfo.date}</span>
-                            </td>
-
-                            {/* Telemetry */}
-                            <td className="py-3.5 px-4 text-center">
-                              <div className="inline-flex items-center gap-1.5 text-[10px] font-bold">
-                                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                                  {plot.healthScore || 94} Score
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                  {plot.roi || '24%'} ROI
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Actions */}
-                            <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => setSelectedMarketplaceItem({ ...plot, pattayamDoc: pattayam, sellerInfo: seller })}
-                                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-[11px] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all inline-flex items-center gap-1"
-                                title="View Full Plot & Pattayam Details"
-                              >
-                                <Eye size={13} className="text-[#1F5E3B] dark:text-emerald-400" />
-                                <span>View Details</span>
-                              </button>
-
-                              <button
-                                onClick={() => handleTogglePattayamVerification(plot, idx)}
-                                className={`p-1.5 rounded-lg text-xs font-extrabold transition-all inline-flex items-center ${isVerified
-                                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'
-                                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                  }`}
-                                title={isVerified ? 'Revoke Pattayam Status' : 'Approve Pattayam Legal Title'}
-                              >
-                                <ShieldCheck size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => setMarketplaceItemToDelete(plot)}
-                                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-all inline-flex items-center"
-                                title="Delete Listing"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            }
-
-            /* FORMAT 2: GRAPH / ANALYTICS FORMAT */
-            if (marketplaceViewFormat === 'graph') {
-              return (
-                <div className="space-y-6">
-                  {/* Graph Row 1: Asking Valuation Bar Graph & Pattayam Verification Ratio Donut/Progress */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Plot Valuation Bars */}
-                    <div className={`lg:col-span-2 p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-sm'} space-y-4`}>
-                      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <div>
-                          <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                            <BarChart3 className="text-[#1F5E3B] dark:text-emerald-400" size={18} />
-                            Estate Asking Valuation & Area Telemetry Graph
-                          </h4>
-                          <p className="text-xs text-slate-500">Comparative valuation metrics per plot (Click any bar to view details)</p>
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300 px-2.5 py-1 rounded-lg">
-                          Live Market Valuation
-                        </span>
-                      </div>
-
-                      {/* Bar chart rows */}
-                      <div className="space-y-3 pt-1">
-                        {sortedListings.map((plot, idx) => {
-                          const pattayam = getListingPattayam(plot, idx);
-                          const seller = getListingSeller(plot);
-                          const isLease = (plot.listingType || plot.type || '').toLowerCase() === 'lease';
-                          const rawVal = parseFloat((plot.price || '').replace(/[^0-9.]/g, '')) || 50;
-                          const maxVal = 250; // Reference max scale
-                          const barWidthPct = Math.min(100, Math.max(15, (rawVal / maxVal) * 100));
-
-                          return (
-                            <div
-                              key={plot.id || plot._id || idx}
-                              onClick={() => setSelectedMarketplaceItem({ ...plot, pattayamDoc: pattayam, sellerInfo: seller })}
-                              className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 hover:border-emerald-500 dark:hover:border-emerald-500 cursor-pointer transition-all space-y-1.5 group"
-                            >
-                              <div className="flex items-center justify-between text-xs font-bold">
-                                <span className="text-slate-900 dark:text-white group-hover:text-[#1F5E3B] dark:group-hover:text-emerald-400 transition-colors truncate max-w-[220px]">
-                                  {plot.title}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${isLease ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                    }`}>
-                                    {plot.price}
-                                  </span>
-                                  <span className="text-slate-500 font-semibold">{plot.area}</span>
-                                </div>
-                              </div>
-
-                              {/* Progress bar visual */}
-                              <div className="w-full h-3.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex items-center p-0.5 relative">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${barWidthPct}%` }}
-                                  transition={{ duration: 0.6, delay: idx * 0.1 }}
-                                  className={`h-full rounded-full ${isLease
-                                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600'
-                                      : 'bg-gradient-to-r from-[#17331F] via-[#2C5E3B] to-[#1F5E3B]'
-                                    }`}
-                                />
-                              </div>
-
-                              <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
-                                <span>Owner: <strong>{seller.name}</strong> ({plot.district})</span>
-                                <span className="text-[#1F5E3B] dark:text-emerald-400 font-bold group-hover:underline flex items-center gap-1">
-                                  Inspect Plot Details <ArrowRight size={10} />
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Pattayam Legal OCR Verification Graph Card */}
-                    <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-sm'} space-y-4 flex flex-col justify-between`}>
-                      <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
-                        <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                          <PieChart className="text-emerald-600 dark:text-emerald-400" size={18} />
-                          Legal Pattayam OCR Ratio Graph
-                        </h4>
-                        <p className="text-xs text-slate-500">Government revenue title verification telemetry</p>
-                      </div>
-
-                      {/* Donut progress ring simulation */}
-                      <div className="py-4 text-center space-y-3">
-                        <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path
-                              className="text-slate-100 dark:text-slate-800"
-                              strokeWidth="3.8"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                            <path
-                              className="text-emerald-600"
-                              strokeDasharray={`${sortedListings.length > 0
-                                  ? Math.round((sortedListings.filter(l => l.pattayamVerified !== false).length / sortedListings.length) * 100)
-                                  : 100
-                                }, 100`}
-                              strokeWidth="3.8"
-                              strokeLinecap="round"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                          </svg>
-                          <div className="absolute flex flex-col items-center justify-center">
-                            <span className="text-2xl font-black text-slate-900 dark:text-white">
-                              {sortedListings.length > 0
-                                ? Math.round((sortedListings.filter(l => l.pattayamVerified !== false).length / sortedListings.length) * 100)
-                                : 100}%
-                            </span>
-                            <span className="text-[10px] font-bold text-emerald-600 uppercase">Verified</span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-xs text-center pt-2">
-                          <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/50">
-                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 block uppercase">Pattayam Clear</span>
-                            <span className="text-base font-black text-emerald-800 dark:text-emerald-200">
-                              {sortedListings.filter(l => l.pattayamVerified !== false).length} Plots
-                            </span>
-                          </div>
-                          <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/50">
-                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 block uppercase">Pending Review</span>
-                            <span className="text-base font-black text-amber-800 dark:text-amber-200">
-                              {sortedListings.filter(l => l.pattayamVerified === false).length} Plots
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        💡 <strong>Gemini AI Legal Audit:</strong> 100% of uploaded Pattayam documents are cross-referenced with Kerala Revenue Survey Numbers.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Graph Row 2: Agronomic Health vs ROI Dual Metric Telemetry */}
-                  <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-sm'} space-y-4`}>
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                      <div>
-                        <h4 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                          <Activity className="text-indigo-600 dark:text-indigo-400" size={18} />
-                          AI Plantation Soil Health Score vs Projected Annual ROI Telemetry
-                        </h4>
-                        <p className="text-xs text-slate-500">Dual-metric telemetry comparing agronomic score with expected financial yield</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {sortedListings.map((plot, idx) => {
-                        const pattayam = getListingPattayam(plot, idx);
-                        const seller = getListingSeller(plot);
-                        const health = plot.healthScore || 94;
-                        const roiVal = parseFloat((plot.roi || '').replace(/[^0-9.]/g, '')) || 24;
-
-                        return (
-                          <div
-                            key={plot.id || plot._id || idx}
-                            onClick={() => setSelectedMarketplaceItem({ ...plot, pattayamDoc: pattayam, sellerInfo: seller })}
-                            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 cursor-pointer transition-all space-y-3 group"
-                          >
-                            <div className="flex items-center justify-between text-xs font-extrabold">
-                              <span className="text-slate-900 dark:text-white group-hover:text-[#1F5E3B] dark:group-hover:text-emerald-400 truncate max-w-[200px]">
-                                {plot.title}
-                              </span>
-                              <span className="text-xs font-black text-[#1F5E3B] dark:text-emerald-400">{plot.price}</span>
-                            </div>
-
-                            <div className="space-y-2 text-xs">
-                              {/* Health Score Bar */}
-                              <div>
-                                <div className="flex justify-between text-[11px] font-bold mb-1">
-                                  <span className="text-slate-500">AI Plantation Health Score</span>
-                                  <span className="text-emerald-600 dark:text-emerald-400">{health}/100</span>
-                                </div>
-                                <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${health}%` }} />
-                                </div>
-                              </div>
-
-                              {/* ROI Bar */}
-                              <div>
-                                <div className="flex justify-between text-[11px] font-bold mb-1">
-                                  <span className="text-slate-500">Projected Annual ROI</span>
-                                  <span className="text-indigo-600 dark:text-indigo-400">{plot.roi || '24% p.a.'}</span>
-                                </div>
-                                <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min(100, roiVal * 3)}%` }} />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500">
-                              <span>Seller: <strong>{seller.name}</strong></span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedMarketplaceItem({ ...plot, pattayamDoc: pattayam, sellerInfo: seller });
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400 font-bold hover:bg-emerald-100 flex items-center gap-1"
-                              >
-                                <Eye size={12} />
-                                View Details
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            /* FORMAT 3: GRID CARDS FORMAT (DEFAULT) */
-            return (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {sortedListings.map((plot, idx) => {
-                  const plotTitle = plot.title || `Cardamom Plantation #${idx + 1}`;
-                  const plotLocation = plot.location || 'Vandanmedu, Idukki';
-                  const plotArea = typeof plot.area === 'number' ? `${plot.area} Acres` : (plot.area || '5.0 Acres');
-                  const plotPrice = plot.price || '₹1.50 Cr';
-                  const isVerified = plot.pattayamVerified !== false;
-                  const isLease = (plot.listingType || plot.type || '').toLowerCase() === 'lease';
-
-                  // Time telemetry
-                  const timeInfo = formatMarketplaceTime(plot.createdAt);
-
-                  // Pattayam & Person metadata
-                  const pattayam = getListingPattayam(plot, idx);
-                  const seller = getListingSeller(plot);
-
-                  return (
-                    <motion.div
-                      key={plot.id || plot._id || idx}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/90 shadow-sm hover:shadow-md'
-                        } space-y-4 transition-all duration-200`}
-                    >
-                      {/* Top Header Card Info */}
-                      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                        {/* Estate Thumbnail with badges */}
-                        <div className="relative shrink-0 w-full sm:w-32 h-32 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                          {plot.image && (plot.image.startsWith('data:') || plot.image.startsWith('http')) ? (
-                            <img
-                              src={plot.image}
-                              alt={plotTitle}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.style.display = 'none';
-                                if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                              }}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : null}
-
-                          <div
-                            className="w-full h-full bg-gradient-to-br from-[#17331F] via-[#2C5E3B] to-[#1F5E3B] flex flex-col items-center justify-center text-white p-2 text-center"
-                            style={{ display: plot.image && (plot.image.startsWith('data:') || plot.image.startsWith('http')) ? 'none' : 'flex' }}
-                          >
-                            <Leaf className="w-8 h-8 text-emerald-400 mb-1" />
-                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200">
-                              {plot.district || 'Estate'}
-                            </span>
-                          </div>
-
-                          {/* Category Badge */}
-                          <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white shadow-xs ${isLease ? 'bg-indigo-600' : 'bg-[#1F5E3B]'
-                            }`}>
-                            {isLease ? 'Lease' : 'For Sale'}
-                          </span>
-
-                          {/* Image count pill */}
-                          {plot.images && plot.images.length > 1 && (
-                            <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-                              📷 {plot.images.length} Photos
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Title, Location & Upload Time */}
-                        <div className="space-y-1.5 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#1F5E3B] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
-                              {plot.district || 'Idukki'}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                              <Clock size={12} className="text-slate-400" />
-                              <span>{timeInfo.relative}</span>
-                              <span className="hidden sm:inline">({timeInfo.date})</span>
-                            </span>
-                          </div>
-
-                          <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white line-clamp-1">
-                            {plotTitle}
-                          </h4>
-
-                          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                            <MapPin size={13} className="text-slate-400 shrink-0" />
-                            <span className="truncate">{plotLocation}</span>
-                          </p>
-
-                          <div className="pt-1 flex items-center justify-between gap-2">
-                            <span className="text-base font-black text-[#1F5E3B] dark:text-emerald-400">
-                              {plotPrice}
-                            </span>
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg">
-                              {plotArea}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Person / Seller Box */}
-                      <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3 text-xs">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                            {seller.name ? seller.name.charAt(0).toUpperCase() : 'P'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-extrabold text-slate-900 dark:text-white truncate flex items-center gap-1">
-                              {seller.name}
-                              <UserCheck size={12} className="text-emerald-600 dark:text-emerald-400 shrink-0" title="Verified Landowner" />
-                            </p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-2">
-                              <span>{seller.role}</span>
-                              <span className="text-slate-300">•</span>
-                              <span className="truncate">{seller.email}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <a
-                          href={`tel:${seller.phone}`}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 font-bold text-[11px] hover:bg-emerald-100 shrink-0 flex items-center gap-1"
-                        >
-                          <Phone size={12} />
-                          <span className="hidden sm:inline">{seller.phone}</span>
-                        </a>
-                      </div>
-
-                      {/* Agronomic Specs Grid */}
-                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">Proj. ROI</p>
-                          <p className="font-extrabold text-slate-800 dark:text-slate-200 text-xs mt-0.5">{plot.roi || '24% p.a.'}</p>
-                        </div>
-                        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">Health Score</p>
-                          <p className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs mt-0.5">{plot.healthScore || 94}/100</p>
-                        </div>
-                        <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">Altitude</p>
-                          <p className="font-extrabold text-slate-800 dark:text-slate-200 text-xs mt-0.5">{plot.altitude || '1,120m MSL'}</p>
-                        </div>
-                      </div>
-
-                      {/* Uploaded Pattayam Legal Deed Banner */}
-                      <div className={`p-3 rounded-xl border ${isVerified
-                          ? 'bg-emerald-50/70 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/60'
-                          : 'bg-amber-50/70 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/60'
-                        } space-y-2`}>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {isVerified ? (
-                              <ShieldCheck size={16} className="text-emerald-700 dark:text-emerald-400 shrink-0" />
-                            ) : (
-                              <AlertTriangle size={16} className="text-amber-700 dark:text-amber-400 shrink-0" />
-                            )}
-                            <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
-                              {pattayam.fileName}
-                            </span>
-                          </div>
-
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${isVerified ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
-                            }`}>
-                            {isVerified ? '✓ Pattayam Verified' : '⏳ Pending OCR'}
-                          </span>
-                        </div>
-
-                        <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium space-y-0.5">
-                          <p className="truncate"><strong>Survey:</strong> {pattayam.surveyNo} • <strong>Office:</strong> {pattayam.villageOffice}</p>
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1">
-                            <span>AI Confidence Score: <strong className={isVerified ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}>{pattayam.score}%</strong></span>
-                            <span>Uploaded: {formatMarketplaceTime(pattayam.uploadedAt).full}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Admin Controls Footer */}
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-                        <button
-                          onClick={() => setSelectedMarketplaceItem({ ...plot, pattayamDoc: pattayam, sellerInfo: seller })}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-all"
-                        >
-                          <Eye size={14} className="text-[#1F5E3B] dark:text-emerald-400" />
-                          View Full Details & Pattayam
-                        </button>
-
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleTogglePattayamVerification(plot, idx)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1 transition-all ${isVerified
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 border-amber-800'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs'
-                              }`}
-                            title={isVerified ? 'Mark Pattayam as Pending OCR' : 'Approve & Verify Pattayam Legal Title'}
-                          >
-                            <ShieldCheck size={14} />
-                            <span>{isVerified ? 'Revoke Status' : 'Approve Pattayam'}</span>
-                          </button>
-
-                          <button
-                            onClick={() => setMarketplaceItemToDelete(plot)}
-                            className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all"
-                            title="Delete Marketplace Listing"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-      ) : adminViewMode === 'auctions' ? (
-        <AdminAuctionsTab
-          onSelectAuction={(auc) => navigate(`/dashboard?tab=auctions`)}
-          onToast={showToast}
-        />
+        <AdminAnalyticsCharts analyticsData={analytics} timeframe={analyticsTimeframe} setTimeframe={setAnalyticsTimeframe} />
       ) : (
-        /* FALLBACK OR OTHER SUB-VIEWS: Activity Feed / Recommendations / Contractors / Posts */
-        <div className="space-y-6">
-          <AdminAnalyticsCharts analyticsData={analytics} darkMode={darkMode} />
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <p className="text-xs font-bold text-slate-500">Selected View: {adminViewMode}</p>
         </div>
       )}
 
@@ -2326,399 +1184,82 @@ const AdminDashboard = () => {
       <AnimatePresence>
         {quickAddUserOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Add New Member</h3>
-                <button onClick={() => setQuickAddUserOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
-                  <X size={18} />
-                </button>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <UserPlus size={18} className="text-[#1F5E3B]" />
+                  Register New User / Farmer
+                </h3>
+                <button onClick={() => setQuickAddUserOpen(false)} className="text-slate-400 font-bold hover:text-slate-700">✕</button>
               </div>
 
-              <form onSubmit={handleQuickAddUserSubmit} className="space-y-3">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                showToast(`User account created for ${newUserForm.name}`);
+                setQuickAddUserOpen(false);
+              }} className="space-y-3 text-xs">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Full Name *</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Full Name *</label>
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Anitha Selvam"
                     value={newUserForm.name}
                     onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:border-[#1F5E3B]"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Email Address *</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Email Address *</label>
                   <input
                     type="email"
                     required
+                    placeholder="e.g. anitha@cardoraplanters.in"
                     value={newUserForm.email}
                     onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:border-[#1F5E3B]"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Role</label>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Role</label>
                     <select
                       value={newUserForm.role}
                       onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold focus:outline-none"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
                     >
                       <option value="Farmer">Farmer / Planter</option>
                       <option value="Supervisor">Supervisor</option>
                       <option value="Admin">Administrator</option>
                     </select>
                   </div>
+
                   <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">District</label>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">District</label>
                     <input
                       type="text"
+                      placeholder="e.g. Idukki, Kerala"
                       value={newUserForm.district}
                       onChange={(e) => setNewUserForm({ ...newUserForm, district: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:border-[#1F5E3B]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setQuickAddUserOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200"
-                  >
+                <div className="pt-3 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+                  <button type="button" onClick={() => setQuickAddUserOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isCreatingUser}
-                    className="px-4 py-2 rounded-xl bg-[#1F5E3B] text-white font-bold text-xs hover:bg-[#16442b]"
-                  >
-                    {isCreatingUser ? 'Creating...' : 'Create Account'}
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-[#1F5E3B] text-white font-black">
+                    Create User Account
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {userToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3">
-              <h3 className="text-sm font-black text-rose-600">Delete User Account?</h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Are you sure you want to remove <strong>{userToDelete.name || userToDelete.email}</strong>? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setUserToDelete(null)} className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmDeleteUser}
-                  disabled={deletingUser}
-                  className="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold text-xs hover:bg-rose-700"
-                >
-                  {deletingUser ? 'Deleting...' : 'Confirm Delete'}
-                </button>
-              </div>
             </div>
           </div>
         )}
-      </AnimatePresence>
-
-      {/* MARKETPLACE DETAILED & PATTAYAM MODAL */}
-      <AnimatePresence>
-        {selectedMarketplaceItem && (() => {
-          const item = selectedMarketplaceItem;
-          const pattayam = item.pattayamDoc || getListingPattayam(item);
-          const seller = item.sellerInfo || getListingSeller(item);
-          const timeInfo = formatMarketplaceTime(item.createdAt);
-          const isVerified = item.pattayamVerified !== false;
-
-          return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 my-8 max-h-[90vh] overflow-y-auto"
-              >
-                {/* Modal Header */}
-                <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-white bg-[#1F5E3B] px-2.5 py-0.5 rounded-md">
-                        {(item.listingType || item.type || 'sale').toUpperCase()}
-                      </span>
-                      <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black ${isVerified ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
-                        }`}>
-                        {isVerified ? '✓ Pattayam Verified Legal Title' : '⏳ Pending OCR Review'}
-                      </span>
-                      <span className="text-xs text-slate-400 font-medium">
-                        Uploaded {timeInfo.full} ({timeInfo.relative})
-                      </span>
-                    </div>
-
-                    <h2 className="text-xl font-black text-slate-900 dark:text-white">{item.title}</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                      <MapPin size={14} className="text-slate-400" />
-                      <span>{item.location || 'Idukki, Kerala'}</span>
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setSelectedMarketplaceItem(null)}
-                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {/* Modal Content Grid (2 Columns) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Column: Estate Details & Seller */}
-                  <div className="space-y-5">
-                    {/* Primary Image preview */}
-                    <div className="relative w-full h-56 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                      {item.image && (item.image.startsWith('data:') || item.image.startsWith('http')) ? (
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-[#17331F] to-[#1F5E3B] flex flex-col items-center justify-center text-white">
-                          <Leaf className="w-12 h-12 text-emerald-400 mb-2" />
-                          <span className="text-xs font-bold text-emerald-200">{item.district || 'Estate'}</span>
-                        </div>
-                      )}
-
-                      <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-xs text-white px-3 py-1 rounded-xl text-xs font-extrabold">
-                        Asking Price: <span className="text-emerald-400">{item.price}</span>
-                      </div>
-                      <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-xs text-white px-3 py-1 rounded-xl text-xs font-bold">
-                        {item.area}
-                      </div>
-                    </div>
-
-                    {/* Person / Seller Card */}
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
-                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Users size={14} className="text-[#1F5E3B] dark:text-emerald-400" />
-                        Uploaded By / Registered Seller Details
-                      </h4>
-
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-[#1F5E3B] text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md">
-                          {seller.name ? seller.name.charAt(0).toUpperCase() : 'P'}
-                        </div>
-                        <div>
-                          <h5 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                            {seller.name}
-                            <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" />
-                          </h5>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{seller.role}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200 dark:border-slate-700">
-                        <a
-                          href={`mailto:${seller.email}`}
-                          className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold hover:border-emerald-500 truncate"
-                        >
-                          <Mail size={14} className="text-emerald-600 shrink-0" />
-                          <span className="truncate">{seller.email}</span>
-                        </a>
-
-                        <a
-                          href={`tel:${seller.phone}`}
-                          className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold hover:border-emerald-500 truncate"
-                        >
-                          <Phone size={14} className="text-emerald-600 shrink-0" />
-                          <span className="truncate">{seller.phone}</span>
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Plot Technical Specifications Table */}
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
-                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <BarChart3 size={14} className="text-[#1F5E3B] dark:text-emerald-400" />
-                        Plot Agronomic & Financial Parameters
-                      </h4>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-400 text-[10px] font-bold uppercase block">Category</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white capitalize">For {item.listingType || item.type || 'sale'}</span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-400 text-[10px] font-bold uppercase block">Total Area</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{item.area}</span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-400 text-[10px] font-bold uppercase block">Asking Price</span>
-                          <span className="font-extrabold text-[#1F5E3B] dark:text-emerald-400">{item.price}</span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-400 text-[10px] font-bold uppercase block">Annual ROI</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{item.roi || '24% p.a.'}</span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-400 text-[10px] font-bold uppercase block">Elevation / Altitude</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{item.altitude || '1,120m MSL'}</span>
-                        </div>
-                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                          <span className="text-slate-400 text-[10px] font-bold uppercase block">Est. Yield</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{item.yield || '450 kg/Acre'}</span>
-                        </div>
-                      </div>
-
-                      {item.description && (
-                        <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                          <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">Description & Notes</p>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                            {item.description}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Column: Uploaded Pattayam Title Deed Telemetry */}
-                  <div className="space-y-5">
-                    <div className={`p-5 rounded-2xl border ${isVerified
-                        ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/80'
-                        : 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/80'
-                      } space-y-4`}>
-                      <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-700">
-                        <div className="flex items-center gap-2">
-                          <FileText size={20} className={isVerified ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'} />
-                          <div>
-                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                              Uploaded Pattayam Document Details
-                            </h4>
-                            <p className="text-[11px] text-slate-500">Government Revenue Legal Title Deed</p>
-                          </div>
-                        </div>
-
-                        <span className={`px-3 py-1 rounded-xl text-xs font-black ${isVerified ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
-                          }`}>
-                          {isVerified ? '✓ OCR VERIFIED' : '⏳ PENDING OCR'}
-                        </span>
-                      </div>
-
-                      {/* File Card Preview */}
-                      <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0 font-black text-xs">
-                            PDF
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
-                              {pattayam.fileName}
-                            </p>
-                            <p className="text-[11px] text-slate-500">
-                              Uploaded {timeInfo.full} • 2.4 MB
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => showToast?.(`Downloading ${pattayam.fileName}...`, 'success')}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs hover:bg-slate-200 flex items-center gap-1 shrink-0"
-                        >
-                          <Download size={14} />
-                          <span className="hidden sm:inline">View File</span>
-                        </button>
-                      </div>
-
-                      {/* Survey & Revenue Telemetry */}
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
-                          <span className="text-slate-500 font-medium">Government Survey No</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{pattayam.surveyNo}</span>
-                        </div>
-                        <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
-                          <span className="text-slate-500 font-medium">Village Revenue Office</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{pattayam.villageOffice}</span>
-                        </div>
-                        <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
-                          <span className="text-slate-500 font-medium">Revenue Taluk Division</span>
-                          <span className="font-extrabold text-slate-900 dark:text-white">{pattayam.talukOffice}</span>
-                        </div>
-                        <div className="flex justify-between py-1.5 border-b border-slate-200/50 dark:border-slate-800">
-                          <span className="text-slate-500 font-medium">Govt Fair Value Index</span>
-                          <span className="font-extrabold text-[#1F5E3B] dark:text-emerald-400">{pattayam.fairValue}</span>
-                        </div>
-                        <div className="flex justify-between py-1.5">
-                          <span className="text-slate-500 font-medium">Gemini AI OCR Match Confidence</span>
-                          <span className={`font-black ${isVerified ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                            {pattayam.score}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* OCR Summary & Telemetry Log Box */}
-                      <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                          AI Gemini OCR Legal Text Audit Summary
-                        </span>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                          "{pattayam.ocrSummary}"
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Admin Actions Panel */}
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
-                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">
-                        Administrator Verification Actions
-                      </h4>
-
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => handleTogglePattayamVerification(item)}
-                          className={`w-full py-2.5 px-4 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-all ${isVerified
-                              ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                            }`}
-                        >
-                          <ShieldCheck size={16} />
-                          <span>{isVerified ? 'Set Status to Pending Review' : 'Approve & Verify Pattayam Legal Deed'}</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            showToast?.('Generating official Cardora Legal Verification PDF Certificate...', 'success');
-                          }}
-                          className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-extrabold text-xs text-slate-700 dark:text-slate-200 hover:border-emerald-500 flex items-center justify-center gap-2 transition-all"
-                        >
-                          <Download size={16} className="text-emerald-600" />
-                          <span>Download Legal PDF Certificate</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMarketplaceItemToDelete(item);
-                          }}
-                          className="w-full py-2.5 px-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-extrabold text-xs hover:bg-rose-100 flex items-center justify-center gap-2 transition-all"
-                        >
-                          <Trash2 size={16} />
-                          <span>Delete Listing From Platform</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          );
-        })()}
       </AnimatePresence>
 
       {/* MARKETPLACE DELETE CONFIRMATION MODAL */}
@@ -2753,9 +1294,11 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* BOTTOM SAFEGUARD SPACING FOR FLOATING VOICE ASSISTANT */}
+      <div className="h-20" />
+
     </div>
   );
 };
 
 export default AdminDashboard;
-

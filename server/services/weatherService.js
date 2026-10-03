@@ -305,6 +305,48 @@ const analyzeCardamomAdvisory = (currentWeather, forecastList = [], locationName
 const inMemoryWeatherCache = new Map();
 const MEMORY_CACHE_TTL_MS = 10 * 60 * 1000;
 
+const formatTimeIST = (epochSec) => {
+  if (!epochSec) return '06:15 AM';
+  return new Date(epochSec * 1000).toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const getDynamicFallbackHourly = () => {
+  const list = [];
+  const now = new Date();
+  const currentISTStr = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const istDate = new Date(currentISTStr);
+  const currentHour = istDate.getHours();
+
+  for (let i = 0; i < 24; i++) {
+    const h = (currentHour + i) % 24;
+    const tempDate = new Date(istDate);
+    tempDate.setHours(currentHour + i, 0, 0, 0);
+    const timeFormatted = tempDate.toLocaleTimeString('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const isDay = h >= 6 && h < 18;
+    list.push({
+      time: timeFormatted,
+      temp: Math.round(22 + Math.sin(((h - 6) / 12) * Math.PI) * 4),
+      icon: isDay ? '02d' : '02n',
+      iconUrl: getWeatherIconUrl(isDay ? '02d' : '02n'),
+      condition: isDay ? 'Partly Cloudy' : 'Clear Night',
+      pop: Math.max(10, Math.min(75, Math.round(20 + Math.sin(i) * 20))),
+      humidity: Math.round(75 + Math.cos((h / 24) * 2 * Math.PI) * 10),
+      windSpeed: 9,
+    });
+  }
+  return list;
+};
+
 /**
  * Fetch Current Weather & 5-Day Forecast from OpenWeatherMap API with MongoDB Caching & Fallback
  */
@@ -315,7 +357,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
 
   // 0. Check Fast In-Memory Cache (10 minutes)
   const memCached = inMemoryWeatherCache.get(locationKey);
-  if (memCached && (Date.now() - memCached.timestamp < MEMORY_CACHE_TTL_MS)) {
+  if (memCached && (Date.now() - memCached.timestamp < MEMORY_CACHE_TTL_MS) && memCached.data?.forecast?.hourly?.length >= 24) {
     return memCached.data;
   }
 
@@ -324,7 +366,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
       const cached = await WeatherCache.findOne({ locationKey }).maxTimeMS(2000);
-      if (cached && cached.fetchedAt) {
+      if (cached && cached.fetchedAt && cached.forecast?.hourly?.length >= 24) {
         const ageInMinutes = (Date.now() - new Date(cached.fetchedAt).getTime()) / (1000 * 60);
         if (ageInMinutes < 45) {
           const payload = {
@@ -397,17 +439,24 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
       rain: rainObj['1h'] || rainObj['3h'] || 0,
       visibility: Math.round((wData.visibility || 10000) / 1000), // in km
       cloudCoverage: wData.clouds?.all ?? 40,
-      sunrise: sysObj.sunrise ? new Date(sysObj.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '06:15 AM',
-      sunset: sysObj.sunset ? new Date(sysObj.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '06:45 PM',
+      sunrise: formatTimeIST(sysObj.sunrise),
+      sunset: formatTimeIST(sysObj.sunset),
       locationName: wData.name || cleanDistrict,
       country: sysObj.country || 'IN',
-      lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      lastUpdated: new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
     };
 
     // Parse Forecast List (Hourly & 5-Day)
     const rawList = fData.list || [];
-    const hourlyForecast = rawList.slice(0, 8).map((item) => ({
-      time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    const nowSec = Math.floor(Date.now() / 1000);
+    const futureList = rawList.filter((item) => item.dt >= nowSec - 3600);
+    const hourlyForecast = (futureList.length > 0 ? futureList : rawList).slice(0, 24).map((item) => ({
+      time: new Date(item.dt * 1000).toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
       temp: Math.round(item.main?.temp ?? 24),
       icon: item.weather?.[0]?.icon || '03d',
       iconUrl: getWeatherIconUrl(item.weather?.[0]?.icon),
@@ -420,10 +469,10 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
     // Group 5-Day Daily Forecast
     const dailyMap = {};
     rawList.forEach((item) => {
-      const dateStr = new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+      const dateStr = new Date(item.dt * 1000).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short', month: 'short', day: 'numeric' });
       if (!dailyMap[dateStr]) {
         dailyMap[dateStr] = {
-          day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'short' }),
+          day: new Date(item.dt * 1000).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short' }),
           date: dateStr,
           minTemp: Math.round(item.main?.temp_min ?? 20),
           maxTemp: Math.round(item.main?.temp_max ?? 28),
@@ -445,7 +494,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
     const dailyForecast = Object.values(dailyMap).slice(0, 5);
 
     const forecastObj = {
-      hourly: hourlyForecast,
+      hourly: hourlyForecast.length > 0 ? hourlyForecast : getDynamicFallbackHourly(),
       daily: dailyForecast,
       rainProbability: hourlyForecast[0]?.pop || (currentWeather.rain > 0 ? 90 : 20),
     };
@@ -504,7 +553,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
       const targetLat = lat || (DISTRICT_COORDINATES[cleanDistrict.toLowerCase()]?.lat ?? 9.85);
       const targetLon = lon || (DISTRICT_COORDINATES[cleanDistrict.toLowerCase()]?.lon ?? 76.97);
 
-      const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${targetLat}&longitude=${targetLon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=auto`;
+      const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${targetLat}&longitude=${targetLon}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,precipitation_probability,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Asia%2FKolkata`;
       const omRes = await axios.get(omUrl, { timeout: 4000 });
       const om = omRes.data;
 
@@ -530,10 +579,42 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
           sunset: '06:45 PM',
           locationName: cleanDistrict,
           country: 'IN',
-          lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          lastUpdated: new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
         };
 
         const advisoryResult = analyzeCardamomAdvisory(currentWeather, [], cleanDistrict);
+
+        // Find start index for hourly forecast starting from current hour
+        const nowMs = Date.now();
+        let startIndex = (om.hourly?.time || []).findIndex((t) => {
+          const isoStr = typeof t === 'string' && (t.includes('+') || t.includes('Z')) ? t : `${t}+05:30`;
+          return new Date(isoStr).getTime() >= nowMs - 45 * 60 * 1000;
+        });
+        if (startIndex < 0) startIndex = 0;
+
+        const omHourlyList = [];
+        const totalOmHours = om.hourly?.time?.length || 0;
+        for (let i = 0; i < 24 && (startIndex + i) < totalOmHours; i++) {
+          const idx = startIndex + i;
+          const t = om.hourly.time[idx];
+          const isoStr = typeof t === 'string' && (t.includes('+') || t.includes('Z')) ? t : `${t}+05:30`;
+          const timeFormatted = new Date(isoStr).toLocaleTimeString('en-US', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
+          omHourlyList.push({
+            time: timeFormatted,
+            temp: Math.round(om.hourly.temperature_2m?.[idx] ?? 24),
+            icon: om.hourly.weathercode?.[idx] > 50 ? '10d' : '02d',
+            iconUrl: getWeatherIconUrl(om.hourly.weathercode?.[idx] > 50 ? '10d' : '02d'),
+            condition: om.hourly.weathercode?.[idx] > 50 ? 'Rain' : (om.hourly.weathercode?.[idx] > 0 ? 'Clouds' : 'Clear'),
+            pop: Math.round(om.hourly.precipitation_probability?.[idx] ?? 20),
+            humidity: Math.round(om.hourly.relativehumidity_2m?.[idx] ?? 75),
+            windSpeed: Math.round(om.hourly.windspeed_10m?.[idx] ?? 8),
+          });
+        }
 
         return {
           success: true,
@@ -543,19 +624,10 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
           lon: targetLon,
           currentWeather,
           forecast: {
-            hourly: (om.hourly?.time || []).slice(0, 8).map((t, idx) => ({
-              time: new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              temp: Math.round(om.hourly.temperature_2m[idx] ?? 24),
-              icon: '02d',
-              iconUrl: getWeatherIconUrl('02d'),
-              condition: 'Live',
-              pop: Math.round(om.hourly.precipitation_probability?.[idx] ?? 20),
-              humidity: Math.round(om.hourly.relativehumidity_2m?.[idx] ?? 75),
-              windSpeed: Math.round(om.hourly.windspeed_10m?.[idx] ?? 8),
-            })),
+            hourly: omHourlyList.length > 0 ? omHourlyList : getDynamicFallbackHourly(),
             daily: (om.daily?.time || []).slice(0, 5).map((t, idx) => ({
-              day: new Date(t).toLocaleDateString([], { weekday: 'short' }),
-              date: new Date(t).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }),
+              day: new Date(t).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short' }),
+              date: new Date(t).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short', month: 'short', day: 'numeric' }),
               minTemp: Math.round(om.daily.temperature_2m_min[idx] ?? 20),
               maxTemp: Math.round(om.daily.temperature_2m_max[idx] ?? 28),
               humidity: 78,
@@ -583,7 +655,6 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
     }
 
     // 3. Fallback: Try reading last cached data from MongoDB
-
     try {
       const cached = await WeatherCache.findOne({ locationKey }).sort({ updatedAt: -1 });
       if (cached) {
@@ -608,7 +679,6 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
     } catch (e) {}
 
     // 4. Default High-Grade Fallback Data for Idukki Cardamom Ecosystem
-
     const fallbackCurrent = {
       temp: 23,
       feelsLike: 24,
@@ -629,7 +699,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
       sunset: '06:42 PM',
       locationName: cleanDistrict || 'Idukki, Kerala',
       country: 'IN',
-      lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      lastUpdated: new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
     };
 
     const fallbackAdvisory = analyzeCardamomAdvisory(fallbackCurrent, [], cleanDistrict);
@@ -642,12 +712,7 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
       lon: lon || 76.97,
       currentWeather: fallbackCurrent,
       forecast: {
-        hourly: [
-          { time: '12:00 PM', temp: 25, icon: '02d', iconUrl: getWeatherIconUrl('02d'), condition: 'Clouds', pop: 20, humidity: 72, windSpeed: 10 },
-          { time: '03:00 PM', temp: 26, icon: '03d', iconUrl: getWeatherIconUrl('03d'), condition: 'Clouds', pop: 30, humidity: 75, windSpeed: 12 },
-          { time: '06:00 PM', temp: 23, icon: '10d', iconUrl: getWeatherIconUrl('10d'), condition: 'Rain', pop: 60, humidity: 84, windSpeed: 8 },
-          { time: '09:00 PM', temp: 21, icon: '10n', iconUrl: getWeatherIconUrl('10n'), condition: 'Rain', pop: 50, humidity: 88, windSpeed: 6 },
-        ],
+        hourly: getDynamicFallbackHourly(),
         daily: [
           { day: 'Today', date: 'Today', minTemp: 19, maxTemp: 26, humidity: 78, pop: 40, windSpeed: 9, icon: '03d', iconUrl: getWeatherIconUrl('03d'), condition: 'Partly Cloudy' },
           { day: 'Tomorrow', date: 'Tomorrow', minTemp: 18, maxTemp: 25, humidity: 82, pop: 65, windSpeed: 11, icon: '10d', iconUrl: getWeatherIconUrl('10d'), condition: 'Light Rain' },
@@ -663,7 +728,6 @@ const getWeatherTelemetry = async ({ lat, lon, district = 'Idukki, Kerala' }) =>
       isFallback: true,
       warningMessage: 'Displaying estimated micro-climate plantation telemetry.',
       fetchedAt: new Date(),
-
     };
   }
 };

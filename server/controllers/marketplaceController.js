@@ -10,7 +10,9 @@ exports.createListing = async (req, res) => {
   try {
     const {
       title, description, location, area, price, type, roi, healthScore,
-      ownerName, ownerEmail, ownerPhone, altitude, yield: plotYield, plants
+      ownerName, ownerEmail, ownerPhone, altitude, yield: plotYield, plants,
+      verificationPhoto, verificationCapturedAt, verificationStatus, verificationRemark,
+      pattayamFileName, pattayamDoc
     } = req.body;
 
     if (!title || title.trim().length < 3) {
@@ -41,6 +43,12 @@ exports.createListing = async (req, res) => {
       type: type || 'lease',
       roi: roi || '24%',
       healthScore: Number(healthScore) || 94,
+      verificationPhoto: verificationPhoto || null,
+      verificationCapturedAt: verificationCapturedAt || new Date(),
+      verificationStatus: verificationStatus || 'Pending',
+      verificationRemark: verificationRemark || '',
+      pattayamFileName: pattayamFileName || '',
+      pattayamDoc: pattayamDoc || '',
       images: req.files ? req.files.map((f) => f.path || f.secure_url) : [
         'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=600'
       ],

@@ -314,7 +314,19 @@ const CardamomMarketplace = () => {
 
   // Filtering Logic
   const filteredPlantations = allPlantations.filter((plot) => {
-    if (selectedDistrict !== 'All' && plot.district !== selectedDistrict) return false;
+    if (selectedDistrict !== 'All') {
+      const cleanDistrict = selectedDistrict.split(',')[0].toLowerCase().trim();
+      const plotDist = (plot.district || '').toLowerCase();
+      const plotLoc = (plot.location || '').toLowerCase();
+      if (!plotDist.includes(cleanDistrict) && !plotLoc.includes(cleanDistrict)) return false;
+    }
+
+    if (filters.locality && filters.locality !== 'All') {
+      const cleanLoc = filters.locality.toLowerCase().trim();
+      const plotLoc = (plot.location || '').toLowerCase();
+      if (!plotLoc.includes(cleanLoc)) return false;
+    }
+
     if (filters.listingType !== 'all' && plot.listingType !== filters.listingType) return false;
     if (filters.organicOnly && !plot.organic) return false;
 

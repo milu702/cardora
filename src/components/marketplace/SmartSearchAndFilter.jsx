@@ -4,7 +4,7 @@ import {
   Search, Mic, Image, MapPin, SlidersHorizontal, Sparkles, X, Check, 
   ChevronDown, DollarSign, Layers, ShieldCheck, Mountain, Droplets, Thermometer, TreePine, Map 
 } from 'lucide-react';
-import { KERALA_DISTRICTS } from '../../utils/districts';
+import { KERALA_DISTRICTS, getLocalitiesForDistrict } from '../../utils/districts';
 
 const SmartSearchAndFilter = ({ 
   lang, 
@@ -196,20 +196,41 @@ const SmartSearchAndFilter = ({
               </div>
 
               {/* District & Location */}
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-wider text-[#1B5E20] dark:text-emerald-400 block">
-                  {lang === 'ml' ? 'ജില്ല' : 'District Location'}
-                </label>
-                <select
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-[#F8FFF8] dark:bg-slate-800 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-slate-100"
-                >
-                  <option value="All">{lang === 'ml' ? 'എല്ലാ ജില്ലകളും' : 'All Kerala Districts'}</option>
-                  {KERALA_DISTRICTS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#1B5E20] dark:text-emerald-400 block">
+                    {lang === 'ml' ? 'ജില്ല' : 'District Location'}
+                  </label>
+                  <select
+                    value={selectedDistrict}
+                    onChange={(e) => {
+                      setSelectedDistrict(e.target.value);
+                      handleFilterChange('locality', 'All');
+                    }}
+                    className="w-full p-3 rounded-xl bg-[#F8FFF8] dark:bg-slate-800 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-slate-100"
+                  >
+                    <option value="All">{lang === 'ml' ? 'എല്ലാ ജില്ലകളും' : 'All Districts'}</option>
+                    {KERALA_DISTRICTS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-wider text-[#1B5E20] dark:text-emerald-400 block">
+                    {lang === 'ml' ? 'സ്ഥലം' : 'Locality / Village'}
+                  </label>
+                  <select
+                    value={filters.locality || 'All'}
+                    onChange={(e) => handleFilterChange('locality', e.target.value)}
+                    className="w-full p-3 rounded-xl bg-[#F8FFF8] dark:bg-slate-800 border border-[#2E7D32]/30 text-xs font-bold text-[#1B5E20] dark:text-slate-100"
+                  >
+                    <option value="All">{lang === 'ml' ? 'എല്ലാ സ്ഥലങ്ങളും' : 'All Localities'}</option>
+                    {getLocalitiesForDistrict(selectedDistrict === 'All' ? 'Idukki, Kerala' : selectedDistrict).map((p) => (
+                      <option key={p.village} value={p.village}>{p.village}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Listing Type (Buy / Lease) */}

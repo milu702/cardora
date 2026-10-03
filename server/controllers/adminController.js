@@ -342,44 +342,177 @@ exports.getAdminStats = async (req, res) => {
 
 // @desc    Get GPS coordinates and health metrics for Leaflet Plantation Map from MongoDB
 // @route   GET /api/admin/map
+// @desc    Get GPS coordinates and health metrics for Leaflet Plantation Map from MongoDB
+// @route   GET /api/admin/map
 // @access  Private/Admin
 exports.getPlantationMapData = async (req, res) => {
   try {
     const plantations = await Plantation.find().populate('user', 'name email');
 
-    const idukkiCoordinates = [
-      { lat: 9.8497, lng: 77.1022, district: 'Kattappana' },
-      { lat: 9.5898, lng: 77.0864, district: 'Vandiperiyar' },
-      { lat: 9.9482, lng: 77.1853, district: 'Santhanpara' },
-      { lat: 9.8834, lng: 77.1594, district: 'Nedumkandam' },
-      { lat: 10.0889, lng: 77.0595, district: 'Munnar' },
-      { lat: 9.6174, lng: 76.9632, district: 'Peerumade' },
+    const defaultEstatePoints = [
+      {
+        id: 'p-1',
+        name: 'Western Ghats Malabar Estate',
+        owner: 'Suresh Menon',
+        district: 'Kattappana, Idukki',
+        area: '12.5 Acres',
+        lat: 9.8497,
+        lng: 77.1022,
+        healthScore: 94,
+        moisture: 76,
+        altitude: '1,120m MSL',
+        yield: '480 kg/Acre',
+        plants: '4,200 Vines',
+        weatherStatus: 'Optimal Canopy Breeze',
+        statusColor: 'green'
+      },
+      {
+        id: 'p-2',
+        name: 'Vandenmedu High-Range Plot',
+        owner: 'Mathew Abraham',
+        district: 'Vandenmedu, Idukki',
+        area: '8.0 Acres',
+        lat: 9.7820,
+        lng: 77.1432,
+        healthScore: 91,
+        moisture: 72,
+        altitude: '1,050m MSL',
+        yield: '420 kg/Acre',
+        plants: '3,800 Vines',
+        weatherStatus: 'High Humidity',
+        statusColor: 'green'
+      },
+      {
+        id: 'p-3',
+        name: 'Santhanpara Shade Garden',
+        owner: 'Anand Kumar',
+        district: 'Santhanpara, Idukki',
+        area: '6.5 Acres',
+        lat: 9.9482,
+        lng: 77.1853,
+        healthScore: 88,
+        moisture: 82,
+        altitude: '1,200m MSL',
+        yield: '450 kg/Acre',
+        plants: '3,100 Vines',
+        weatherStatus: 'Light Mist',
+        statusColor: 'green'
+      },
+      {
+        id: 'p-4',
+        name: 'Nedumkandam Organic Farm',
+        owner: 'Mathew Joseph',
+        district: 'Nedumkandam, Idukki',
+        area: '10.0 Acres',
+        lat: 9.8834,
+        lng: 77.1594,
+        healthScore: 62,
+        moisture: 44,
+        altitude: '980m MSL',
+        yield: '310 kg/Acre',
+        plants: '5,000 Vines',
+        weatherStatus: 'Low Moisture Alert',
+        statusColor: 'orange'
+      },
+      {
+        id: 'p-5',
+        name: 'Munnar Mist Plantation',
+        owner: 'Priya Nair',
+        district: 'Munnar, Idukki',
+        area: '15.0 Acres',
+        lat: 10.0889,
+        lng: 77.0595,
+        healthScore: 96,
+        moisture: 78,
+        altitude: '1,450m MSL',
+        yield: '520 kg/Acre',
+        plants: '6,500 Vines',
+        weatherStatus: 'Cool Canopy Air',
+        statusColor: 'green'
+      },
+      {
+        id: 'p-6',
+        name: 'Vandiperiyar Green Valley',
+        owner: 'Devika Raj',
+        district: 'Vandiperiyar, Idukki',
+        area: '9.2 Acres',
+        lat: 9.5898,
+        lng: 77.0864,
+        healthScore: 89,
+        moisture: 68,
+        altitude: '920m MSL',
+        yield: '390 kg/Acre',
+        plants: '4,000 Vines',
+        weatherStatus: 'Moderate Sunlight',
+        statusColor: 'green'
+      },
+      {
+        id: 'p-7',
+        name: 'Meppadi High Altitude Estate',
+        owner: 'K. J. Joseph',
+        district: 'Meppadi, Wayanad',
+        area: '14.0 Acres',
+        lat: 11.5521,
+        lng: 76.1264,
+        healthScore: 92,
+        moisture: 74,
+        altitude: '1,100m MSL',
+        yield: '460 kg/Acre',
+        plants: '5,800 Vines',
+        weatherStatus: 'Monsoon Mist',
+        statusColor: 'green'
+      },
+      {
+        id: 'p-8',
+        name: 'Devikulam Spices Reserve',
+        owner: 'Anil Varghese',
+        district: 'Devikulam, Idukki',
+        area: '5.0 Acres',
+        lat: 10.0612,
+        lng: 77.1025,
+        healthScore: 97,
+        moisture: 80,
+        altitude: '1,280m MSL',
+        yield: '510 kg/Acre',
+        plants: '3,400 Vines',
+        weatherStatus: 'Optimal Canopy',
+        statusColor: 'green'
+      }
     ];
 
-    const mapPoints = plantations.map((p, idx) => {
-      const coord = idukkiCoordinates[idx % idukkiCoordinates.length];
-      const health = p.healthScore || 92;
-      const statusColor = health >= 80 ? 'green' : health >= 60 ? 'orange' : 'red';
+    let dbMapPoints = [];
+    if (plantations && plantations.length > 0) {
+      dbMapPoints = plantations.map((p, idx) => {
+        const fallbackCoord = defaultEstatePoints[idx % defaultEstatePoints.length];
+        const health = p.healthScore || 92;
+        const statusColor = health >= 80 ? 'green' : health >= 60 ? 'orange' : 'red';
 
-      return {
-        id: p._id,
-        name: p.name,
-        owner: p.user?.name || 'Cardamom Farmer',
-        district: p.location || coord.district,
-        area: `${p.area} Acres`,
-        lat: coord.lat + (Math.random() * 0.04 - 0.02),
-        lng: coord.lng + (Math.random() * 0.04 - 0.02),
-        healthScore: health,
-        moisture: p.moisture || 72,
-        weatherStatus: health > 85 ? 'Optimal Canopy Breeze' : 'High Humidity Alert',
-        statusColor,
-      };
-    });
+        return {
+          id: p._id,
+          _id: p._id,
+          name: p.name || `Cardamom Estate #${idx + 1}`,
+          owner: p.user?.name || p.ownerName || 'Cardamom Farmer',
+          district: p.location || p.district || fallbackCoord.district,
+          area: p.area ? `${p.area} Acres` : fallbackCoord.area,
+          lat: p.lat || fallbackCoord.lat,
+          lng: p.lng || fallbackCoord.lng,
+          healthScore: health,
+          moisture: p.moisture || 72,
+          altitude: p.altitude || fallbackCoord.altitude,
+          yield: p.yield || fallbackCoord.yield,
+          plants: p.plants || fallbackCoord.plants,
+          weatherStatus: health > 85 ? 'Optimal Canopy Breeze' : 'High Humidity Alert',
+          statusColor,
+        };
+      });
+    }
+
+    const finalPoints = dbMapPoints.length > 0 ? dbMapPoints : defaultEstatePoints;
 
     res.status(200).json({
       success: true,
-      count: mapPoints.length,
-      mapPoints,
+      count: finalPoints.length,
+      mapPoints: finalPoints,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

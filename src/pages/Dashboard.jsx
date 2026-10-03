@@ -858,25 +858,52 @@ const Dashboard = () => {
         ];
 
   return (
-    <div className="min-h-screen bg-[#F2F7F4] dark:bg-[#06150D] text-slate-800 dark:text-emerald-100 transition-colors flex flex-col justify-between">
-      <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
+    <div className="min-h-screen text-slate-800 dark:text-emerald-100 transition-colors flex flex-col justify-between relative overflow-x-hidden">
+      {/* 🌿 CARDORA KERALA CARDAMOM PLANTATION ATMOSPHERIC BACKGROUND LAYER */}
+      <div className="cardora-plantation-backdrop">
+        <div className="cardora-bg-mesh" />
+        <div className="cardora-bg-photo" />
+        <div className="cardora-bg-leaf-pattern" />
+        <div className="cardora-bg-vignette" />
+      </div>
+      <Navbar
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={() => {
+          if (window.innerWidth >= 1024) {
+            setSidebarCollapsed(!sidebarCollapsed);
+          } else {
+            setMobileSidebarOpen(!mobileSidebarOpen);
+          }
+        }}
+        onToggleMobileSidebar={() => {
+          if (window.innerWidth >= 1024) {
+            setSidebarCollapsed(!sidebarCollapsed);
+          } else {
+            setMobileSidebarOpen(!mobileSidebarOpen);
+          }
+        }}
+      />
 
       {/* FIXED DESKTOP LEFT SIDEBAR NAVIGATION */}
-      <aside className={`hidden lg:flex fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white/95 dark:bg-[#06150D]/95 backdrop-blur-xl border-r border-[#CDE3D5] dark:border-[#1A402D] z-30 flex-col justify-between p-3 overflow-y-auto shadow-md transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-20' : 'w-60'}`}>
+      <aside className={`hidden lg:flex fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white dark:bg-[#03180F] border-r-2 border-[#CDE3D5] dark:border-emerald-500/30 z-30 flex-col justify-between p-3 overflow-y-auto shadow-2xl transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-20' : 'w-60'}`}>
         <div className="space-y-3">
 
           {/* Toggle Sidebar Collapse Button Header */}
-          <div className="flex items-center justify-between pb-1 border-b border-[#CDE3D5]/60 dark:border-[#1A402D]/60">
-            {!sidebarCollapsed && (
-              <span className="text-[10px] font-black uppercase text-slate-400 dark:text-emerald-400/70 tracking-widest px-1">
+          <div className="flex items-center justify-between pb-1 border-b border-[#CDE3D5] dark:border-[#1A402D]">
+            {!sidebarCollapsed ? (
+              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-emerald-400 tracking-widest px-1">
                 Navigation
+              </span>
+            ) : (
+              <span className="text-[9px] font-black uppercase text-slate-500 dark:text-emerald-400 tracking-tighter mx-auto">
+                Menu
               </span>
             )}
             <button
               type="button"
               onClick={toggleSidebarCollapse}
-              className={`p-1.5 rounded-xl bg-[#EAF4EE] dark:bg-[#0D261B] hover:bg-[#1F5E3B] hover:text-white text-[#1F5E3B] dark:text-emerald-400 border border-[#CDE3D5] dark:border-[#1A402D] transition-all cursor-pointer shadow-xs ${sidebarCollapsed ? 'mx-auto' : 'ml-auto'}`}
-              title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              className="p-1.5 rounded-xl bg-[#EAF4EE] dark:bg-[#0D261B] hover:bg-[#059669] hover:text-white text-[#059669] dark:text-emerald-400 border border-[#CDE3D5] dark:border-[#1A402D] transition-all cursor-pointer shadow-xs shrink-0"
+              title={sidebarCollapsed ? "Expand Sidebar Navigation" : "Collapse Sidebar Navigation"}
             >
               {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>
@@ -885,7 +912,7 @@ const Dashboard = () => {
           {/* Admin / Planter Info Card */}
           <div
             onClick={() => setActiveTab('dashboard')}
-            className={`p-2 bg-[#EAF4EE] dark:bg-[#0D261B] rounded-2xl border border-[#CDE3D5] dark:border-[#1A402D] flex items-center shadow-inner cursor-pointer hover:bg-[#E2F0E7] dark:hover:bg-[#123324] transition-colors ${sidebarCollapsed ? 'justify-center' : 'gap-3 p-3'}`}
+            className={`p-2 bg-[#EAF4EE] dark:bg-[#0D261B] rounded-2xl border border-[#CDE3D5] dark:border-[#1A402D] flex items-center shadow-xs cursor-pointer hover:bg-[#E2F0E7] dark:hover:bg-[#123324] transition-colors ${sidebarCollapsed ? 'justify-center' : 'gap-3 p-3'}`}
             title={sidebarCollapsed ? (isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')) : 'Click to go to Dashboard'}
           >
             <img
@@ -951,7 +978,7 @@ const Dashboard = () => {
               ].map((group) => (
                 <div key={group.title} className="space-y-1">
                   {!sidebarCollapsed ? (
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1">
+                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest px-2 mb-1">
                       {group.title}
                     </p>
                   ) : (
@@ -980,12 +1007,12 @@ const Dashboard = () => {
                           }
                         }}
                         title={link.label}
-                        className={`w-full flex items-center rounded-xl transition-all ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2 text-xs font-bold border-l-3'} ${isActive
-                          ? 'bg-[#EAF3E8] dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:text-slate-900'
+                        className={`w-full flex items-center rounded-xl transition-all ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2 text-xs font-black border-l-3'} ${isActive
+                          ? 'bg-[#EAF3E8] dark:bg-emerald-950/80 text-[#1F5E3B] dark:text-emerald-300 border-[#1F5E3B] font-black shadow-xs'
+                          : 'text-slate-900 dark:text-emerald-100 border-transparent hover:bg-emerald-100/70 dark:hover:bg-emerald-900/50 hover:text-slate-950'
                           }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1F5E3B] dark:text-emerald-400' : 'text-[#059669] dark:text-emerald-400'}`} />
                         {!sidebarCollapsed && <span className="truncate">{link.label}</span>}
                       </button>
                     );
@@ -1011,9 +1038,9 @@ const Dashboard = () => {
                       }
                     }}
                     title={link.label}
-                    className={`w-full flex items-center rounded-xl transition-all ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5 text-xs font-extrabold'} ${isActive
-                      ? 'bg-gradient-to-r from-[#059669] via-[#047857] to-[#06150D] text-white shadow-md shadow-emerald-950/30 border-l-4 border-amber-400 font-black'
-                      : 'text-slate-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-[#0D261B]'
+                    className={`w-full flex items-center rounded-xl transition-all ${sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2.5 text-xs font-black'} ${isActive
+                      ? 'bg-gradient-to-r from-[#059669] via-[#047857] to-[#022C1C] text-white shadow-lg shadow-emerald-950/40 border-l-4 border-amber-400 font-black'
+                      : 'text-slate-900 dark:text-emerald-100 hover:bg-emerald-100/80 dark:hover:bg-[#0D261B] hover:text-emerald-950 dark:hover:text-white'
                       }`}
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-amber-300' : 'text-[#059669] dark:text-emerald-400'}`} />
@@ -1065,7 +1092,7 @@ const Dashboard = () => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-72 max-w-[80vw] bg-white dark:bg-slate-900 h-full p-5 shadow-2xl flex flex-col justify-between z-10"
+              className="relative w-72 max-w-[80vw] bg-white dark:bg-[#03180F] h-full p-5 shadow-2xl flex flex-col justify-between z-10 border-r-2 border-[#CDE3D5] dark:border-emerald-500/30"
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-slate-800">
@@ -1111,9 +1138,9 @@ const Dashboard = () => {
                             setActiveTab(link.id);
                           }
                         }}
-                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${isActive
-                          ? 'bg-[#1F5E3B] text-white shadow-sm'
-                          : 'text-slate-700 dark:text-slate-200 hover:bg-[#F1F7F0] dark:hover:bg-slate-800'
+                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-black transition-all ${isActive
+                          ? 'bg-gradient-to-r from-[#059669] via-[#047857] to-[#022C1C] text-white shadow-md border-l-4 border-amber-400 font-black'
+                          : 'text-slate-900 dark:text-emerald-100 hover:bg-emerald-100/80 dark:hover:bg-[#0D261B] hover:text-emerald-950 dark:hover:text-white'
                           }`}
                       >
                         <Icon className="w-4 h-4 text-[#5C8D4E]" />
@@ -1129,11 +1156,18 @@ const Dashboard = () => {
       </AnimatePresence>
 
       {/* MAIN CONTENT AREA */}
-      <main className={`pt-20 sm:pt-22 flex-1 ${activeTab === 'expert' ? 'p-2 sm:p-4 space-y-0' : 'p-4 sm:p-6 lg:p-8 space-y-6'} w-full max-w-none min-h-[calc(100vh-4rem)] overflow-x-hidden transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
+      <main className={`relative z-10 pt-20 sm:pt-24 flex-1 ${activeTab === 'expert' ? 'px-2 sm:px-4 pb-2 sm:pb-4 space-y-0' : 'px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 lg:pb-8 space-y-6'} w-full max-w-none min-h-[calc(100vh-4rem)] overflow-x-hidden transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
         {(activeTab === 'dashboard' || activeTab === 'overview' || !activeTab) && (
           <div className="space-y-6">
             {/* COMPACT WELCOME CARD */}
-            <div className="bg-gradient-to-r from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden">
+            <div className="bg-[#041D12] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden group">
+              {/* Photorealistic Cardamom Plantation Hills Background Image */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:scale-105 group-hover:opacity-55 transition-all duration-1000 pointer-events-none"
+                style={{ backgroundImage: `url('/images/weather_hero_bg.jpg')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#041D12] via-[#041D12]/80 to-transparent pointer-events-none" />
+
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
@@ -1176,7 +1210,14 @@ const Dashboard = () => {
             </div>
 
             {/* 🎙️ PROMINENT CARDORA VOICE HERO CARD */}
-            <div className="bg-gradient-to-br from-[#041D12] via-[#0B3522] to-[#144E33] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-emerald-500/40 relative overflow-hidden space-y-4">
+            <div className="bg-[#041D12] text-white rounded-3xl p-6 sm:p-7 shadow-2xl border-2 border-emerald-500/40 relative overflow-hidden space-y-4 group">
+              {/* Photorealistic Cardamom Flower & Pods Background Image */}
+              <div 
+                className="absolute inset-0 bg-cover bg-right sm:bg-center opacity-45 group-hover:scale-105 group-hover:opacity-60 transition-all duration-1000 pointer-events-none"
+                style={{ backgroundImage: `url('/images/cardamom_flower_hero_bg.jpg')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#041D12] via-[#041D12]/85 to-black/20 pointer-events-none" />
+
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -1221,8 +1262,8 @@ const Dashboard = () => {
               )}
 
               {/* Voice Prompts Hints */}
-              <div className="pt-3 border-t border-white/15 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-emerald-200/90">{lang === 'ml' ? 'ഉദാഹരണം:' : 'Examples:'}</span>
+              <div className="pt-3 border-t border-white/20 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-black text-amber-300 uppercase tracking-wider">{lang === 'ml' ? 'ഉദാഹരണം:' : 'Examples:'}</span>
                 {[
                   { text: lang === 'ml' ? '"എന്റെ തോട്ടം കാണിക്കൂ"' : '"Show my plantation"', tab: 'plantations' },
                   { text: lang === 'ml' ? '"ലൈവ് ലേലം തുറക്കൂ"' : '"Open live auctions"', tab: 'auctions' },
@@ -1233,7 +1274,7 @@ const Dashboard = () => {
                   <button
                     key={idx}
                     onClick={() => setActiveTab(hint.tab)}
-                    className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/30 text-emerald-100 text-xs font-bold border border-white/20 transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-full bg-[#02180F]/85 hover:bg-amber-400 hover:text-slate-950 text-amber-300 text-xs font-black border border-amber-400/50 shadow-md backdrop-blur-md transition-all cursor-pointer"
                   >
                     {hint.text}
                   </button>

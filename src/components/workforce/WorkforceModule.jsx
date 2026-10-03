@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Users, Search, Filter, ShieldCheck, MapPin, Star, DollarSign,
   CheckCircle, CheckCircle2, Clock, Plus, UserPlus, MessageSquare, Briefcase,
@@ -13,6 +14,7 @@ import OwnerSupervisorManagement from './OwnerSupervisorManagement';
 import OwnerActivityHistory from './OwnerActivityHistory';
 
 const WorkforceModule = ({ onOpenChat }) => {
+  const location = useLocation();
   const { user, showToast } = useAuth();
 
   const userRole = (user?.role || 'Farmer').toLowerCase();
@@ -42,6 +44,16 @@ const WorkforceModule = ({ onOpenChat }) => {
 
   // Filter States for Worker Search
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync search query from URL parameter if navigated from Header search bar
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam !== null) {
+      setSearchQuery(searchParam);
+      setActiveTab('search');
+    }
+  }, [location.search]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedVillage, setSelectedVillage] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');

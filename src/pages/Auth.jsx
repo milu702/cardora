@@ -578,7 +578,7 @@ const Auth = () => {
       </div>
 
       <Navbar />
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-10 pt-24 pb-16 relative z-10">
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-10 pt-24 pb-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 35, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

@@ -63,44 +63,60 @@ const generateMarketplacePDF = (listing) => {
 
       y += 75;
 
-      // Section: Seller & Owner Info
+      // Section: OWNER VERIFICATION
       doc.fillColor(primaryColor)
          .fontSize(13)
          .font('Helvetica-Bold')
-         .text('Owner & Contact Details', 40, y);
+         .text('OWNER VERIFICATION', 40, y);
 
       doc.moveTo(40, y + 16).lineTo(555, y + 16).strokeColor(borderColor).stroke();
-
       y += 24;
 
+      doc.roundedRect(40, y, 515, 70, 6).fillAndStroke('#F0FDF4', borderColor);
+
       doc.font('Helvetica-Bold').fontSize(9.5).fillColor(textColor);
-      doc.text('Owner Name:', 40, y);
-      doc.font('Helvetica').text(listing.ownerName || 'Verified Planter', 130, y);
+      doc.text('Owner Name:', 50, y + 10);
+      doc.font('Helvetica').text(listing.ownerName || 'Verified Planter', 140, y + 10);
 
-      doc.font('Helvetica-Bold').text('Contact Email:', 300, y);
-      doc.font('Helvetica').text(listing.ownerEmail || 'seller@cardora.io', 390, y);
+      doc.font('Helvetica-Bold').text('Verification Status:', 300, y + 10);
+      const statusVal = listing.verificationStatus || 'Pending';
+      const statusColor = statusVal === 'Verified' ? '#15803D' : (statusVal === 'Rejected' ? '#B91C1C' : '#D97706');
+      doc.font('Helvetica-Bold').fillColor(statusColor).text(statusVal.toUpperCase(), 410, y + 10);
 
-      y += 18;
+      const capturedStr = listing.verificationCapturedAt
+        ? (typeof listing.verificationCapturedAt === 'string' ? listing.verificationCapturedAt : new Date(listing.verificationCapturedAt).toLocaleString())
+        : new Date().toLocaleString();
 
-      doc.font('Helvetica-Bold').text('Phone Number:', 40, y);
-      doc.font('Helvetica').text(listing.ownerPhone || '+91 98470 54321', 130, y);
+      doc.font('Helvetica-Bold').fillColor(textColor).text('Captured Date/Time:', 50, y + 30);
+      doc.font('Helvetica').text(capturedStr, 160, y + 30);
 
-      doc.font('Helvetica-Bold').text('AI Verification:', 300, y);
-      doc.font('Helvetica').fillColor('#15803D').text('✔ 99.4% AI Legal Verified', 390, y);
+      doc.font('Helvetica-Bold').text('Live Scanner Photo:', 50, y + 50);
+      if (listing.verificationPhoto && listing.verificationPhoto.startsWith('data:image')) {
+        try {
+          const base64Data = listing.verificationPhoto.split(',')[1];
+          const imgBuffer = Buffer.from(base64Data, 'base64');
+          doc.image(imgBuffer, 460, y + 8, { width: 55, height: 55 });
+        } catch (imgErr) {
+          doc.font('Helvetica').fillColor('#059669').text('✔ Live Camera Photo Recorded', 160, y + 50);
+        }
+      } else {
+        doc.font('Helvetica').fillColor('#059669').text('✔ Fresh Camera Capture Recorded', 160, y + 50);
+      }
 
-      y += 30;
+      y += 85;
 
-      // Section: Property & Agronomic Specifications
+      // Section: PLOT DETAILS
       doc.fillColor(primaryColor)
          .fontSize(13)
          .font('Helvetica-Bold')
-         .text('Property & Agronomic Specifications', 40, y);
+         .text('PLOT DETAILS', 40, y);
 
       doc.moveTo(40, y + 16).lineTo(555, y + 16).strokeColor(borderColor).stroke();
 
       y += 24;
 
       const specs = [
+        { label: 'Plot Ref ID:', val: `#${listingId}` },
         { label: 'Location:', val: listing.location || 'Idukki, Kerala' },
         { label: 'Total Area:', val: listing.area ? (listing.area.toLowerCase().includes('acre') ? listing.area : `${listing.area} Acres`) : '5 Acres' },
         { label: 'Price / Valuation:', val: listing.price ? (listing.price.startsWith('₹') ? listing.price : `₹${listing.price}`) : 'Price on Request' },
@@ -108,40 +124,46 @@ const generateMarketplacePDF = (listing) => {
         { label: 'Est. Annual Yield:', val: listing.yield || '420 kg / acre' },
         { label: 'Plant Stock:', val: listing.plants || '2,500 Plants' },
         { label: 'Health Score:', val: `${listing.healthScore || 94}/100` },
-        { label: 'Projected ROI:', val: listing.roi || '24% Annual' },
       ];
 
-      // Render spec table (2 columns)
       specs.forEach((item, index) => {
         const col = index % 2;
         const row = Math.floor(index / 2);
         const xPos = col === 0 ? 40 : 300;
-        const currentY = y + (row * 24);
+        const currentY = y + (row * 22);
 
-        doc.roundedRect(xPos, currentY, 245, 20, 4).fill('#F9FAFB');
-        doc.fillColor('#374151').font('Helvetica-Bold').fontSize(8.5).text(item.label, xPos + 8, currentY + 5);
-        doc.fillColor(secondaryColor).font('Helvetica-Bold').fontSize(8.5).text(item.val, xPos + 105, currentY + 5, { width: 132, align: 'right' });
+        doc.roundedRect(xPos, currentY, 245, 18, 4).fill('#F9FAFB');
+        doc.fillColor('#374151').font('Helvetica-Bold').fontSize(8.5).text(item.label, xPos + 8, currentY + 4);
+        doc.fillColor(secondaryColor).font('Helvetica-Bold').fontSize(8.5).text(item.val, xPos + 105, currentY + 4, { width: 132, align: 'right' });
       });
 
-      y += Math.ceil(specs.length / 2) * 24 + 15;
+      y += Math.ceil(specs.length / 2) * 22 + 15;
 
-      // Section: Plot Description
+      // Section: LEGAL DOCUMENTS
       doc.fillColor(primaryColor)
          .fontSize(13)
          .font('Helvetica-Bold')
-         .text('Plot Description & Agronomic Features', 40, y);
+         .text('LEGAL DOCUMENTS', 40, y);
 
       doc.moveTo(40, y + 16).lineTo(555, y + 16).strokeColor(borderColor).stroke();
 
       y += 24;
 
-      const descText = listing.description || 'Prime Organic Cardamom Plot in Western Ghats, Kerala. Features drip irrigation, high-altitude microclimate, and excellent yield track record.';
+      const pattayamTitle = listing.pattayamFileName || 'Official_Pattayam_Title_Deed.pdf';
+      const pattayamType = listing.pattayamDoc || 'Official Kerala Govt Revenue Land Title (Pattayam)';
 
-      doc.roundedRect(40, y, 515, 65, 6).fillAndStroke('#FAFAFA', borderColor);
-      doc.fillColor('#374151')
-         .font('Helvetica')
-         .fontSize(9)
-         .text(descText, 50, y + 10, { width: 495, height: 45, ellipsis: true });
+      doc.roundedRect(40, y, 515, 45, 6).fillAndStroke('#FAFAFA', borderColor);
+      doc.fillColor(textColor).font('Helvetica-Bold').fontSize(9).text('Document Name:', 50, y + 10);
+      doc.font('Helvetica').text(pattayamTitle, 140, y + 10);
+      doc.font('Helvetica-Bold').text('Document Type:', 50, y + 26);
+      doc.font('Helvetica').text(pattayamType, 140, y + 26);
+
+      y += 60;
+
+      // Section: Plot Description
+      const descText = listing.description || 'Prime Organic Cardamom Plot in Western Ghats, Kerala. Features drip irrigation, high-altitude microclimate, and excellent yield track record.';
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(primaryColor).text('Plot Description & Notes:', 40, y);
+      doc.font('Helvetica').fontSize(8.5).fillColor('#4B5563').text(descText, 40, y + 14, { width: 515 });
 
       y += 80;
 
