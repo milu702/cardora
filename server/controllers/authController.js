@@ -205,23 +205,57 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    // Non-blocking Background Notification creation (Deduplicated to 1 per 24 hours)
+    // Non-blocking Background Notification creation (Deduplicated cleanly)
     (async () => {
       try {
-        const recentAlert = await Notification.findOne({
-          user: user._id,
-          type: 'login',
-          createdAt: { $gt: new Date(Date.now() - 86400000) },
+        const isAdmin = (user.role || '').toLowerCase().includes('admin');
+        const now = new Date();
+        const timeStr = now.toLocaleString([], {
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
         });
 
-        if (!recentAlert) {
-          await Notification.create({
+        if (isAdmin) {
+          let adminNotif = await Notification.findOne({
             user: user._id,
             type: 'login',
-            title: '🔐 Login Security Alert',
-            message: `Welcome back, ${user.name || user.username}! Successfully logged into Cardora.`,
-            link: '/dashboard',
+            title: '🔐 Admin Login Activity',
           });
+
+          const notifMessage = `Administrator ${user.name || user.username} logged into Cardora Admin Command Center. Activity: Session Authenticated. Status: Active Session. Timestamp: ${timeStr}.`;
+
+          if (adminNotif) {
+            adminNotif.message = notifMessage;
+            adminNotif.read = false;
+            adminNotif.updatedAt = now;
+            await adminNotif.save();
+          } else {
+            await Notification.create({
+              user: user._id,
+              sender: user._id,
+              type: 'login',
+              title: '🔐 Admin Login Activity',
+              message: notifMessage,
+              read: false,
+              link: '/dashboard?tab=admin',
+            });
+          }
+        } else {
+          const recentAlert = await Notification.findOne({
+            user: user._id,
+            type: 'login',
+            createdAt: { $gt: new Date(Date.now() - 86400000) },
+          });
+
+          if (!recentAlert) {
+            await Notification.create({
+              user: user._id,
+              type: 'login',
+              title: '🔐 Login Security Alert',
+              message: `Welcome back, ${user.name || user.username}! Successfully logged into Cardora.`,
+              link: '/dashboard',
+            });
+          }
         }
 
         const adminUsers = await User.find({ role: /admin/i, _id: { $ne: user._id } });
@@ -231,12 +265,14 @@ exports.login = async (req, res) => {
             sender: user._id,
             type: 'login',
             title: '🔐 User Login Alert',
-            message: `User ${user.name} (${user.role}) logged into Cardora.`,
+            message: `User ${user.name} (${user.role}) logged into Cardora ecosystem.`,
             link: '/dashboard?tab=admin',
           }));
           await Notification.insertMany(adminNotifs);
         }
-      } catch (e) { }
+      } catch (e) {
+        console.error('Error recording login notification:', e.message);
+      }
     })();
 
     res.status(200).json({

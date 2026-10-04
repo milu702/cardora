@@ -142,17 +142,35 @@ const Footer = ({ className = '' }) => {
                 {category}
               </h4>
               <ul className="space-y-2.5">
-                {links.map((link) => (
-                  <li key={link}>
-                    <a 
-                      href={`#${link.toLowerCase().replace(/\s+/g, '-')}`} 
-                      className="text-[#DDEFD9]/70 hover:text-white transition-colors flex items-center gap-1 group text-xs font-semibold"
-                    >
-                      <ChevronRight className="w-3 h-3 text-[#C9A227] opacity-0 group-hover:opacity-100 transition-all -ml-1 group-hover:ml-0" />
-                      {link}
-                    </a>
-                  </li>
-                ))}
+                {links.map((link) => {
+                  let toPath = null;
+                  const l = link.toLowerCase();
+                  if (l.includes('privacy')) toPath = '/privacy-policy';
+                  else if (l.includes('terms')) toPath = '/terms-of-service';
+                  else if (l.includes('security')) toPath = '/security-protocol';
+
+                  return (
+                    <li key={link}>
+                      {toPath ? (
+                        <Link 
+                          to={toPath} 
+                          className="text-[#DDEFD9]/70 hover:text-white transition-colors flex items-center gap-1 group text-xs font-semibold"
+                        >
+                          <ChevronRight className="w-3 h-3 text-[#C9A227] opacity-0 group-hover:opacity-100 transition-all -ml-1 group-hover:ml-0" />
+                          {link}
+                        </Link>
+                      ) : (
+                        <a 
+                          href={`#${link.toLowerCase().replace(/\s+/g, '-')}`} 
+                          className="text-[#DDEFD9]/70 hover:text-white transition-colors flex items-center gap-1 group text-xs font-semibold"
+                        >
+                          <ChevronRight className="w-3 h-3 text-[#C9A227] opacity-0 group-hover:opacity-100 transition-all -ml-1 group-hover:ml-0" />
+                          {link}
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
@@ -171,12 +189,12 @@ const Footer = ({ className = '' }) => {
             <span>© 2026 Cardora Platform. All rights reserved.</span>
           </div>
 
-          <div className="flex items-center gap-4 flex-wrap justify-center">
-            <a href="#privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+          <div className="flex items-center gap-4 flex-wrap justify-center font-bold">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span className="w-1 h-1 rounded-full bg-[#1F5E3B]" />
-            <a href="#terms" className="hover:text-white transition-colors">Terms of Service</a>
+            <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
             <span className="w-1 h-1 rounded-full bg-[#1F5E3B]" />
-            <a href="#security" className="hover:text-white transition-colors">Security Protocol</a>
+            <Link to="/security-protocol" className="hover:text-white transition-colors">Security Protocol</Link>
           </div>
         </div>
 

@@ -16,7 +16,7 @@ exports.getNotifications = async (req, res) => {
 
     let notifications = await Notification.find({ user: userId })
       .populate('sender', 'name avatar profilePhoto role')
-      .sort({ createdAt: -1 });
+      .sort({ updatedAt: -1, createdAt: -1 });
 
     // Deduplicate duplicate login notifications in response
     const seenTitles = new Set();

@@ -262,7 +262,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchPlantations();
-  }, [activeTab]);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab, searchParams]);
 
 
 

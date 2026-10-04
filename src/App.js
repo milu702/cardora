@@ -9,6 +9,10 @@ import Dashboard from './pages/Dashboard';
 import AcceptInvitation from './pages/AcceptInvitation';
 import NotFound from './pages/NotFound';
 
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import SecurityProtocol from './pages/SecurityProtocol';
+
 // Protected Route for Dashboard & Sub-pages
 const ProtectedDashboard = () => {
   const { isAuthenticated, loadingUser } = useAuth();
@@ -69,6 +73,14 @@ const MainContent = () => {
         <Route path="/signup" element={<AuthRoute />} />
         <Route path="/forgot-password" element={<AuthRoute />} />
         <Route path="/accept-invitation" element={<AcceptInvitation />} />
+
+        {/* Public Legal Pages */}
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/security" element={<SecurityProtocol />} />
+        <Route path="/security-protocol" element={<SecurityProtocol />} />
 
         {/* Main Application Dashboard & Sub-page routes */}
         <Route path="/dashboard" element={<ProtectedDashboard />} />

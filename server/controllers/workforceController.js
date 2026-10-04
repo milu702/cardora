@@ -808,13 +808,35 @@ exports.checkOutAttendance = async (req, res) => {
 exports.getAttendanceHistory = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { workerId } = req.query;
+    const { workerId, plantationId, date } = req.query;
 
-    const queryWorker = workerId || userId;
+    const userRole = (req.user?.role || '').toLowerCase();
+    const isAdmin = userRole.includes('admin');
 
-    const history = await Attendance.find({ worker: queryWorker })
-      .populate('worker', 'name username avatar phone')
-      .sort({ checkInTime: -1 });
+    let filter = {};
+    if (isAdmin) {
+      if (workerId && workerId !== 'all') {
+        filter.$or = [{ worker: workerId }, { workerId: workerId }];
+      }
+      if (plantationId && plantationId !== 'all') {
+        filter.plantation = plantationId;
+      }
+      if (date) {
+        filter.date = date;
+      }
+    } else if (userRole.includes('supervisor')) {
+      filter.$or = [{ supervisor: userId }, { markedBy: req.user.name }];
+      if (workerId && workerId !== 'all') filter.worker = workerId;
+    } else {
+      const queryWorker = workerId && workerId !== 'all' ? workerId : userId;
+      filter.worker = queryWorker;
+    }
+
+    const history = await Attendance.find(filter)
+      .populate('worker', 'fullName name workerId photo phone village district')
+      .populate('supervisor', 'name username email')
+      .populate('plantation', 'name location district')
+      .sort({ checkInTime: -1, createdAt: -1 });
 
     res.status(200).json({
       success: true,
