@@ -601,3 +601,108 @@ textarea {
   border: 1px solid rgba(52, 211, 153, 0.22);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }
+
+/* ========================================================================= */
+/* ENTERPRISE AGRICULTURAL ADMIN DASHBOARD DESIGN SYSTEM STYLES */
+/* ========================================================================= */
+
+.admin-dashboard-bg {
+  background-color: #F7F9F8;
+  background-image: 
+    linear-gradient(180deg, rgba(247, 249, 248, 0.92) 0%, rgba(247, 249, 248, 0.96) 100%),
+    url('../public/images/cardamom_dashboard_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.dark .admin-dashboard-bg {
+  background-color: #0B120E;
+  background-image: 
+    linear-gradient(180deg, rgba(11, 18, 14, 0.93) 0%, rgba(11, 18, 14, 0.97) 100%),
+    url('../public/images/cardamom_dashboard_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Cardamom Header Hero Container Style with Translucent Backdrop */
+.admin-header-cardamom-bg {
+  position: relative;
+  background-image: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.93) 0%, rgba(247, 249, 248, 0.88) 100%),
+    url('../public/images/cardamom_dashboard_bg.jpg');
+  background-size: cover;
+  background-position: center right;
+  backdrop-filter: blur(8px);
+}
+
+.dark .admin-header-cardamom-bg {
+  background-image: 
+    linear-gradient(135deg, rgba(18, 28, 22, 0.94) 0%, rgba(15, 23, 42, 0.90) 100%),
+    url('../public/images/cardamom_dashboard_bg.jpg');
+  background-size: cover;
+  background-position: center right;
+}
+
+/* Modern Enterprise White Card Style */
+.admin-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8E5;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04), 0 1px 2px rgba(16, 24, 40, 0.02);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.admin-card:hover {
+  border-color: #D1DBD6;
+  box-shadow: 0 4px 12px rgba(20, 92, 58, 0.06), 0 1px 3px rgba(16, 24, 40, 0.04);
+}
+
+.dark .admin-card {
+  background-color: #121C16;
+  border-color: #1E2E25;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.dark .admin-card:hover {
+  border-color: #273D30;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* Custom Sparkline Animations */
+@keyframes sparklineDraw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.sparkline-path {
+  stroke-dasharray: 100;
+  animation: sparklineDraw 1.2s ease-out forwards;
+}
+
+/* Custom Shimmer Loading State */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #F0F4F2 25%, #E4ECE8 50%, #F0F4F2 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, #15221B 25%, #1F3328 50%, #15221B 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

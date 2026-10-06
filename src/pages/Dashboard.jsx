@@ -912,7 +912,7 @@ const Dashboard = () => {
 
           {/* Admin / Planter Info Card */}
           <div
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => setActiveTab(isAdminUser ? 'admin' : 'dashboard')}
             className={`p-2 bg-[#EAF4EE] dark:bg-[#0D261B] rounded-2xl border border-[#CDE3D5] dark:border-[#1A402D] flex items-center shadow-xs cursor-pointer hover:bg-[#E2F0E7] dark:hover:bg-[#123324] transition-colors ${sidebarCollapsed ? 'justify-center' : 'gap-3 p-3'}`}
             title={sidebarCollapsed ? (isAdminUser ? 'System Administrator' : (user?.fullName || user?.username || 'Planter')) : 'Click to go to Dashboard'}
           >
@@ -1158,7 +1158,7 @@ const Dashboard = () => {
 
       {/* MAIN CONTENT AREA */}
       <main className={`relative z-10 pt-20 sm:pt-24 flex-1 ${activeTab === 'expert' ? 'px-2 sm:px-4 pb-2 sm:pb-4 space-y-0' : 'px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 lg:pb-8 space-y-6'} w-full max-w-none min-h-[calc(100vh-4rem)] overflow-x-hidden transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
-        {(activeTab === 'dashboard' || activeTab === 'overview' || !activeTab) && (
+        {!isAdminUser && (activeTab === 'dashboard' || activeTab === 'overview' || !activeTab) && (
           <div className="space-y-6">
             {/* COMPACT WELCOME CARD */}
             <div className="bg-[#041D12] text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden group">
@@ -2723,7 +2723,7 @@ const Dashboard = () => {
 
 
         {/* ===== TAB: ADMIN PORTAL ===== */}
-        {activeTab === 'admin' && <AdminDashboard />}
+        {isAdminUser && (activeTab === 'admin' || activeTab === 'dashboard' || activeTab === 'overview' || !activeTab) && <AdminDashboard />}
 
         {/* ===== TAB 6: PROFILE ===== */}
         {activeTab === 'profile' && (

@@ -137,20 +137,20 @@ const AdminAnalyticsCharts = ({ analyticsData, darkMode }) => {
       {/* ========================================================================= */}
       {/* 1. TOP CONTROL & CHART TAB SELECTION HEADER */}
       {/* ========================================================================= */}
-      <div className={`p-5 rounded-2xl border transition-all ${
-        darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200/80 shadow-xs'
+      <div className={`admin-card p-5 border transition-all ${
+        darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-[#E2E8E5] shadow-xs'
       }`}>
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#1F5E3B] dark:text-emerald-400 flex items-center justify-center font-bold">
+              <span className="w-8 h-8 rounded-xl bg-[#145C3A]/10 text-[#145C3A] dark:text-[#16A36A] flex items-center justify-center font-bold">
                 <BarChart3 size={18} />
               </span>
-              <h3 className="text-base font-black text-[#1F2937] dark:text-white tracking-tight">
+              <h3 className="text-base font-black text-[#101828] dark:text-white tracking-tight">
                 Executive Analytics & Interactive Bar Charts
               </h3>
             </div>
-            <p className="text-xs text-[#6B7280] dark:text-slate-400 mt-1 font-medium">
+            <p className="text-xs text-[#667085] dark:text-slate-400 mt-1 font-medium">
               Real-time platform metrics, harvest yield analytics, district acreage & AI diagnostic frequency
             </p>
           </div>
@@ -168,8 +168,8 @@ const AdminAnalyticsCharts = ({ analyticsData, darkMode }) => {
                   onClick={() => setTimeframe(tf.id)}
                   className={`px-3 py-1.5 rounded-lg transition-all ${
                     timeframe === tf.id
-                      ? 'bg-white dark:bg-slate-900 text-[#1F5E3B] dark:text-emerald-400 shadow-xs'
-                      : 'hover:text-[#1F5E3B]'
+                      ? 'bg-white dark:bg-slate-900 text-[#145C3A] dark:text-[#16A36A] shadow-xs font-black'
+                      : 'hover:text-[#145C3A]'
                   }`}
                 >
                   {tf.label}
@@ -188,7 +188,7 @@ const AdminAnalyticsCharts = ({ analyticsData, darkMode }) => {
 
             <button
               onClick={handleExportChartCSV}
-              className="px-3.5 py-2 rounded-xl bg-[#1F5E3B] hover:bg-[#16442b] text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs"
+              className="px-3.5 py-2 rounded-xl bg-[#145C3A] hover:bg-[#176B43] text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Download size={14} />
               <span>Export CSV</span>
@@ -213,7 +213,7 @@ const AdminAnalyticsCharts = ({ analyticsData, darkMode }) => {
                 onClick={() => setActiveChartTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all whitespace-nowrap border ${
                   isActive
-                    ? 'bg-[#1F5E3B] text-white border-[#1F5E3B] shadow-sm scale-[1.01]'
+                    ? 'bg-[#145C3A] text-white border-[#145C3A] shadow-sm scale-[1.01]'
                     : darkMode
                     ? 'bg-slate-800/60 border-slate-700 text-slate-300 hover:bg-slate-800'
                     : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -222,7 +222,7 @@ const AdminAnalyticsCharts = ({ analyticsData, darkMode }) => {
                 <TabIcon size={15} />
                 <span>{tab.label}</span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-[#1F5E3B] dark:text-emerald-400'
+                  isActive ? 'bg-white/20 text-white' : 'bg-[#145C3A]/10 text-[#145C3A] dark:text-[#16A36A]'
                 }`}>
                   {tab.badge}
                 </span>
