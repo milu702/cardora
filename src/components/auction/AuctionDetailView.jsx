@@ -558,7 +558,7 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
 
       {/* CONFIRMATION BID MODAL */}
       {confirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-7 shadow-2xl border border-[#D7E6D5] dark:border-slate-800 space-y-5 text-center font-sans">
             <div className="w-14 h-14 rounded-2xl bg-[#1F5E3B] text-white flex items-center justify-center mx-auto shadow-md">
               <Gavel size={28} />
@@ -610,7 +610,7 @@ const AuctionDetailView = ({ auctionId, onBack, user, onToast }) => {
 
       {/* FULL SCREEN LIGHTBOX MODAL */}
       {isLightboxOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-8 animate-fadeIn">
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-8 animate-fadeIn">
           {/* Header Bar */}
           <div className="flex items-center justify-between text-white z-10">
             <div className="flex items-center gap-3">

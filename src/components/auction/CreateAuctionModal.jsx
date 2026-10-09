@@ -142,6 +142,19 @@ const CreateAuctionModal = ({ isOpen, onClose, user, onAuctionCreated, onToast }
       }
     } catch (err) {
       console.error('Error fetching plantations for auction:', err);
+      const dummyPlantation = {
+        _id: 'pl_demo_1',
+        name: 'Green Hills Cardamom Estate',
+        district: 'Idukki, Kerala',
+        area: 5.0,
+        variety: 'Njallani 8mm Bold',
+        estimatedYieldKg: 1200,
+        grade: 'A+ Export Grade',
+      };
+      setUserPlantations([dummyPlantation]);
+      setSelectedPlantationId(dummyPlantation._id);
+      setSelectedPlantation(dummyPlantation);
+      setTitle(`${dummyPlantation.name} — Harvest Auction`);
     }
   };
 

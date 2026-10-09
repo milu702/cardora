@@ -53,7 +53,7 @@ const FullScreenFormModal = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-0 sm:p-3 md:p-5 font-sans">
+      <div className="fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center p-0 sm:p-3 md:p-5 font-sans">
         
         {/* BACKDROP BLUR OVERLAY */}
         <motion.div
@@ -74,7 +74,7 @@ const FullScreenFormModal = ({
         >
           
           {/* ===== 1. FIXED TOP HEADER ===== */}
-          <header className="sticky top-0 z-30 px-4 sm:px-6 py-3.5 bg-white/95 dark:bg-[#081E12]/95 backdrop-blur-md border-b border-[#D7E6D5] dark:border-[#1A402D] flex items-center justify-between gap-4 shadow-xs">
+          <header className="shrink-0 z-30 px-4 sm:px-6 py-3.5 bg-white dark:bg-[#081E12] border-b border-[#D7E6D5] dark:border-[#1A402D] flex items-center justify-between gap-4 shadow-xs">
             
             {/* Title & Badge */}
             <div className="flex items-center gap-3 min-w-0">
@@ -197,7 +197,7 @@ const FullScreenFormModal = ({
 
           {/* ===== 3. STICKY FOOTER ACTION BAR ===== */}
           {footerActions && (
-            <footer className="sticky bottom-0 z-30 px-4 sm:px-6 py-3.5 bg-white/95 dark:bg-[#081E12]/95 backdrop-blur-md border-t border-[#D7E6D5] dark:border-[#1A402D] shadow-md flex items-center justify-between gap-3">
+            <footer className="shrink-0 z-30 px-4 sm:px-6 py-3.5 bg-white dark:bg-[#081E12] border-t border-[#D7E6D5] dark:border-[#1A402D] shadow-md flex items-center justify-between gap-3">
               {footerActions}
             </footer>
           )}
